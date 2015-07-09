@@ -13,25 +13,26 @@ export init, cleanup, open, get, put
 ##############################
 
 type RequestOptions
-	blocking::Bool
-	isImplicit::Bool
-	isSSL::Bool
-	headers::Vector{Tuple}
-	username::String
-	passwd::String
+    blocking::Bool
+    isImplicit::Bool
+    isSSL::Bool
+    verify_peer::Bool
+    headers::Vector{Tuple}
+    username::String
+    passwd::String
 
-	RequestOptions(; blocking=true, isImplicit=false, isSSL=false, headers=Array(Tuple, 0), username="", passwd="") = new(blocking, isImplicit, isSSL, headers, username, passwd)
+    RequestOptions(; blocking=true, isImplicit=false, isSSL=false, verify_peer=true, headers=Array(Tuple, 0), username="", passwd="") = new(blocking, isImplicit, isSSL, verify_peer, headers, username, passwd)
 end
 
 type Response
-	body
-	headers::Dict{String, Vector{Tuple}}
-	code::Int
-	total_time
-	bytes_recd::Int
+    body
+    headers::Dict{String, Vector{Tuple}}
+    code::Int
+    total_time
+    bytes_recd::Int
 
-	Response() = new(nothing, Dict{String, Vector{String}}(), 0, 0.0, 0)
-end 
+    Response() = new(nothing, Dict{String, Vector{String}}(), 0, 0.0, 0)
+end
 
 function show(io::IO, o::Response)
     println(io, "Response Code :", o.code)
@@ -78,12 +79,15 @@ end
 # Callbacks
 ##############################
 
-function write_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
+@debug function write_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
     println("@write_cb")
     ctxt = unsafe_pointer_to_objref(p_ctxt)
     nbytes = sz * n
-    write(ctxt.resp.body, buff, nbytes)
-    ctxt.resp.bytes_recd = ctxt.resp.bytes_recd + nbytes
+    @bp
+    if (ctxt.resp.bytes_recd !=0 )
+        write(ctxt.resp.body, buff, nbytes)
+        ctxt.resp.bytes_recd = ctxt.resp.bytes_recd + nbytes
+    end
 
     nbytes::Csize_t
 end
@@ -185,37 +189,37 @@ end
 
 function setup_easy_handle(url, options::RequestOptions)
     ctxt = ConnContext(options)
-    
+
     curl = curl_easy_init()
     if (curl == C_NULL) throw("curl_easy_init() failed") end
 
     ctxt.curl = curl
 
     ctxt.url = url
-    
+
     p_ctxt = pointer_from_objref(ctxt)
 
 
     @ce_curl curl_easy_setopt CURLOPT_URL url
-    @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_cb
-    # @ce_curl curl_easy_setopt CURLOPT_UPLOAD 1
-    @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
+    # @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_cb
+    # @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
     @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
-    if length(options.username) > 0
-    	@ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
-    	@ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
+    if options.isSSL
+        @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
+        @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
+        @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
+        @ce_curl curl_easy_setopt CURLOPT_SSLVERSION Int64(0)
+        @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
+
+        if ~options.verify_peer
+            @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
+        else
+            @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(1)
+        end
     end
 
-    if options.isSSL
-    	@ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
-    	@ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(1)
-    	@ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
-    	@ce_curl curl_easy_setopt CURLOPT_SSLVERSION Int64(0)
-    	@ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
-    end 
-    
-    ctxt
+    return ctxt
 end
 
 function cleanup_easy_context(ctxt::Union(ConnContext,Bool))
@@ -224,7 +228,7 @@ function cleanup_easy_context(ctxt::Union(ConnContext,Bool))
         if (ctxt.curl != C_NULL)
             curl_easy_cleanup(ctxt.curl)
         end
-        
+
         if ctxt.close_ostream
             close(ctxt.resp.body)
             ctxt.resp.body = nothing
@@ -236,7 +240,7 @@ end
 function process_response(ctxt)
     resp_code = Array(Int,1)
     @ce_curl curl_easy_getinfo CURLINFO_RESPONSE_CODE resp_code
-    
+
     total_time = Array(Float64,1)
     @ce_curl curl_easy_getinfo CURLINFO_TOTAL_TIME total_time
 
@@ -280,22 +284,28 @@ end
 ##############################
 
 @debug function open(url::String, options::RequestOptions=RequestOptions())
-	if (options.blocking)
-		ctxt = false
-		try
-			@bp
-			ctxt = setup_easy_handle(url, options)
+    if (options.blocking)
+        ctxt = false
+        try
+            @bp
+            ctxt = setup_easy_handle(url, options)
 
-			@ce_curl curl_easy_perform
-		finally
-			cleanup_easy_context(ctxt)
-		end
-	else
+            if (~isempty(options.username) && ~isempty(options.passwd))
+                @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
+                @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
+            end
 
-	end
+            @ce_curl curl_easy_perform
+
+            return ctxt.resp
+        finally
+            cleanup_easy_context(ctxt)
+        end
+    else
+        # Todo: figure out non-blocking
+    end
 end
 
 end #module
-
 
 
