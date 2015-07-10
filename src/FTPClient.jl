@@ -290,24 +290,24 @@ function open(url::String, options::RequestOptions=RequestOptions())
         try
             ctxt = setup_easy_handle(url, options)
 
-          if (~isempty(options.username) && ~isempty(options.passwd))
-              @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
-              @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
-          end
+            if (~isempty(options.username) && ~isempty(options.passwd))
+                @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
+                @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
+            end
 
-          if options.isSSL
-              @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
-              @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
-              @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
-              @ce_curl curl_easy_setopt CURLOPT_SSLVERSION Int64(0)
-              @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
+            if options.isSSL
+                @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
+                @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
+                @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
+                @ce_curl curl_easy_setopt CURLOPT_SSLVERSION Int64(0)
+                @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
 
-              if ~options.verify_peer
+                if ~options.verify_peer
                   @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
-              else
+                else
                   @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(1)
-              end
-          end
+                end
+            end
 
             @ce_curl curl_easy_perform
 
@@ -366,7 +366,7 @@ end
 # COMMAND
 ##############################
 
-@debug function command(url::String, options::RequestOptions=RequestOptions(), command::AbstractString = "LIST")
+function command(url::String, options::RequestOptions=RequestOptions(), command::AbstractString = "LIST")
     if (options.blocking)
         ctxt = false
         try
@@ -377,7 +377,6 @@ end
                 @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
             end
 
-            @bp
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
 
             @ce_curl curl_easy_perform
