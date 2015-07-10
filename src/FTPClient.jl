@@ -79,11 +79,11 @@ end
 # Callbacks
 ##############################
 
-@debug function write_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
+function write_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
     println("@write_cb")
     ctxt = unsafe_pointer_to_objref(p_ctxt)
     nbytes = sz * n
-    @bp
+
     if (ctxt.resp.bytes_recd !=0 )
         write(ctxt.resp.body, buff, nbytes)
         ctxt.resp.bytes_recd = ctxt.resp.bytes_recd + nbytes
@@ -94,28 +94,28 @@ end
 
 c_write_cb = cfunction(write_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
-function header_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
-    println("@header_cb")
-    ctxt = unsafe_pointer_to_objref(p_ctxt)
-    hdrlines = split(bytestring(buff, convert(Int, sz * n)), "\r\n")
+# function header_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
+#     println("@header_cb")
+#     ctxt = unsafe_pointer_to_objref(p_ctxt)
+#     hdrlines = split(bytestring(buff, convert(Int, sz * n)), "\r\n")
 
-   println(hdrlines)
-    for e in hdrlines
-        m = match(r"^\s*([\w\-\_]+)\s*\:(.+)", e)
-        if (m != nothing)
-            k = strip(m.captures[1])
-            v = strip(m.captures[2])
-            if haskey(ctxt.resp.headers, k)
-                push!(ctxt.resp.headers[k], v)
-            else
-                ctxt.resp.headers[k] = (String)[v]
-            end
-        end
-    end
-    (sz*n)::Csize_t
-end
+#    println(hdrlines)
+#     for e in hdrlines
+#         m = match(r"^\s*([\w\-\_]+)\s*\:(.+)", e)
+#         if (m != nothing)
+#             k = strip(m.captures[1])
+#             v = strip(m.captures[2])
+#             if haskey(ctxt.resp.headers, k)
+#                 push!(ctxt.resp.headers[k], v)
+#             else
+#                 ctxt.resp.headers[k] = (String)[v]
+#             end
+#         end
+#     end
+#     (sz*n)::Csize_t
+# end
 
-c_header_cb = cfunction(header_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
+# c_header_cb = cfunction(header_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
 function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
    println("@curl_read_cb")
@@ -140,17 +140,17 @@ end
 
 c_curl_read_cb = cfunction(curl_read_cb, Csize_t, (Ptr{Void}, Csize_t, Csize_t, Ptr{Void}))
 
-function curl_multi_timer_cb(curlm::Ptr{Void}, timeout_ms::Clong, p_muctxt::Ptr{Void})
-    muctxt = unsafe_pointer_to_objref(p_muctxt)
-    muctxt.timeout = timeout_ms / 1000.0
+# function curl_multi_timer_cb(curlm::Ptr{Void}, timeout_ms::Clong, p_muctxt::Ptr{Void})
+#     muctxt = unsafe_pointer_to_objref(p_muctxt)
+#     muctxt.timeout = timeout_ms / 1000.0
 
-    println("Requested timeout value : " * string(muctxt.timeout))
+#     println("Requested timeout value : " * string(muctxt.timeout))
 
-    ret = convert(Cint, 0)
-    ret::Cint
-end
+#     ret = convert(Cint, 0)
+#     ret::Cint
+# end
 
-c_curl_multi_timer_cb = cfunction(curl_multi_timer_cb, Cint, (Ptr{Void}, Clong, Ptr{Void}))
+# c_curl_multi_timer_cb = cfunction(curl_multi_timer_cb, Cint, (Ptr{Void}, Clong, Ptr{Void}))
 
 
 ##############################
@@ -227,6 +227,7 @@ function cleanup_easy_context(ctxt::Union(ConnContext,Bool))
 
         if (ctxt.curl != C_NULL)
             curl_easy_cleanup(ctxt.curl)
+            ctxt.curl = C_NULL
         end
 
         if ctxt.close_ostream
@@ -283,26 +284,80 @@ end
 # OPEN
 ##############################
 
-@debug function open(url::String, options::RequestOptions=RequestOptions())
+function open(url::String, options::RequestOptions=RequestOptions())
     if (options.blocking)
         ctxt = false
         try
-            @bp
             ctxt = setup_easy_handle(url, options)
+
+          if (~isempty(options.username) && ~isempty(options.passwd))
+              @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
+              @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
+          end
+
+          if options.isSSL
+              @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
+              @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
+              @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
+              @ce_curl curl_easy_setopt CURLOPT_SSLVERSION Int64(0)
+              @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
+
+              if ~options.verify_peer
+                  @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
+              else
+                  @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(1)
+              end
+          end
+
+            @ce_curl curl_easy_perform
+
+            return ctxt
+        finally
+            cleanup_easy_context(ctxt)
+        end
+    else
+        return remotecall(myid(), open, url, set_opt_blocking(options))
+    end
+end
+
+
+##############################
+# PUT
+##############################
+
+function put(url::String, file_name::String, file::IO, options::RequestOptions=RequestOptions())
+    if (options.blocking)
+        ctxt = false
+        try
+            rd = ReadData()
+            rd.typ = :io
+            rd.src = file
+            seekend(file)
+            rd.sz = position(file)
+            seekstart(file)
+
+            ctxt = setup_easy_handle(url*file_name, options)
+            ctxt.rd = rd
 
             if (~isempty(options.username) && ~isempty(options.passwd))
                 @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
                 @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
             end
 
+            p_ctxt = pointer_from_objref(ctxt)
+
+            @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
+            @ce_curl curl_easy_setopt CURLOPT_READDATA p_ctxt
+            @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
+
             @ce_curl curl_easy_perform
 
-            return ctxt.resp
+            return ctxt
         finally
             cleanup_easy_context(ctxt)
         end
     else
-        # Todo: figure out non-blocking
+        return remotecall(myid(), put, url, set_opt_blocking(options))
     end
 end
 
