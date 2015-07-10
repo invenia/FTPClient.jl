@@ -306,6 +306,36 @@ end
     end
 end
 
+
+##############################
+# COMMAND
+##############################
+
+@debug function command(url::String, options::RequestOptions=RequestOptions(), command::AbstractString = "LIST")
+    if (options.blocking)
+        ctxt = false
+        try
+            ctxt = setup_easy_handle(url, options)
+
+            if (~isempty(options.username) && ~isempty(options.passwd))
+                @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
+                @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
+            end
+
+            @bp
+            @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
+
+            @ce_curl curl_easy_perform
+
+            return ctxt.resp
+        finally
+            cleanup_easy_context(ctxt)
+        end
+    else
+        # Todo: figure out non-blocking
+    end
+end
+
 end #module
 
 
