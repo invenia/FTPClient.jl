@@ -279,6 +279,20 @@ function get(url::String, options::RequestOptions=RequestOptions())
     end
 end
 
+function get(ctxt::ConnContext, options::RequestOptions=RequestOptions())
+    if (ctxt.options.blocking)
+        try
+            @ce_curl curl_easy_setopt CURLOPT_HTTPGET 1
+
+            return exec_as_multi(ctxt)
+        catch e
+            cleanup_easy_context(ctxt)
+        end
+    else
+        return remotecall(myid(), get, url, set_opt_blocking(options))
+    end
+end
+
 
 ##############################
 # OPEN
@@ -383,6 +397,45 @@ function command(url::String, options::RequestOptions=RequestOptions(), command:
 
             return ctxt.resp
         finally
+            cleanup_easy_context(ctxt)
+        end
+    else
+        # Todo: figure out non-blocking
+    end
+end
+
+function command(ctxt::ConnContext, command::AbstractString = "LIST")
+
+    if (ctxt.options.blocking)
+        try
+            @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
+            @ce_curl curl_easy_perform
+
+            return ctxt.resp
+        catch e
+            cleanup_easy_context(ctxt)
+        end
+    else
+
+    end
+
+end
+
+function connect(url::String, options::RequestOptions=RequestOptions())
+    if (options.blocking)
+        ctxt = false
+        try
+            ctxt = setup_easy_handle(url, options)
+
+            if (~isempty(options.username) && ~isempty(options.passwd))
+                @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
+                @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
+            end
+
+            @ce_curl curl_easy_perform
+
+            return ctxt
+        catch e
             cleanup_easy_context(ctxt)
         end
     else
