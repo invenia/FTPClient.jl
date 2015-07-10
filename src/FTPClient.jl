@@ -162,7 +162,7 @@ macro ce_curl (f, args...)
         cc = CURLE_OK
         cc = $(esc(f))(ctxt.curl, $(args...))
 
-        if(cc != CURLE_OK)
+        if(cc != CURLE_OK && cc != CURLE_FTP_COULDNT_RETR_FILE)
             error (string($f) * "() failed: error $cc, " * bytestring(curl_easy_strerror(cc)))
         end
     end
