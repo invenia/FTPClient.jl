@@ -411,7 +411,7 @@ end
 # COMMAND
 ##############################
 
-function command(url::String, options::RequestOptions=RequestOptions(), command::AbstractString = "LIST")
+function command(url::String, options::RequestOptions=RequestOptions(), command::String = "LIST")
     if (options.blocking)
         ctxt = false
         try
@@ -435,7 +435,7 @@ function command(url::String, options::RequestOptions=RequestOptions(), command:
     end
 end
 
-function command(ctxt::ConnContext, command::AbstractString = "LIST")
+function command(ctxt::ConnContext, command::String = "LIST")
 
     if (ctxt.options.blocking)
         try
