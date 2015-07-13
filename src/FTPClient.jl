@@ -57,15 +57,24 @@ type ReadData
     ReadData() = new(:undefined, false, "", 0, 0)
 end
 
+type WriteData
+    typ::Symbol
+    src::Any
+    name::String
+
+    WriteData() = new(:undefined, nothing, "")
+end
+
 type ConnContext
     curl::Ptr{CURL}
     url::String
     rd::ReadData
+    wd::WriteData
     resp::Response
     options::RequestOptions
     close_ostream::Bool
 
-    ConnContext(options::RequestOptions) = new(C_NULL, "", ReadData(), Response(), options, false)
+    ConnContext(options::RequestOptions) = new(C_NULL, "", ReadData(), WriteData(), Response(), options, false)
 end
 
 immutable CURLMsg2
@@ -79,20 +88,27 @@ end
 # Callbacks
 ##############################
 
-function write_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
-    println("@write_cb")
+function write_file_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
+    println("@write_file_cb")
     ctxt = unsafe_pointer_to_objref(p_ctxt)
     nbytes = sz * n
 
-    if (ctxt.resp.bytes_recd !=0 )
-        write(ctxt.resp.body, buff, nbytes)
-        ctxt.resp.bytes_recd = ctxt.resp.bytes_recd + nbytes
+    if ctxt.wd.typ == :io
+        ctxt.wd.src = Base.open(ctxt.wd.name, "w")
     end
+
+    write(ctxt.wd.src, buff, nbytes)
+
+    if ctxt.wd.typ == :io
+       close(ctxt.wd.src)
+    end
+
+    ctxt.resp.bytes_recd = ctxt.resp.bytes_recd + nbytes
 
     nbytes::Csize_t
 end
 
-c_write_cb = cfunction(write_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
+c_write_file_cb = cfunction(write_file_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
 # function header_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
 #     println("@header_cb")
@@ -262,15 +278,30 @@ cleanup() = curl_global_cleanup()
 # GET
 ##############################
 
-function get(url::String, options::RequestOptions=RequestOptions())
+function get(url::String, file_name::String, options::RequestOptions=RequestOptions())
     if (options.blocking)
         ctxt = false
         try
-            ctxt = setup_easy_handle(url, options)
+            wd = WriteData()
+            wd.typ = :io
+            wd.name = file_name
 
-            @ce_curl curl_easy_setopt CURLOPT_HTTPGET 1
+            ctxt = setup_easy_handle(url*file_name, options)
+            ctxt.wd = wd
 
-            return exec_as_multi(ctxt)
+            p_ctxt = pointer_from_objref(ctxt)
+
+            if (~isempty(options.username) && ~isempty(options.passwd))
+                @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
+                @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
+            end
+
+            @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
+            @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
+
+            @ce_curl curl_easy_perform
+
+            return ctxt
         finally
             cleanup_easy_context(ctxt)
         end
