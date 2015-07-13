@@ -26,21 +26,21 @@ end
 
 type Response
     body
-    headers::Dict{String, Vector{Tuple}}
+    headers::Vector{String}
     code::Int
     total_time
     bytes_recd::Int
 
-    Response() = new(nothing, Dict{String, Vector{String}}(), 0, 0.0, 0)
+    Response() = new(IOBuffer(), Vector{String}(), 0, 0.0, 0)
 end
 
 function show(io::IO, o::Response)
     println(io, "Response Code :", o.code)
     println(io, "Request Time  :", o.total_time)
     println(io, "Headers       :")
-    for (k,vs) in o.headers
+    for (vs) in o.headers
         for v in vs
-            println(io, "    $k : $v")
+            println(io, "    $v")
         end
     end
 
@@ -110,28 +110,29 @@ end
 
 c_write_file_cb = cfunction(write_file_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
-# function header_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
-#     println("@header_cb")
-#     ctxt = unsafe_pointer_to_objref(p_ctxt)
-#     hdrlines = split(bytestring(buff, convert(Int, sz * n)), "\r\n")
+function write_command_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
+    println("@write_command_cb")
+    ctxt = unsafe_pointer_to_objref(p_ctxt)
+    nbytes = sz * n
 
-#    println(hdrlines)
-#     for e in hdrlines
-#         m = match(r"^\s*([\w\-\_]+)\s*\:(.+)", e)
-#         if (m != nothing)
-#             k = strip(m.captures[1])
-#             v = strip(m.captures[2])
-#             if haskey(ctxt.resp.headers, k)
-#                 push!(ctxt.resp.headers[k], v)
-#             else
-#                 ctxt.resp.headers[k] = (String)[v]
-#             end
-#         end
-#     end
-#     (sz*n)::Csize_t
-# end
+    write(ctxt.resp.body, buff, nbytes)
+    ctxt.resp.bytes_recd = ctxt.resp.bytes_recd + nbytes
 
-# c_header_cb = cfunction(header_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
+    nbytes::Csize_t
+end
+
+c_write_command_cb = cfunction(write_command_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
+
+function header_command_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
+    println("@header_cb")
+    ctxt = unsafe_pointer_to_objref(p_ctxt)
+    hdrlines = split(bytestring(buff, convert(Int, sz * n)), "\r\n")
+
+    append!(ctxt.resp.headers, hdrlines)
+    (sz*n)::Csize_t
+end
+
+c_header_command_cb = cfunction(header_command_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
 function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
    println("@curl_read_cb")
@@ -210,20 +211,15 @@ function setup_easy_handle(url, options::RequestOptions)
     if (curl == C_NULL) throw("curl_easy_init() failed") end
 
     ctxt.curl = curl
-
     ctxt.url = url
 
     p_ctxt = pointer_from_objref(ctxt)
 
-
     @ce_curl curl_easy_setopt CURLOPT_URL url
-    # @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_cb
-    # @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
     @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
     if options.isSSL
         @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
-        @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
         @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
         @ce_curl curl_easy_setopt CURLOPT_SSLVERSION Int64(0)
         @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
@@ -439,18 +435,32 @@ function command(ctxt::ConnContext, command::String = "LIST")
 
     if (ctxt.options.blocking)
         try
+
+            p_ctxt = pointer_from_objref(ctxt)
+
+            @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_command_cb
+            @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
+            @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
+            @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_ctxt
+
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
             @ce_curl curl_easy_perform
 
             return ctxt.resp
         catch e
             cleanup_easy_context(ctxt)
+            throw(e)
         end
     else
 
     end
 
 end
+
+
+##############################
+# CONNECT
+##############################
 
 function connect(url::String, options::RequestOptions=RequestOptions())
     if (options.blocking)
@@ -472,6 +482,16 @@ function connect(url::String, options::RequestOptions=RequestOptions())
     else
         # Todo: figure out non-blocking
     end
+end
+
+
+##############################
+# CLOSE
+##############################
+
+function close_connection(ctxt::ConnContext)
+    cleanup_easy_context(ctxt)
+    cleanup()
 end
 
 end #module
