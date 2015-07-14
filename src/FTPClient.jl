@@ -37,13 +37,7 @@ end
 function show(io::IO, o::Response)
     println(io, "Response Code :", o.code)
     println(io, "Request Time  :", o.total_time)
-    println(io, "Headers       :")
-    for (vs) in o.headers
-        for v in vs
-            println(io, "    $v")
-        end
-    end
-
+    println(io, "Headers       :", o.headers)
     println(io, "Length of body: ", o.bytes_recd)
 end
 
@@ -135,8 +129,7 @@ end
 c_header_command_cb = cfunction(header_command_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
 function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
-   println("@curl_read_cb")
-
+    println("@curl_read_cb")
     ctxt = unsafe_pointer_to_objref(p_ctxt)
     bavail::Csize_t = s * n
     breq::Csize_t = ctxt.rd.sz - ctxt.rd.offset
@@ -306,14 +299,29 @@ function get(url::String, file_name::String, options::RequestOptions=RequestOpti
     end
 end
 
-function get(ctxt::ConnContext, options::RequestOptions=RequestOptions())
+function get(ctxt::ConnContext, file_name::String)
     if (ctxt.options.blocking)
         try
-            @ce_curl curl_easy_setopt CURLOPT_HTTPGET 1
+            wd = WriteData()
+            wd.typ = :io
+            wd.name = file_name
 
-            return exec_as_multi(ctxt)
+            ctxt.wd = wd
+
+            p_ctxt = pointer_from_objref(ctxt)
+
+            command = "RETR " * file_name
+            @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
+            @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
+            @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
+
+            @ce_curl curl_easy_perform
+
+            return ctxt
+
         catch e
             cleanup_easy_context(ctxt)
+            throw(e)
         end
     else
         return remotecall(myid(), get, url, set_opt_blocking(options))
@@ -402,6 +410,41 @@ function put(url::String, file_name::String, file::IO, options::RequestOptions=R
     end
 end
 
+function put(ctxt::ConnContext, file_name::String, file::IO)
+    if (ctxt.options.blocking)
+        try
+            println("@put with connection")
+            rd = ReadData()
+            rd.typ = :io
+            rd.src = file
+            seekend(file)
+            rd.sz = position(file)
+            seekstart(file)
+
+            ctxt.rd = rd
+
+            p_ctxt = pointer_from_objref(ctxt)
+
+            command = "STOR " * file_name
+            @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
+            @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
+            @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
+            @ce_curl curl_easy_setopt CURLOPT_READDATA p_ctxt
+            @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
+
+            @ce_curl curl_easy_perform
+
+            return ctxt
+
+        catch e
+            cleanup_easy_context(ctxt)
+            throw(e)
+        end
+    else
+        return remotecall(myid(), get, url, set_opt_blocking(options))
+    end
+end
+
 
 ##############################
 # COMMAND
@@ -478,6 +521,7 @@ function connect(url::String, options::RequestOptions=RequestOptions())
             return ctxt
         catch e
             cleanup_easy_context(ctxt)
+            throw(e)
         end
     else
         # Todo: figure out non-blocking
