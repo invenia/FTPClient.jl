@@ -317,6 +317,7 @@ function ftp_get(ctxt::ConnContext, file_name::String)
             @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
 
             @ce_curl curl_easy_perform
+            process_response(ctxt)
 
             return ctxt
 
@@ -374,6 +375,7 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
             @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
 
             @ce_curl curl_easy_perform
+            process_response(ctxt)
 
             return ctxt
 
@@ -419,10 +421,12 @@ function ftp_command(ctxt::ConnContext, cmd::String = "LIST")
             @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_ctxt
 
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
+
             @ce_curl curl_easy_perform
+            process_response(ctxt)
 
             cmd = split(cmd)
-            if (cmd[1] == "CWD" && length(cmd) == 2)
+            if (ctxt.resp.code == 250 && cmd[1] == "CWD")
                 ctxt.url *= cmd[2]
             end
 
@@ -449,6 +453,7 @@ function ftp_connect(url::String, options::RequestOptions=RequestOptions())
             ctxt = setup_easy_handle(url, options)
 
             @ce_curl curl_easy_perform
+            process_response(ctxt)
 
             return ctxt
 
