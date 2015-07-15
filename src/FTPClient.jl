@@ -204,20 +204,27 @@ function setup_easy_handle(url, options::RequestOptions)
     if (curl == C_NULL) throw("curl_easy_init() failed") end
 
     ctxt.curl = curl
-    ctxt.url = url
 
     p_ctxt = pointer_from_objref(ctxt)
+
+    if (options.isImplicit)
+        url = "ftps://" * String(url) * "/"
+    else
+        url = "ftp://"* String(url) * "/"
+    end
+
+    ctxt.url = url
 
     @ce_curl curl_easy_setopt CURLOPT_URL url
     @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
-    if options.isSSL
+    if (options.isSSL)
         @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
         @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
         @ce_curl curl_easy_setopt CURLOPT_SSLVERSION Int64(0)
         @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
 
-        if ~options.verify_peer
+        if (~options.verify_peer)
             @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
         else
             @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(1)
@@ -275,7 +282,7 @@ function get(url::String, file_name::String, options::RequestOptions=RequestOpti
             wd.typ = :io
             wd.name = file_name
 
-            ctxt = setup_easy_handle(url*file_name, options)
+            ctxt = setup_easy_handle(url*"/"*file_name, options)
             ctxt.wd = wd
 
             p_ctxt = pointer_from_objref(ctxt)
@@ -385,7 +392,7 @@ function put(url::String, file_name::String, file::IO, options::RequestOptions=R
             rd.sz = position(file)
             seekstart(file)
 
-            ctxt = setup_easy_handle(url*file_name, options)
+            ctxt = setup_easy_handle(url*"/"*file_name, options)
             ctxt.rd = rd
 
             if (~isempty(options.username) && ~isempty(options.passwd))
@@ -426,7 +433,7 @@ function put(ctxt::ConnContext, file_name::String, file::IO)
             p_ctxt = pointer_from_objref(ctxt)
 
             command = "STOR " * file_name
-            @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
+            @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*"/"*file_name
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
             @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
             @ce_curl curl_easy_setopt CURLOPT_READDATA p_ctxt
@@ -465,6 +472,11 @@ function command(url::String, options::RequestOptions=RequestOptions(), command:
 
             @ce_curl curl_easy_perform
 
+            command = split(command)
+            if (command[1] == "CWD" && length(command) == 2)
+                ctxt.url *= command[2]
+            end
+
             return ctxt.resp
         finally
             cleanup_easy_context(ctxt)
@@ -488,6 +500,11 @@ function command(ctxt::ConnContext, command::String = "LIST")
 
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
             @ce_curl curl_easy_perform
+
+            command = split(command)
+            if (command[1] == "CWD" && length(command) == 2)
+                ctxt.url *= command[2]
+            end
 
             return ctxt.resp
         catch e
