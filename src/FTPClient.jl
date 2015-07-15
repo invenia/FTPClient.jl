@@ -17,11 +17,12 @@ type RequestOptions
     isImplicit::Bool
     isSSL::Bool
     verify_peer::Bool
+    active_mode::Bool
     headers::Vector{Tuple}
     username::String
     passwd::String
 
-    RequestOptions(; blocking=true, isImplicit=false, isSSL=false, verify_peer=true, headers=Array(Tuple, 0), username="", passwd="") = new(blocking, isImplicit, isSSL, verify_peer, headers, username, passwd)
+    RequestOptions(; blocking=true, isImplicit=false, isSSL=false, verify_peer=true, active_mode=false, headers=Array(Tuple, 0), username="", passwd="") = new(blocking, isImplicit, isSSL, verify_peer, active_mode, headers, username, passwd)
 end
 
 type Response
@@ -231,6 +232,10 @@ function setup_easy_handle(url, options::RequestOptions)
         end
     end
 
+    if (options.active_mode)
+        @ce_curl curl_easy_setopt CURLOPT_FTPPORT "-"
+    end
+
     return ctxt
 end
 
@@ -282,7 +287,7 @@ function get(url::String, file_name::String, options::RequestOptions=RequestOpti
             wd.typ = :io
             wd.name = file_name
 
-            ctxt = setup_easy_handle(url*"/"*file_name, options)
+            ctxt = setup_easy_handle(url, options)
             ctxt.wd = wd
 
             p_ctxt = pointer_from_objref(ctxt)
@@ -292,6 +297,7 @@ function get(url::String, file_name::String, options::RequestOptions=RequestOpti
                 @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
             end
 
+            @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
             @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
             @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
 
@@ -392,7 +398,7 @@ function put(url::String, file_name::String, file::IO, options::RequestOptions=R
             rd.sz = position(file)
             seekstart(file)
 
-            ctxt = setup_easy_handle(url*"/"*file_name, options)
+            ctxt = setup_easy_handle(url, options)
             ctxt.rd = rd
 
             if (~isempty(options.username) && ~isempty(options.passwd))
@@ -402,6 +408,7 @@ function put(url::String, file_name::String, file::IO, options::RequestOptions=R
 
             p_ctxt = pointer_from_objref(ctxt)
 
+            @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
             @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
             @ce_curl curl_easy_setopt CURLOPT_READDATA p_ctxt
             @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
@@ -433,7 +440,7 @@ function put(ctxt::ConnContext, file_name::String, file::IO)
             p_ctxt = pointer_from_objref(ctxt)
 
             command = "STOR " * file_name
-            @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*"/"*file_name
+            @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
             @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
             @ce_curl curl_easy_setopt CURLOPT_READDATA p_ctxt
@@ -462,12 +469,17 @@ function command(url::String, options::RequestOptions=RequestOptions(), command:
         ctxt = false
         try
             ctxt = setup_easy_handle(url, options)
+            p_ctxt = pointer_from_objref(ctxt)
 
             if (~isempty(options.username) && ~isempty(options.passwd))
                 @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
                 @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
             end
 
+            @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_command_cb
+            @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
+            @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
+            @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_ctxt
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
 
             @ce_curl curl_easy_perform
