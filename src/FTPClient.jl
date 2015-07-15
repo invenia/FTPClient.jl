@@ -6,7 +6,7 @@ using Debug
 import Base.convert, Base.show
 
 export RequestOptions, Response
-export init, cleanup, open, get, put
+export ftp_init, ftp_cleanup, ftp_connect, ftp_close_connection, ftp_get, ftp_put, ftp_command
 
 ##############################
 # Type definitions
@@ -219,6 +219,11 @@ function setup_easy_handle(url, options::RequestOptions)
     @ce_curl curl_easy_setopt CURLOPT_URL url
     @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
+    if (~isempty(options.username) && ~isempty(options.passwd))
+        @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
+        @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
+    end
+
     if (options.isSSL)
         @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
         @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
@@ -241,7 +246,6 @@ end
 
 function cleanup_easy_context(ctxt::Union(ConnContext,Bool))
     if isa(ctxt, ConnContext)
-
         if (ctxt.curl != C_NULL)
             curl_easy_cleanup(ctxt.curl)
             ctxt.curl = C_NULL
@@ -271,39 +275,23 @@ end
 # Library initializations
 ##############################
 
-init() = curl_global_init(CURL_GLOBAL_ALL)
-cleanup() = curl_global_cleanup()
+ftp_init() = curl_global_init(CURL_GLOBAL_ALL)
+ftp_cleanup() = curl_global_cleanup()
 
 
 ##############################
 # GET
 ##############################
 
-function get(url::String, file_name::String, options::RequestOptions=RequestOptions())
+function ftp_get(url::String, file_name::String, options::RequestOptions=RequestOptions())
     if (options.blocking)
         ctxt = false
         try
-            wd = WriteData()
-            wd.typ = :io
-            wd.name = file_name
-
             ctxt = setup_easy_handle(url, options)
-            ctxt.wd = wd
+            ctxt = ftp_get(ctxt, file_name)
 
-            p_ctxt = pointer_from_objref(ctxt)
+            return ctxt.resp
 
-            if (~isempty(options.username) && ~isempty(options.passwd))
-                @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
-                @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
-            end
-
-            @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
-            @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
-            @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
-
-            @ce_curl curl_easy_perform
-
-            return ctxt
         finally
             cleanup_easy_context(ctxt)
         end
@@ -312,7 +300,7 @@ function get(url::String, file_name::String, options::RequestOptions=RequestOpti
     end
 end
 
-function get(ctxt::ConnContext, file_name::String)
+function ftp_get(ctxt::ConnContext, file_name::String)
     if (ctxt.options.blocking)
         try
             wd = WriteData()
@@ -343,79 +331,19 @@ end
 
 
 ##############################
-# OPEN
-##############################
-
-function open(url::String, options::RequestOptions=RequestOptions())
-    if (options.blocking)
-        ctxt = false
-        try
-            ctxt = setup_easy_handle(url, options)
-
-            if (~isempty(options.username) && ~isempty(options.passwd))
-                @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
-                @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
-            end
-
-            if options.isSSL
-                @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
-                @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
-                @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
-                @ce_curl curl_easy_setopt CURLOPT_SSLVERSION Int64(0)
-                @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
-
-                if ~options.verify_peer
-                  @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
-                else
-                  @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(1)
-                end
-            end
-
-            @ce_curl curl_easy_perform
-
-            return ctxt
-        finally
-            cleanup_easy_context(ctxt)
-        end
-    else
-        return remotecall(myid(), open, url, set_opt_blocking(options))
-    end
-end
-
-
-##############################
 # PUT
 ##############################
 
-function put(url::String, file_name::String, file::IO, options::RequestOptions=RequestOptions())
+function ftp_put(url::String, file_name::String, file::IO, options::RequestOptions=RequestOptions())
     if (options.blocking)
         ctxt = false
         try
-            rd = ReadData()
-            rd.typ = :io
-            rd.src = file
-            seekend(file)
-            rd.sz = position(file)
-            seekstart(file)
 
             ctxt = setup_easy_handle(url, options)
-            ctxt.rd = rd
+            ctxt = ftp_put(ctxt, file_name, file)
 
-            if (~isempty(options.username) && ~isempty(options.passwd))
-                @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
-                @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
-            end
+            return ctxt.resp
 
-            p_ctxt = pointer_from_objref(ctxt)
-
-            @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
-            @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
-            @ce_curl curl_easy_setopt CURLOPT_READDATA p_ctxt
-            @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
-
-            @ce_curl curl_easy_perform
-
-            return ctxt
         finally
             cleanup_easy_context(ctxt)
         end
@@ -424,10 +352,9 @@ function put(url::String, file_name::String, file::IO, options::RequestOptions=R
     end
 end
 
-function put(ctxt::ConnContext, file_name::String, file::IO)
+function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
     if (ctxt.options.blocking)
         try
-            println("@put with connection")
             rd = ReadData()
             rd.typ = :io
             rd.src = file
@@ -464,32 +391,15 @@ end
 # COMMAND
 ##############################
 
-function command(url::String, options::RequestOptions=RequestOptions(), command::String = "LIST")
+function ftp_command(url::String, options::RequestOptions=RequestOptions(), cmd::String = "LIST")
     if (options.blocking)
         ctxt = false
         try
             ctxt = setup_easy_handle(url, options)
-            p_ctxt = pointer_from_objref(ctxt)
-
-            if (~isempty(options.username) && ~isempty(options.passwd))
-                @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
-                @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
-            end
-
-            @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_command_cb
-            @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
-            @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
-            @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_ctxt
-            @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
-
-            @ce_curl curl_easy_perform
-
-            command = split(command)
-            if (command[1] == "CWD" && length(command) == 2)
-                ctxt.url *= command[2]
-            end
+            ctxt = ftp_command(ctxt, cmd)
 
             return ctxt.resp
+
         finally
             cleanup_easy_context(ctxt)
         end
@@ -498,11 +408,9 @@ function command(url::String, options::RequestOptions=RequestOptions(), command:
     end
 end
 
-function command(ctxt::ConnContext, command::String = "LIST")
-
+function ftp_command(ctxt::ConnContext, cmd::String = "LIST")
     if (ctxt.options.blocking)
         try
-
             p_ctxt = pointer_from_objref(ctxt)
 
             @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_command_cb
@@ -510,15 +418,16 @@ function command(ctxt::ConnContext, command::String = "LIST")
             @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
             @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_ctxt
 
-            @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
+            @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
             @ce_curl curl_easy_perform
 
-            command = split(command)
-            if (command[1] == "CWD" && length(command) == 2)
-                ctxt.url *= command[2]
+            cmd = split(cmd)
+            if (cmd[1] == "CWD" && length(cmd) == 2)
+                ctxt.url *= cmd[2]
             end
 
-            return ctxt.resp
+            return ctxt
+
         catch e
             cleanup_easy_context(ctxt)
             throw(e)
@@ -526,7 +435,6 @@ function command(ctxt::ConnContext, command::String = "LIST")
     else
 
     end
-
 end
 
 
@@ -534,20 +442,16 @@ end
 # CONNECT
 ##############################
 
-function connect(url::String, options::RequestOptions=RequestOptions())
+function ftp_connect(url::String, options::RequestOptions=RequestOptions())
     if (options.blocking)
         ctxt = false
         try
             ctxt = setup_easy_handle(url, options)
 
-            if (~isempty(options.username) && ~isempty(options.passwd))
-                @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
-                @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
-            end
-
             @ce_curl curl_easy_perform
 
             return ctxt
+
         catch e
             cleanup_easy_context(ctxt)
             throw(e)
@@ -562,9 +466,9 @@ end
 # CLOSE
 ##############################
 
-function close_connection(ctxt::ConnContext)
+function ftp_close_connection(ctxt::ConnContext)
     cleanup_easy_context(ctxt)
-    cleanup()
+    # ftp_cleanup()
 end
 
 end #module
