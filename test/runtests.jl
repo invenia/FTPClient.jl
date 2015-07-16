@@ -37,13 +37,32 @@ end
 # write your own tests here
 @test 1 == 1
 
+url = "localhost"
+user_name = "test"
+password = "test"
+home_dir = "/"
+file_name = "test.txt"
+file_contents = "hello, world"
+
+options = RequestOptions(isSSL=false, username=user_name, passwd=password)
+
 # Test mock
-set_user("test", "test", "/")
-set_file("/test_file.txt", "hello, world")
+set_user(user_name, password, home_dir)
+set_file("/" * file_name, file_contents)
 set_command_response("AUTH", 230, "Login successful.")
 start_server()
 
+# Test ftp_get
 
+response = ftp_get(url, file_name, options)
+
+actual_file = open(file_name)
+actual_content = readall(actual_file)
+rm(file_name)
+
+@test actual_content == file_contents
+
+# Done testing
 
 stop_server()
 JavaCall.destroy()
