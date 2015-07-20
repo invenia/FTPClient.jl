@@ -84,7 +84,7 @@ end
 ##############################
 
 function write_file_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
-    println("@write_file_cb")
+    # println("@write_file_cb")
     ctxt = unsafe_pointer_to_objref(p_ctxt)
     nbytes = sz * n
 
@@ -106,7 +106,7 @@ end
 c_write_file_cb = cfunction(write_file_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
 function write_command_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
-    println("@write_command_cb")
+    # println("@write_command_cb")
     ctxt = unsafe_pointer_to_objref(p_ctxt)
     nbytes = sz * n
 
@@ -119,7 +119,7 @@ end
 c_write_command_cb = cfunction(write_command_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
 function header_command_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
-    println("@header_cb")
+    # println("@header_cb")
     ctxt = unsafe_pointer_to_objref(p_ctxt)
     hdrlines = split(bytestring(buff, convert(Int, sz * n)), "\r\n")
 
@@ -130,7 +130,7 @@ end
 c_header_command_cb = cfunction(header_command_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
 function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
-    println("@curl_read_cb")
+    # println("@curl_read_cb")
     ctxt = unsafe_pointer_to_objref(p_ctxt)
     bavail::Csize_t = s * n
     breq::Csize_t = ctxt.rd.sz - ctxt.rd.offset
@@ -151,18 +151,6 @@ end
 
 c_curl_read_cb = cfunction(curl_read_cb, Csize_t, (Ptr{Void}, Csize_t, Csize_t, Ptr{Void}))
 
-# function curl_multi_timer_cb(curlm::Ptr{Void}, timeout_ms::Clong, p_muctxt::Ptr{Void})
-#     muctxt = unsafe_pointer_to_objref(p_muctxt)
-#     muctxt.timeout = timeout_ms / 1000.0
-
-#     println("Requested timeout value : " * string(muctxt.timeout))
-
-#     ret = convert(Cint, 0)
-#     ret::Cint
-# end
-
-# c_curl_multi_timer_cb = cfunction(curl_multi_timer_cb, Cint, (Ptr{Void}, Clong, Ptr{Void}))
-
 
 ##############################
 # Utility functions
@@ -178,17 +166,6 @@ macro ce_curl (f, args...)
         end
     end
 end
-
-# macro ce_curlm (f, args...)
-#     quote
-#         cc = CURLM_OK
-#         cc = $(esc(f))(curlm, $(args...))
-
-#         if(cc != CURLM_OK)
-#             error (string($f) * "() failed: error $cc, " * bytestring(curl_multi_strerror(cc)))
-#         end
-#     end
-# end
 
 null_cb(curl) = return nothing
 
@@ -217,7 +194,7 @@ function setup_easy_handle(url, options::RequestOptions)
     ctxt.url = url
 
     @ce_curl curl_easy_setopt CURLOPT_URL url
-    @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
+    # @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
     if (~isempty(options.username) && ~isempty(options.passwd))
         @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
@@ -473,7 +450,7 @@ end
 
 function ftp_close_connection(ctxt::ConnContext)
     cleanup_easy_context(ctxt)
-    # ftp_cleanup()
+    ftp_cleanup()
 end
 
 end #module

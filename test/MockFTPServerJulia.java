@@ -44,9 +44,9 @@ public class MockFTPServerJulia
         return true;
     }
 
-    public static boolean setUser(String userName, String passowrd, String homeDir)
+    public static boolean setUser(String userName, String password, String homeDir)
     {
-        UserAccount userAccount = new UserAccount(userName, passowrd, homeDir);
+        UserAccount userAccount = new UserAccount(userName, password, homeDir);
         fakeFtpServer.addUserAccount(userAccount);
 
         return true;
