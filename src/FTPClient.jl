@@ -14,15 +14,14 @@ export ftp_init, ftp_cleanup, ftp_connect, ftp_close_connection, ftp_get, ftp_pu
 
 type RequestOptions
     blocking::Bool
-    isImplicit::Bool
-    isSSL::Bool
+    implicit::Bool
+    ssl::Bool
     verify_peer::Bool
     active_mode::Bool
-    headers::Vector{Tuple}
     username::String
     passwd::String
 
-    RequestOptions(; blocking=true, isImplicit=false, isSSL=false, verify_peer=true, active_mode=false, headers=Array(Tuple, 0), username="", passwd="") = new(blocking, isImplicit, isSSL, verify_peer, active_mode, headers, username, passwd)
+    RequestOptions(; blocking=true, implicit=false, ssl=false, verify_peer=true, active_mode=false, username="", passwd="") = new(blocking, implicit, ssl, verify_peer, active_mode, username, passwd)
 end
 
 type Response
@@ -70,12 +69,6 @@ type ConnContext
     close_ostream::Bool
 
     ConnContext(options::RequestOptions) = new(C_NULL, "", ReadData(), WriteData(), Response(), options, false)
-end
-
-immutable CURLMsg2
-  msg::CURLMSG
-  easy_handle::Ptr{CURL}
-  data::Ptr{Any}
 end
 
 
@@ -185,7 +178,7 @@ function setup_easy_handle(url, options::RequestOptions)
 
     p_ctxt = pointer_from_objref(ctxt)
 
-    if (options.isImplicit)
+    if (options.implicit)
         url = "ftps://" * String(url) * "/"
     else
         url = "ftp://"* String(url) * "/"
@@ -201,7 +194,7 @@ function setup_easy_handle(url, options::RequestOptions)
         @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
     end
 
-    if (options.isSSL)
+    if (options.ssl)
         @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
         @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
         @ce_curl curl_easy_setopt CURLOPT_SSLVERSION Int64(0)
@@ -252,7 +245,14 @@ end
 # Library initializations
 ##############################
 
+@doc """
+    Global libcurl initialisation
+""" ->
 ftp_init() = curl_global_init(CURL_GLOBAL_ALL)
+
+@doc """
+    Global libcurl cleanup
+""" ->
 ftp_cleanup() = curl_global_cleanup()
 
 
@@ -260,6 +260,15 @@ ftp_cleanup() = curl_global_cleanup()
 # GET
 ##############################
 
+@doc """
+    Download file with non-persistent connection.
+
+    - url: FTP server, ex "localhost"
+    - file_name: name of file to download
+    - options: options for connection, ex use ssl, implicit security, etc.
+
+    returns resp::Response
+""" ->
 function ftp_get(url::String, file_name::String, options::RequestOptions=RequestOptions())
     if (options.blocking)
         ctxt = false
@@ -277,6 +286,14 @@ function ftp_get(url::String, file_name::String, options::RequestOptions=Request
     end
 end
 
+@doc """
+    Download file with persistent connection.
+
+    - ctxt: open connection to FTP server
+    - file_name: name of file to download
+
+    returns ctxt::ConnContext
+""" ->
 function ftp_get(ctxt::ConnContext, file_name::String)
     if (ctxt.options.blocking)
         try
@@ -312,6 +329,17 @@ end
 # PUT
 ##############################
 
+@doc """
+    Upload file with non-persistent connection.
+
+    - url: FTP server, ex "localhost"
+    - ctxt: open connection to FTP server
+    - file_name: name of file to upload
+    - file: the file to upload
+    - options: options for connection, ex use ssl, implicit security, etc.
+
+    returns resp::Response
+""" ->
 function ftp_put(url::String, file_name::String, file::IO, options::RequestOptions=RequestOptions())
     if (options.blocking)
         ctxt = false
@@ -330,6 +358,15 @@ function ftp_put(url::String, file_name::String, file::IO, options::RequestOptio
     end
 end
 
+@doc """
+    Upload file with persistent connection.
+
+    - ctxt: open connection to FTP server
+    - file_name: name of file to upload
+    - file: the file to upload
+
+    returns ctxt::ConnContext
+""" ->
 function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
     if (ctxt.options.blocking)
         try
@@ -370,7 +407,16 @@ end
 # COMMAND
 ##############################
 
-function ftp_command(url::String, options::RequestOptions=RequestOptions(), cmd::String = "LIST")
+@doc """
+    Pass FTP command with non-persistent connection.
+
+    - url: FTP server, ex "localhost"
+    - cmd: FTP command to execute
+    - options: options for connection, ex use ssl, implicit security, etc.
+
+    returns resp::Response
+""" ->
+function ftp_command(url::String, cmd::String, options::RequestOptions=RequestOptions())
     if (options.blocking)
         ctxt = false
         try
@@ -387,7 +433,15 @@ function ftp_command(url::String, options::RequestOptions=RequestOptions(), cmd:
     end
 end
 
-function ftp_command(ctxt::ConnContext, cmd::String = "LIST")
+@doc """
+    Pass FTP command with persistent connection.
+
+    - ctxt: open connection to FTP server
+    - cmd: FTP command to execute
+
+    returns ctxt::ConnContext
+""" ->
+function ftp_command(ctxt::ConnContext, cmd::String)
     if (ctxt.options.blocking)
         try
             p_ctxt = pointer_from_objref(ctxt)
@@ -423,6 +477,14 @@ end
 # CONNECT
 ##############################
 
+@doc """
+    Establish connection to FTP server.
+
+    - url: FTP server, ex "localhost"
+    - options: options for connection, ex use ssl, implicit security, etc.
+
+    returns ctxt::ConnContext
+""" ->
 function ftp_connect(url::String, options::RequestOptions=RequestOptions())
     if (options.blocking)
         ctxt = false
@@ -448,9 +510,13 @@ end
 # CLOSE
 ##############################
 
+@doc """
+    Close connection FTP server.
+
+    - ctxt: connection to clean up
+""" ->
 function ftp_close_connection(ctxt::ConnContext)
     cleanup_easy_context(ctxt)
-    ftp_cleanup()
 end
 
 end #module

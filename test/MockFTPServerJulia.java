@@ -63,7 +63,7 @@ public class MockFTPServerJulia
     {
         System.out.println("Stoping server");
         fakeFtpServer.stop();
-        System.out.println("Server started");
+        System.out.println("Server stopped");
 
         return true;
     }

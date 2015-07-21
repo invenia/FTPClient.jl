@@ -41,20 +41,16 @@ write(f, "Test file to upload.\n")
 close(f)
 
 
-# options = RequestOptions(isSSL=false, username=user, passwd=pswd)
-
-@assert length(ARGS) >= 2
-
-if (ARGS[1] == "true")
-    test_implicit = true
-else
-    test_implicit = false
-end
-
-if (ARGS[2] == "true")
+if (length(ARGS) >= 1 && ARGS[1] == "true")
     test_ssl = true
 else
     test_ssl = false
+end
+
+if (length(ARGS) >= 2 && ARGS[2] == "true")
+    test_implicit = true
+else
+    test_implicit = false
 end
 
 if (length(ARGS) == 4)
@@ -62,17 +58,19 @@ if (length(ARGS) == 4)
     pswd = ARGS[4]
 end
 
-if (test_implicit && test_ssl)
-    fp = joinpath(dirname(@__FILE__), "test_implicit_ssl.jl")
-    println("$fp ...")
-    include(fp)
-elseif (test_ssl)
-    fp = joinpath(dirname(@__FILE__), "test_explicit_ssl.jl")
-    println("$fp ...")
-    include(fp)
+if (test_ssl)
+    if (test_implicit)
+        fp = joinpath(dirname(@__FILE__), "test_implicit_ssl.jl")
+        println("$fp ...\n")
+        include(fp)
+    else
+        fp = joinpath(dirname(@__FILE__), "test_explicit_ssl.jl")
+        println("$fp ...\n")
+        include(fp)
+    end
 else
-    # Start Java, use verbose for debug and point to the class in this directory
-    JavaCall.init([#= "-verbose:jni", "-verbose:gc",=# "-Djava.class.path=$(joinpath(pwd(), "test"))"])
+    # Start Java, and point to the class in this directory
+    JavaCall.init(["-Djava.class.path=$(joinpath(pwd(), "test"))"])
     MockFTPServerJulia = @jimport MockFTPServerJulia
 
     set_user(user, pswd, home_dir)
@@ -81,7 +79,7 @@ else
     start_server()
 
     fp = joinpath(dirname(@__FILE__), "test_non_ssl.jl")
-    println("$fp ...")
+    println("$fp ...\n")
     include(fp)
 
     stop_server()
