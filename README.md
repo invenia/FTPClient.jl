@@ -12,7 +12,8 @@ ftp_put(url::String, file_name::String, file::IO, options::RequestOptions)
 ftp_command(url::String, cmd::String, options::RequestOptions)
 ```
 - These functions all establish a connection, perform the desired operation then close the connection and return a `Response` object.
-   ```julia
+
+    ```julia
     type Response
         body
         headers::Vector{String}
@@ -30,7 +31,7 @@ ftp_put(ctxt::ConnContext, file_name::String, file::IO)
 ftp_command(ctxt::ConnContext, cmd::String)
 ftp_close_connection(ctxt::ConnContext)
 ```
-- These functions all return a `ConnContext` object, except `ftp_clost_connection` which does not return anything.
+- These functions all return a `ConnContext` object, except `ftp_close_connection`, which does not return anything.
     ```julia
     type ConnContext
         curl::Ptr{CURL}
