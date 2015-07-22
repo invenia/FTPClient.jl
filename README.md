@@ -74,7 +74,7 @@ Using non-peristent connection and FTPS with implicit security:
 using FTPClient
 
 ftp_init()
-options = ReqeustOptions(ssl=true, implicit=true, username="user1", passwd="1234")
+options = RequestOptions(ssl=true, implicit=true, username="user1", passwd="1234")
 
 resp = ftp_get("localhost", "download_file.txt", options)
 
