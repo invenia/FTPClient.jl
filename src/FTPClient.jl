@@ -53,22 +53,21 @@ end
 
 type WriteData
     typ::Symbol
-    src::Any
-    name::String
+    path::String
+    buffer::IO
+    bytes_recd::Int
 
-    WriteData() = new(:undefined, nothing, "")
+    WriteData() = new(:undefined, "", IOBuffer(), 0)
 end
 
 type ConnContext
     curl::Ptr{CURL}
     url::String
-    rd::ReadData
-    wd::WriteData
     resp::Response
     options::RequestOptions
     close_ostream::Bool
 
-    ConnContext(options::RequestOptions) = new(C_NULL, "", ReadData(), WriteData(), Response(), options, false)
+    ConnContext(options::RequestOptions) = new(C_NULL, "", Response(), options, false)
 end
 
 
@@ -76,67 +75,58 @@ end
 # Callbacks
 ##############################
 
-function write_file_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
+function write_file_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Void})
     # println("@write_file_cb")
-    ctxt = unsafe_pointer_to_objref(p_ctxt)
+    wd = unsafe_pointer_to_objref(p_wd)
     nbytes = sz * n
 
-    if ctxt.wd.typ == :io
-        ctxt.wd.src = Base.open(ctxt.wd.name, "w")
+    if wd.typ == :io
+        wd.buffer = Base.open(wd.path, "w")
     end
 
-    write(ctxt.wd.src, buff, nbytes)
+    write(wd.buffer, buff, nbytes)
 
-    if ctxt.wd.typ == :io
-       close(ctxt.wd.src)
+    if wd.typ == :io
+       close(wd.buffer)
     end
 
-    ctxt.resp.bytes_recd = ctxt.resp.bytes_recd + nbytes
+    wd.bytes_recd += nbytes
 
     nbytes::Csize_t
 end
 
 c_write_file_cb = cfunction(write_file_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
-function write_command_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
-    # println("@write_command_cb")
+function header_command_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
+    # println("@header_cb")
     ctxt = unsafe_pointer_to_objref(p_ctxt)
     nbytes = sz * n
+    hdrlines = split(bytestring(buff, convert(Int, nbytes)), "\r\n")
 
-    write(ctxt.resp.body, buff, nbytes)
-    ctxt.resp.bytes_recd = ctxt.resp.bytes_recd + nbytes
+    hdrlines = filter(line -> ~isempty(line), hdrlines)
+    append!(ctxt.resp.headers, hdrlines)
 
     nbytes::Csize_t
 end
 
-c_write_command_cb = cfunction(write_command_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
-
-function header_command_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
-    # println("@header_cb")
-    ctxt = unsafe_pointer_to_objref(p_ctxt)
-    hdrlines = split(bytestring(buff, convert(Int, sz * n)), "\r\n")
-
-    append!(ctxt.resp.headers, hdrlines)
-    (sz*n)::Csize_t
-end
-
 c_header_command_cb = cfunction(header_command_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
-function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
+function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_rd::Ptr{Void})
     # println("@curl_read_cb")
-    ctxt = unsafe_pointer_to_objref(p_ctxt)
+    rd = unsafe_pointer_to_objref(p_rd)
     bavail::Csize_t = s * n
-    breq::Csize_t = ctxt.rd.sz - ctxt.rd.offset
+    breq::Csize_t = rd.sz - rd.offset
     b2copy = bavail > breq ? breq : bavail
 
-    if (ctxt.rd.typ == :buffer)
+    if (rd.typ == :buffer)
         ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint),
-                out, convert(Ptr{Uint8}, pointer(ctxt.rd.str)) + ctxt.rd.offset, b2copy)
-    elseif (ctxt.rd.typ == :io)
-        b_read = read(ctxt.rd.src, Uint8, b2copy)
+                out, convert(Ptr{Uint8}, pointer(rd.str)) + rd.offset, b2copy)
+    elseif (rd.typ == :io)
+        b_read = read(rd.src, Uint8, b2copy)
         ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint), out, b_read, b2copy)
     end
-    ctxt.rd.offset = ctxt.rd.offset + b2copy
+
+    rd.offset += b2copy
 
     r = convert(Csize_t, b2copy)
     r::Csize_t
@@ -266,23 +256,23 @@ ftp_cleanup() = curl_global_cleanup()
     - url: FTP server, ex "localhost"
     - file_name: name of file to download
     - options: options for connection, ex use ssl, implicit security, etc.
+    - save_path: location to save file to, if not specified file is written to a buffer
 
-    returns resp::Response
+    returns resp::Response and write_stream::IO
 """ ->
-function ftp_get(url::String, file_name::String, options::RequestOptions=RequestOptions())
+function ftp_get(url::String, file_name::String, options::RequestOptions=RequestOptions(), save_path::String="")
     if (options.blocking)
         ctxt = false
         try
             ctxt = setup_easy_handle(url, options)
-            ctxt = ftp_get(ctxt, file_name)
+            write_stream = ftp_get(ctxt, file_name, save_path)
 
-            return ctxt.resp
-
+            return ctxt.resp, write_stream
         finally
             cleanup_easy_context(ctxt)
         end
     else
-        return remotecall(myid(), get, url, set_opt_blocking(options))
+        return remotecall(myid(), ftp_get, url, file_name, set_opt_blocking(options), save_path)
     end
 end
 
@@ -291,36 +281,46 @@ end
 
     - ctxt: open connection to FTP server
     - file_name: name of file to download
+    - save_path: location to save file to, if not specified file is written to a buffer
 
-    returns ctxt::ConnContext
+    returns resp::Response and buffer::IO
 """ ->
-function ftp_get(ctxt::ConnContext, file_name::String)
+function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
     if (ctxt.options.blocking)
         try
             wd = WriteData()
-            wd.typ = :io
-            wd.name = file_name
 
-            ctxt.wd = wd
+            if (isempty(save_path))
+                wd.typ = :buffer
+            else
+                wd.typ = :io
+                wd.path = save_path
+            end
 
-            p_ctxt = pointer_from_objref(ctxt)
+            p_wd = pointer_from_objref(wd)
 
             command = "RETR " * file_name
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
             @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
-            @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
+            @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
             @ce_curl curl_easy_perform
             process_response(ctxt)
 
-            return ctxt
+            ctxt.resp.bytes_recd = wd.bytes_recd
+
+            if isopen(wd.buffer)
+                seekstart(wd.buffer)
+            end
+
+            return ctxt.resp, wd.buffer
 
         catch e
             cleanup_easy_context(ctxt)
             throw(e)
         end
     else
-        return remotecall(myid(), get, url, set_opt_blocking(options))
+        return remotecall(myid(), ftp_get, ctxt, file_name, save_path)
     end
 end
 
@@ -346,15 +346,15 @@ function ftp_put(url::String, file_name::String, file::IO, options::RequestOptio
         try
 
             ctxt = setup_easy_handle(url, options)
-            ctxt = ftp_put(ctxt, file_name, file)
+            resp = ftp_put(ctxt, file_name, file)
 
-            return ctxt.resp
+            return resp
 
         finally
             cleanup_easy_context(ctxt)
         end
     else
-        return remotecall(myid(), put, url, set_opt_blocking(options))
+        return remotecall(myid(), ftp_put, url, file_name, file, set_opt_blocking(options))
     end
 end
 
@@ -365,7 +365,7 @@ end
     - file_name: name of file to upload
     - file: the file to upload
 
-    returns ctxt::ConnContext
+    returns resp::Response
 """ ->
 function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
     if (ctxt.options.blocking)
@@ -377,28 +377,26 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
             rd.sz = position(file)
             seekstart(file)
 
-            ctxt.rd = rd
-
-            p_ctxt = pointer_from_objref(ctxt)
+            p_rd = pointer_from_objref(rd)
 
             command = "STOR " * file_name
             @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
             @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
-            @ce_curl curl_easy_setopt CURLOPT_READDATA p_ctxt
+            @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
             @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
 
             @ce_curl curl_easy_perform
             process_response(ctxt)
 
-            return ctxt
+            return ctxt.resp
 
         catch e
             cleanup_easy_context(ctxt)
             throw(e)
         end
     else
-        return remotecall(myid(), get, url, set_opt_blocking(options))
+        return remotecall(myid(), ftp_put, url, file_name, file, set_opt_blocking(options))
     end
 end
 
@@ -421,9 +419,9 @@ function ftp_command(url::String, cmd::String, options::RequestOptions=RequestOp
         ctxt = false
         try
             ctxt = setup_easy_handle(url, options)
-            ctxt = ftp_command(ctxt, cmd)
+            resp = ftp_command(ctxt, cmd)
 
-            return ctxt.resp
+            return resp
 
         finally
             cleanup_easy_context(ctxt)
@@ -439,15 +437,13 @@ end
     - ctxt: open connection to FTP server
     - cmd: FTP command to execute
 
-    returns ctxt::ConnContext
+    returns resp::Response
 """ ->
 function ftp_command(ctxt::ConnContext, cmd::String)
     if (ctxt.options.blocking)
         try
             p_ctxt = pointer_from_objref(ctxt)
 
-            @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_command_cb
-            @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_ctxt
             @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
             @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_ctxt
 
@@ -461,7 +457,7 @@ function ftp_command(ctxt::ConnContext, cmd::String)
                 ctxt.url *= cmd[2]
             end
 
-            return ctxt
+            return ctxt.resp
 
         catch e
             cleanup_easy_context(ctxt)

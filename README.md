@@ -110,8 +110,9 @@ ftp_cleanup()
 ```
 
 ### Running Tests
+Tests must be run from the main directory
 
-`julia runtests.jl <use_ssl> <use_implicit> <username> <password>`
+`julia test/runtests.jl <use_ssl> <use_implicit> <username> <password>`
 
 To set up the mock FTP server
 - Add the [JavaCall.jl](https://github.com/aviks/JavaCall.jl) package with `Pkg.clone("git@github.com:aviks/JavaCall.jl.git”)`
@@ -120,10 +121,10 @@ To set up the mock FTP server
 - Download Java 8
 - Download [SLF4J](http://www.slf4j.org/download.html) and move `slf4j-api-1.7.12.jar` to `/Library/Java/Extensions`
 
-The mock FTP server does not work with ssl. To run the non-ssl tests:
-    `julia runtests.jl false false`
+The mock FTP server does not work with ssl and requires root privileges. To run the non-ssl tests:
+    `sudo julia test/runtests.jl`
 
 The ssl tests can be run if you have a local ftp server set up.
-- To run the tests using implicit security: `julia runtests.jl true true <username> <password>`
-- To run the tests using explicit security: `julia runtests.jl true false <username> <password>`
+- To run the tests using implicit security: `julia test/runtests.jl true true <username> <password>`
+- To run the tests using explicit security: `julia test/runtests.jl true false <username> <password>`
 
