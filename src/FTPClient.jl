@@ -1,7 +1,6 @@
 module FTPClient
 
 using LibCURL
-using Debug
 
 import Base.convert, Base.show
 
