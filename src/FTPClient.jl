@@ -139,13 +139,13 @@ c_curl_read_cb = cfunction(curl_read_cb, Csize_t, (Ptr{Void}, Csize_t, Csize_t, 
 # Utility functions
 ##############################
 
-macro ce_curl (f, args...)
+macro ce_curl(f, args...)
     quote
         cc = CURLE_OK
         cc = $(esc(f))(ctxt.curl, $(args...))
 
         if(cc != CURLE_OK && cc != CURLE_FTP_COULDNT_RETR_FILE)
-            error (string($f) * "() failed: error $cc, " * bytestring(curl_easy_strerror(cc)))
+            error(string($f) * "() failed: error $cc, " * bytestring(curl_easy_strerror(cc)))
         end
     end
 end
@@ -180,8 +180,8 @@ function setup_easy_handle(url, options::RequestOptions)
     # @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
     if (~isempty(options.username) && ~isempty(options.passwd))
-        @ce_curl curl_easy_setopt  CURLOPT_USERNAME options.username
-        @ce_curl curl_easy_setopt  CURLOPT_PASSWORD options.passwd
+        @ce_curl curl_easy_setopt CURLOPT_USERNAME options.username
+        @ce_curl curl_easy_setopt CURLOPT_PASSWORD options.passwd
     end
 
     if (options.ssl)
