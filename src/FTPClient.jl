@@ -265,9 +265,9 @@ function ftp_get(url::String, file_name::String, options::RequestOptions=Request
         ctxt = false
         try
             ctxt = setup_easy_handle(url, options)
-            write_stream = ftp_get(ctxt, file_name, save_path)
+            resp, write_stream = ftp_get(ctxt, file_name, save_path)
 
-            return ctxt.resp, write_stream
+            return resp, write_stream
         finally
             cleanup_easy_context(ctxt)
         end
