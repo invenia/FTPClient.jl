@@ -5,8 +5,9 @@ using Base.Test
 using JavaCall
 
 function start_server()
-    result = jcall(MockFTPServerJulia, "setUp", jboolean, ())
-    @assert result == 1 "start_server failed"
+    port = jcall(MockFTPServerJulia, "setUp", jint, ())
+    @assert port > 0 "start_server failed"
+    port
 end
 
 function stop_server()
@@ -70,13 +71,21 @@ if (test_ssl)
     end
 else
     # Start Java, and point to the class in this directory
-    JavaCall.init(["-Djava.class.path=$(joinpath(pwd(), "test"))"])
+    pkg_dir = Pkg.dir("FTPClient")
+    JavaCall.init([
+        "-Djava.class.path=$(joinpath(pkg_dir, "test"))",
+        "-Djava.ext.dirs=$(joinpath(pkg_dir, "deps", "ext"))",
+    ])
     MockFTPServerJulia = @jimport MockFTPServerJulia
 
     set_user(user, pswd, home_dir)
     set_file("/" * file_name, file_contents)
     set_command_response("AUTH", 230, "Login successful.")
-    start_server()
+    port = start_server()
+    url = "$url:$port"
+
+    # Note: If LibCURL complains that the server doesn't listen it probably means that
+    # the MockFtpServer isn't ready to accept connections yet.
 
     fp = joinpath(dirname(@__FILE__), "test_non_ssl.jl")
     println("$fp ...\n")

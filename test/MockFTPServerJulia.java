@@ -12,8 +12,11 @@ public class MockFTPServerJulia
 //    private RemoteFile remoteFile;
     private static FakeFtpServer fakeFtpServer = new FakeFtpServer();
 
-    public static boolean setUp()
+    public static int setUp()
     {
+        // Pick a free port.
+        fakeFtpServer.setServerControlPort(0);
+
         System.out.println("Starting server");
         fakeFtpServer.start();
         System.out.println("Server started");
@@ -24,7 +27,7 @@ public class MockFTPServerJulia
 //        remoteFile.setServer("localhost");
 //        remoteFile.setPort(port);
 
-        return true;
+        return port;
     }
 
     public static boolean setCommandResponse(String request, int code, String response)
