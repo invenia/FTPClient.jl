@@ -11,7 +11,7 @@ options = RequestOptions(ssl=true, implicit=false, active_mode=false, verify_pee
 println("Test non-persistent connection using ssl, explicit security and passive mode:\n")
 
 # test 1, download file from server
-resp, buff = ftp_get(url, file_name, options)
+resp = ftp_get(url, file_name, options)
 @test resp.code == 226
 println("Test 1 passed.\n$resp")
 # rm(file_name)
@@ -40,7 +40,7 @@ options = RequestOptions(ssl=true, implicit=false, active_mode=true, verify_peer
 println("Test non-persistent connection using ssl, explicit security and active mode:\n")
 
 # test 4, download file from server
-resp, buff = ftp_get(url, file_name, options)
+resp = ftp_get(url, file_name, options)
 @test resp.code == 226
 println("Test 4 passed.\n$resp")
 # rm(file_name)
@@ -79,7 +79,7 @@ resp = ftp_command(ctxt, "PWD")
 println("Test 8 passed.\n$(ctxt.resp)")
 
 # test 9, download file from server
-resp, buff = ftp_get(ctxt, file_name)
+resp = ftp_get(ctxt, file_name)
 @test resp.code == 226
 println("Test 9 passed.\n$(ctxt.resp)")
 # rm(file_name)
@@ -115,7 +115,7 @@ resp = ftp_command(ctxt, "PWD")
 println("Test 12 passed.\n$(ctxt.resp)")
 
 # test 13, download file from server
-resp, buff = ftp_get(ctxt, file_name)
+resp = ftp_get(ctxt, file_name)
 @test resp.code == 226
 println("Test 13 passed.\n$(ctxt.resp)")
 # rm(file_name)

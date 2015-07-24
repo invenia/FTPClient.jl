@@ -12,7 +12,7 @@ options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=psw
 println("\nTest non-persistent connection with passive mode:\n")
 
 # test 1, download file from server
-resp, buff = ftp_get(url, file_name, options)
+resp = ftp_get(url, file_name, options)
 @test resp.code == 226
 println("\nTest 1 passed.\n$resp")
 # rm(file_name)
@@ -37,7 +37,7 @@ options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd
 println("\nTest non-persistent connection with active mode:\n")
 
 # test 4, download file from server
-resp, buff = ftp_get(url, file_name, options)
+resp = ftp_get(url, file_name, options)
 @test resp.code == 226
 println("\nTest 4 passed.\n$resp")
 # rm(file_name)
@@ -104,7 +104,7 @@ resp = ftp_command(ctxt, "PWD")
 println("\nTest 12 passed.\n$(ctxt.resp)")
 
 # test 13, download file from server
-resp, buff = ftp_get(ctxt, file_name)
+resp = ftp_get(ctxt, file_name)
 @test resp.code == 226
 println("\nTest 13 passed.\n$(ctxt.resp)")
 # rm(file_name)

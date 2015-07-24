@@ -4,7 +4,7 @@ using LibCURL
 
 import Base.convert, Base.show
 
-export RequestOptions, Response
+export RequestOptions, Response, ConnContext
 export ftp_init, ftp_cleanup, ftp_connect, ftp_close_connection, ftp_get, ftp_put, ftp_command
 
 ##############################
@@ -24,10 +24,10 @@ type RequestOptions
 end
 
 type Response
-    body
+    body::IO
     headers::Vector{String}
     code::Int
-    total_time
+    total_time::FloatingPoint
     bytes_recd::Int
 
     Response() = new(IOBuffer(), Vector{String}(), 0, 0.0, 0)
@@ -66,7 +66,7 @@ type ConnContext
     options::RequestOptions
     close_ostream::Bool
 
-    ConnContext(options::RequestOptions) = new(C_NULL, "", Response(), options, false)
+    ConnContext(options::RequestOptions ; url="") = new(C_NULL, url, Response(), options, false)
 end
 
 
@@ -257,16 +257,16 @@ ftp_cleanup() = curl_global_cleanup()
     - options: options for connection, ex use ssl, implicit security, etc.
     - save_path: location to save file to, if not specified file is written to a buffer
 
-    returns resp::Response and write_stream::IO
+    returns resp::Response
 """ ->
 function ftp_get(url::String, file_name::String, options::RequestOptions=RequestOptions(), save_path::String="")
     if (options.blocking)
         ctxt = false
         try
             ctxt = setup_easy_handle(url, options)
-            resp, write_stream = ftp_get(ctxt, file_name, save_path)
+            resp = ftp_get(ctxt, file_name, save_path)
 
-            return resp, write_stream
+            return resp
         finally
             cleanup_easy_context(ctxt)
         end
@@ -282,7 +282,7 @@ end
     - file_name: name of file to download
     - save_path: location to save file to, if not specified file is written to a buffer
 
-    returns resp::Response and buffer::IO
+    returns resp::Response
 """ ->
 function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
     if (ctxt.options.blocking)
@@ -306,13 +306,14 @@ function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
             @ce_curl curl_easy_perform
             process_response(ctxt)
 
-            ctxt.resp.bytes_recd = wd.bytes_recd
-
             if isopen(wd.buffer)
                 seekstart(wd.buffer)
             end
 
-            return ctxt.resp, wd.buffer
+            ctxt.resp.bytes_recd = wd.bytes_recd
+            ctxt.resp.body = wd.buffer
+
+            return ctxt.resp
 
         catch e
             cleanup_easy_context(ctxt)
@@ -441,8 +442,14 @@ end
 function ftp_command(ctxt::ConnContext, cmd::String)
     if (ctxt.options.blocking)
         try
+            wd = WriteData()
+            wd.typ = :buffer
+            p_wd = pointer_from_objref(wd)
+
             p_ctxt = pointer_from_objref(ctxt)
 
+            @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
+            @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
             @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
             @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_ctxt
 
@@ -450,6 +457,9 @@ function ftp_command(ctxt::ConnContext, cmd::String)
 
             @ce_curl curl_easy_perform
             process_response(ctxt)
+
+            ctxt.resp.body = seekstart(wd.buffer)
+            ctxt.resp.bytes_recd = wd.bytes_recd
 
             cmd = split(cmd)
             if (ctxt.resp.code == 250 && cmd[1] == "CWD")

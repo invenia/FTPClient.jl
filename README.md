@@ -7,18 +7,18 @@ FTP client based on [LibCURL.jl](https://github.com/JuliaWeb/LibCURL.jl).
 
 Functions for non-persistent connection:
 ```julia
-ftp_get(url::String, file_name::String, options::RequestOptions)
+ftp_get(url::String, file_name::String, options::RequestOptions, save_path::String)
 ftp_put(url::String, file_name::String, file::IO, options::RequestOptions)
 ftp_command(url::String, cmd::String, options::RequestOptions)
 ```
-- These functions all establish a connection, perform the desired operation then close the connection and return a `Response` object.
+- These functions all establish a connection, perform the desired operation then close the connection and return a `Response` object. Any data retrieved from server is in `Response.body`.
 
     ```julia
     type Response
-        body
+        body::IO
         headers::Vector{String}
         code::Int
-        total_time
+        total_time::FloatingPoint
         bytes_recd::Int
     end
     ```
@@ -26,12 +26,13 @@ ftp_command(url::String, cmd::String, options::RequestOptions)
 Functions for persistent connection:
 ```julia
 ftp_connect(url::String, options::RequestOptions)
-ftp_get(ctxt::ConnContext, file_name::String)
+ftp_get(ctxt::ConnContext, file_name::String, save_path::String)
 ftp_put(ctxt::ConnContext, file_name::String, file::IO)
 ftp_command(ctxt::ConnContext, cmd::String)
 ftp_close_connection(ctxt::ConnContext)
 ```
-- These functions all return a `ConnContext` object, except `ftp_close_connection`, which does not return anything.
+- These functions all return a `Response` object, except `ftp_close_connection`, which does not return anything. Any data retrieved from server is in `Response.body`.
+
     ```julia
     type ConnContext
         curl::Ptr{CURL}
@@ -77,12 +78,17 @@ ftp_init()
 options = RequestOptions(ssl=true, implicit=true, username="user1", passwd="1234")
 
 resp = ftp_get("localhost", "download_file.txt", options)
+io_buffer = resp.body
+
+resp = ftp_get("localhost", "download_file.txt", options, "Documents/downloaded_file.txt")
+io_stream = resp.body
 
 file = open("upload_file.txt")
 resp = ftp_put("localhost", "upload_file.txt", file, options)
 close(file)
 
-resp = ftp_command("localhost", "PWD", options)
+resp = ftp_command("localhost", "LIST", options)
+dir = resp.body
 
 ftp_cleanup()
 ```
@@ -96,12 +102,16 @@ options = RequestOptions(ssl=true, username="user2", passwd="5678")
 
 ctxt = ftp_connect("localhost", options)
 
-ctxt = ftp_get(ctxt, "download_file.txt")
+resp = ftp_get(ctxt, "download_file.txt")
+io_buffer = resp.body
 
-ctxt = ftp_command(ctxt, "CWD Documents/")
+resp = ftp_get(ctxt, "download_file.txt", "Documents/downloaded_file.txt")
+io_stream = resp.body
+
+resp = ftp_command(ctxt, "CWD Documents/")
 
 file = open("upload_file.txt")
-ctxt = ftp_put(ctxt, "upload_file.txt", file)
+resp = ftp_put(ctxt, "upload_file.txt", file)
 close(file)
 
 ftp_close_connection(ctxt)
