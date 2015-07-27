@@ -70,11 +70,6 @@ if (test_ssl)
         include(fp)
     end
 else
-    # Build the dependencies
-    cd("deps")
-    include("../deps/build.jl")
-    cd("..")
-
     # Start Java, and point to the class in this directory
     pkg_dir = joinpath(dirname(@__FILE__), "..")
     JavaCall.init([
