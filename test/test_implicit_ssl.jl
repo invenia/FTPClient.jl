@@ -69,19 +69,19 @@ options = RequestOptions(ssl=true, implicit=true, active_mode=false, verify_peer
 println("Test persistent connection using ssl, implicit security and passive mode:\n")
 
 # test 7, establish connection
-ctxt = ftp_connect(url, options)
-@test ctxt.resp.code == 226
-println("Test 7 passed.\n$(ctxt.resp)")
+ctxt, resp = ftp_connect(url, options)
+@test resp.code == 226
+println("Test 7 passed.\n$(resp)")
 
 # test 8, pass command to server
 resp = ftp_command(ctxt, "PWD")
 @test resp.code == 257
-println("Test 8 passed.\n$(ctxt.resp)")
+println("Test 8 passed.\n$(resp)")
 
 # test 9, download file from server
-buff = ftp_get(ctxt, file_name)
-@test ctxt.resp.code == 226
-println("Test 9 passed.\n$(ctxt.resp)")
+resp = ftp_get(ctxt, file_name)
+@test resp.code == 226
+println("Test 9 passed.\n$(resp)")
 # rm(file_name)
 
 # test 10, upload file to server
@@ -89,7 +89,7 @@ try
     file = open(upload_file)
     resp = ftp_put(ctxt, "test_upload.txt", file)
     @test resp.code ==226
-    println("Test 10 passed.\n$(ctxt.resp)")
+    println("Test 10 passed.\n$(resp)")
     close(file)
 catch e
     println("Test 10 failed: $e\n")
@@ -105,19 +105,19 @@ options = RequestOptions(ssl=true, implicit=true, active_mode=true, verify_peer=
 println("Test persistent connection using ssl, implicit security and active mode:\n")
 
 # test 11, establish connection
-ctxt = ftp_connect(url, options)
-@test ctxt.resp.code == 226
-println("Test 11 passed.\n$(ctxt.resp)")
+ctxt, resp = ftp_connect(url, options)
+@test resp.code == 226
+println("Test 11 passed.\n$(resp)")
 
 # test 12, pass command to server
 resp = ftp_command(ctxt, "PWD")
 @test resp.code == 257
-println("Test 12 passed.\n$(ctxt.resp)")
+println("Test 12 passed.\n$(resp)")
 
 # test 13, download file from server
 resp = ftp_get(ctxt, file_name)
 @test resp.code == 226
-println("Test 13 passed.\n$(ctxt.resp)")
+println("Test 13 passed.\n$(resp)")
 # rm(file_name)
 
 # test 14, upload file to server
@@ -125,7 +125,7 @@ try
     file = open(upload_file)
     resp = ftp_put(ctxt, "test_upload.txt", file)
     @test resp.code ==226
-    println("Test 14 passed.\n$(ctxt.resp)")
+    println("Test 14 passed.\n$(resp)")
     close(file)
 catch e
     println("Test 14 failed: $e\n")

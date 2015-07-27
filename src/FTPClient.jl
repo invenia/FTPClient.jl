@@ -27,7 +27,7 @@ type Response
     body::IO
     headers::Vector{String}
     code::Int
-    total_time::FloatingPoint
+    total_time::Float64
     bytes_recd::Int
 
     Response() = new(IOBuffer(), Vector{String}(), 0, 0.0, 0)
@@ -62,11 +62,10 @@ end
 type ConnContext
     curl::Ptr{CURL}
     url::String
-    resp::Response
     options::RequestOptions
     close_ostream::Bool
 
-    ConnContext(options::RequestOptions ; url="") = new(C_NULL, url, Response(), options, false)
+    ConnContext(options::RequestOptions ; url="") = new(C_NULL, url, options, false)
 end
 
 
@@ -96,14 +95,14 @@ end
 
 c_write_file_cb = cfunction(write_file_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
 
-function header_command_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_ctxt::Ptr{Void})
+function header_command_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_resp::Ptr{Void})
     # println("@header_cb")
-    ctxt = unsafe_pointer_to_objref(p_ctxt)
+    resp = unsafe_pointer_to_objref(p_resp)
     nbytes = sz * n
     hdrlines = split(bytestring(buff, convert(Int, nbytes)), "\r\n")
 
     hdrlines = filter(line -> ~isempty(line), hdrlines)
-    append!(ctxt.resp.headers, hdrlines)
+    append!(resp.headers, hdrlines)
 
     nbytes::Csize_t
 end
@@ -167,7 +166,7 @@ function setup_easy_handle(url, options::RequestOptions)
 
     p_ctxt = pointer_from_objref(ctxt)
 
-    if (options.implicit)
+    if options.implicit
         url = "ftps://" * String(url) * "/"
     else
         url = "ftp://"* String(url) * "/"
@@ -183,20 +182,20 @@ function setup_easy_handle(url, options::RequestOptions)
         @ce_curl curl_easy_setopt CURLOPT_PASSWORD options.passwd
     end
 
-    if (options.ssl)
+    if options.ssl
         @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
         @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
         @ce_curl curl_easy_setopt CURLOPT_SSLVERSION Int64(0)
         @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
 
-        if (~options.verify_peer)
+        if ~options.verify_peer
             @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
         else
             @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(1)
         end
     end
 
-    if (options.active_mode)
+    if options.active_mode
         @ce_curl curl_easy_setopt CURLOPT_FTPPORT "-"
     end
 
@@ -209,24 +208,18 @@ function cleanup_easy_context(ctxt::Union(ConnContext,Bool))
             curl_easy_cleanup(ctxt.curl)
             ctxt.curl = C_NULL
         end
-
-        if ctxt.close_ostream
-            close(ctxt.resp.body)
-            ctxt.resp.body = nothing
-            ctxt.close_ostream = false
-        end
     end
 end
 
-function process_response(ctxt)
+function process_response(ctxt, resp)
     resp_code = Array(Int,1)
     @ce_curl curl_easy_getinfo CURLINFO_RESPONSE_CODE resp_code
 
     total_time = Array(Float64,1)
     @ce_curl curl_easy_getinfo CURLINFO_TOTAL_TIME total_time
 
-    ctxt.resp.code = resp_code[1]
-    ctxt.resp.total_time = total_time[1]
+    resp.code = resp_code[1]
+    resp.total_time = total_time[1]
 end
 
 
@@ -235,12 +228,12 @@ end
 ##############################
 
 @doc """
-    Global libcurl initialisation
+Global libcurl initialisation
 """ ->
 ftp_init() = curl_global_init(CURL_GLOBAL_ALL)
 
 @doc """
-    Global libcurl cleanup
+Global libcurl cleanup
 """ ->
 ftp_cleanup() = curl_global_cleanup()
 
@@ -250,17 +243,17 @@ ftp_cleanup() = curl_global_cleanup()
 ##############################
 
 @doc """
-    Download file with non-persistent connection.
+Download file with non-persistent connection.
 
-    - url: FTP server, ex "localhost"
-    - file_name: name of file to download
-    - options: options for connection, ex use ssl, implicit security, etc.
-    - save_path: location to save file to, if not specified file is written to a buffer
+- url: FTP server, ex "localhost"
+- file_name: name of file to download
+- options: options for connection, ex use ssl, implicit security, etc.
+- save_path: location to save file to, if not specified file is written to a buffer
 
-    returns resp::Response
+returns resp::Response
 """ ->
 function ftp_get(url::String, file_name::String, options::RequestOptions=RequestOptions(), save_path::String="")
-    if (options.blocking)
+    if options.blocking
         ctxt = false
         try
             ctxt = setup_easy_handle(url, options)
@@ -276,20 +269,21 @@ function ftp_get(url::String, file_name::String, options::RequestOptions=Request
 end
 
 @doc """
-    Download file with persistent connection.
+Download file with persistent connection.
 
-    - ctxt: open connection to FTP server
-    - file_name: name of file to download
-    - save_path: location to save file to, if not specified file is written to a buffer
+- ctxt: open connection to FTP server
+- file_name: name of file to download
+- save_path: location to save file to, if not specified file is written to a buffer
 
-    returns resp::Response
+returns resp::Response
 """ ->
 function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
-    if (ctxt.options.blocking)
+    if ctxt.options.blocking
         try
+            resp = Response()
             wd = WriteData()
 
-            if (isempty(save_path))
+            if isempty(save_path)
                 wd.typ = :buffer
             else
                 wd.typ = :io
@@ -304,16 +298,16 @@ function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
             @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
             @ce_curl curl_easy_perform
-            process_response(ctxt)
+            process_response(ctxt, resp)
 
             if isopen(wd.buffer)
                 seekstart(wd.buffer)
             end
 
-            ctxt.resp.bytes_recd = wd.bytes_recd
-            ctxt.resp.body = wd.buffer
+            resp.bytes_recd = wd.bytes_recd
+            resp.body = wd.buffer
 
-            return ctxt.resp
+            return resp
 
         catch e
             cleanup_easy_context(ctxt)
@@ -330,18 +324,18 @@ end
 ##############################
 
 @doc """
-    Upload file with non-persistent connection.
+Upload file with non-persistent connection.
 
-    - url: FTP server, ex "localhost"
-    - ctxt: open connection to FTP server
-    - file_name: name of file to upload
-    - file: the file to upload
-    - options: options for connection, ex use ssl, implicit security, etc.
+- url: FTP server, ex "localhost"
+- ctxt: open connection to FTP server
+- file_name: name of file to upload
+- file: the file to upload
+- options: options for connection, ex use ssl, implicit security, etc.
 
-    returns resp::Response
+returns resp::Response
 """ ->
 function ftp_put(url::String, file_name::String, file::IO, options::RequestOptions=RequestOptions())
-    if (options.blocking)
+    if options.blocking
         ctxt = false
         try
 
@@ -359,17 +353,18 @@ function ftp_put(url::String, file_name::String, file::IO, options::RequestOptio
 end
 
 @doc """
-    Upload file with persistent connection.
+Upload file with persistent connection.
 
-    - ctxt: open connection to FTP server
-    - file_name: name of file to upload
-    - file: the file to upload
+- ctxt: open connection to FTP server
+- file_name: name of file to upload
+- file: the file to upload
 
-    returns resp::Response
+returns resp::Response
 """ ->
 function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
-    if (ctxt.options.blocking)
+    if ctxt.options.blocking
         try
+            resp = Response()
             rd = ReadData()
             rd.typ = :io
             rd.src = file
@@ -387,9 +382,9 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
             @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
 
             @ce_curl curl_easy_perform
-            process_response(ctxt)
+            process_response(ctxt, resp)
 
-            return ctxt.resp
+            return resp
 
         catch e
             cleanup_easy_context(ctxt)
@@ -406,16 +401,16 @@ end
 ##############################
 
 @doc """
-    Pass FTP command with non-persistent connection.
+Pass FTP command with non-persistent connection.
 
-    - url: FTP server, ex "localhost"
-    - cmd: FTP command to execute
-    - options: options for connection, ex use ssl, implicit security, etc.
+- url: FTP server, ex "localhost"
+- cmd: FTP command to execute
+- options: options for connection, ex use ssl, implicit security, etc.
 
-    returns resp::Response
+returns resp::Response
 """ ->
 function ftp_command(url::String, cmd::String, options::RequestOptions=RequestOptions())
-    if (options.blocking)
+    if options.blocking
         ctxt = false
         try
             ctxt = setup_easy_handle(url, options)
@@ -432,41 +427,43 @@ function ftp_command(url::String, cmd::String, options::RequestOptions=RequestOp
 end
 
 @doc """
-    Pass FTP command with persistent connection.
+Pass FTP command with persistent connection.
 
-    - ctxt: open connection to FTP server
-    - cmd: FTP command to execute
+- ctxt: open connection to FTP server
+- cmd: FTP command to execute
 
-    returns resp::Response
+returns resp::Response
 """ ->
 function ftp_command(ctxt::ConnContext, cmd::String)
-    if (ctxt.options.blocking)
+    if ctxt.options.blocking
         try
+            resp = Response()
             wd = WriteData()
             wd.typ = :buffer
             p_wd = pointer_from_objref(wd)
 
-            p_ctxt = pointer_from_objref(ctxt)
+            resp = Response()
+            p_resp = pointer_from_objref(resp)
 
             @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
             @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
             @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
-            @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_ctxt
+            @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
 
             @ce_curl curl_easy_perform
-            process_response(ctxt)
+            process_response(ctxt, resp)
 
-            ctxt.resp.body = seekstart(wd.buffer)
-            ctxt.resp.bytes_recd = wd.bytes_recd
+            resp.body = seekstart(wd.buffer)
+            resp.bytes_recd = wd.bytes_recd
 
             cmd = split(cmd)
-            if (ctxt.resp.code == 250 && cmd[1] == "CWD")
+            if (resp.code == 250 && cmd[1] == "CWD")
                 ctxt.url *= cmd[2]
             end
 
-            return ctxt.resp
+            return resp
 
         catch e
             cleanup_easy_context(ctxt)
@@ -483,23 +480,24 @@ end
 ##############################
 
 @doc """
-    Establish connection to FTP server.
+Establish connection to FTP server.
 
-    - url: FTP server, ex "localhost"
-    - options: options for connection, ex use ssl, implicit security, etc.
+- url: FTP server, ex "localhost"
+- options: options for connection, ex use ssl, implicit security, etc.
 
-    returns ctxt::ConnContext
+returns ctxt::ConnContext
 """ ->
 function ftp_connect(url::String, options::RequestOptions=RequestOptions())
-    if (options.blocking)
+    if options.blocking
         ctxt = false
         try
+            resp = Response()
             ctxt = setup_easy_handle(url, options)
 
             @ce_curl curl_easy_perform
-            process_response(ctxt)
+            process_response(ctxt, resp)
 
-            return ctxt
+            return ctxt, resp
 
         catch e
             cleanup_easy_context(ctxt)
@@ -516,9 +514,9 @@ end
 ##############################
 
 @doc """
-    Close connection FTP server.
+Close connection FTP server.
 
-    - ctxt: connection to clean up
+- ctxt: connection to clean up
 """ ->
 function ftp_close_connection(ctxt::ConnContext)
     cleanup_easy_context(ctxt)

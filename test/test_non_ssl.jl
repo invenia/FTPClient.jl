@@ -62,26 +62,26 @@ options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=psw
 println("\nTest persistent connection with passive mode:\n")
 
 # test 7, establish connection
-ctxt = ftp_connect(url, options)
-@test ctxt.resp.code == 226
-println("\nTest 7 passed.\n$(ctxt.resp)")
+ctxt, resp = ftp_connect(url, options)
+@test resp.code == 226
+println("\nTest 7 passed.\n$(resp)")
 
 # test 8, pass command to server
 resp = ftp_command(ctxt, "PWD")
 @test resp.code == 257
-println("\nTest 8 passed.\n$(ctxt.resp)")
+println("\nTest 8 passed.\n$(resp)")
 
 # test 9, download file from server
-buff = ftp_get(ctxt, file_name)
-@test ctxt.resp.code == 226
-println("\nTest 9 passed.\n$(ctxt.resp)")
+resp = ftp_get(ctxt, file_name)
+@test resp.code == 226
+println("\nTest 9 passed.\n$(resp)")
 # rm(file_name)
 
 # test 10, upload file to server
 file = open(upload_file)
 resp = ftp_put(ctxt, "test_upload.txt", file)
 @test resp.code ==226
-println("\nTest 10 passed.\n$(ctxt.resp)")
+println("\nTest 10 passed.\n$(resp)")
 
 ftp_close_connection(ctxt)
 close(file)
@@ -94,26 +94,26 @@ options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd
 println("\nTest persistent connection with active mode:\n")
 
 # test 11, establish connection
-ctxt = ftp_connect(url, options)
-@test ctxt.resp.code == 226
-println("\nTest 11 passed.\n$(ctxt.resp)")
+ctxt, resp = ftp_connect(url, options)
+@test resp.code == 226
+println("\nTest 11 passed.\n$(resp)")
 
 # test 12, pass command to server
 resp = ftp_command(ctxt, "PWD")
 @test resp.code == 257
-println("\nTest 12 passed.\n$(ctxt.resp)")
+println("\nTest 12 passed.\n$(resp)")
 
 # test 13, download file from server
 resp = ftp_get(ctxt, file_name)
 @test resp.code == 226
-println("\nTest 13 passed.\n$(ctxt.resp)")
+println("\nTest 13 passed.\n$(resp)")
 # rm(file_name)
 
 # test 14, upload file to server
 file = open(upload_file)
 resp = ftp_put(ctxt, "test_upload.txt", file)
 @test resp.code ==226
-println("\nTest 14 passed.\n$(ctxt.resp)")
+println("\nTest 14 passed.\n$(resp)")
 
 ftp_close_connection(ctxt)
 close(file)
