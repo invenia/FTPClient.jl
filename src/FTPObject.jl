@@ -51,8 +51,10 @@ function download(ftp::FTP, file_name::String, save_path::String="")
     end
 end
 
-function upload(ftp::FTP, file_name::String)
-    file = open(file_name)
+function upload(ftp::FTP, file_name::String, file=nothing)
+    if file == nothing
+        file = open(file_name)
+    end
 
     resp = ftp_put(ftp.ctxt, file_name, file)
 

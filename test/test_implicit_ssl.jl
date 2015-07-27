@@ -133,4 +133,21 @@ end
 
 ftp_close_connection(ctxt)
 
+# test 15 & 16, test uploading text from a buffer
+ctxt, resp = ftp_connect(url, options)
+@test resp.code == 226
+println("Test 15 passed.\n$(resp)")
+
+buff = IOBuffer("Test buffer to upload.\n")
+
+try
+    resp = ftp_put(ctxt, "test_uploadbuff.txt", buff)
+    @test resp.code ==226
+    println("Test 16 passed.\n$(resp)")
+catch e
+    println("Test 16 failed: $e\n")
+end
+ftp_close_connection(ctxt)
+
+
 ftp_cleanup()

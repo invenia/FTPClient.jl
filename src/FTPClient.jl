@@ -41,13 +41,11 @@ function show(io::IO, o::Response)
 end
 
 type ReadData
-    typ::Symbol
-    src::Any
-    str::String
+    src::IO
     offset::Csize_t
     sz::Csize_t
 
-    ReadData() = new(:undefined, false, "", 0, 0)
+    ReadData() = new(IOBuffer(), 0, 0)
 end
 
 type WriteData
@@ -106,13 +104,8 @@ function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_rd::Ptr{Void})
     breq::Csize_t = rd.sz - rd.offset
     b2copy = bavail > breq ? breq : bavail
 
-    if (rd.typ == :buffer)
-        ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint),
-                out, convert(Ptr{Uint8}, pointer(rd.str)) + rd.offset, b2copy)
-    elseif (rd.typ == :io)
-        b_read = read(rd.src, Uint8, b2copy)
-        ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint), out, b_read, b2copy)
-    end
+    b_read = read(rd.src, Uint8, b2copy)
+    ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint), out, b_read, b2copy)
 
     rd.offset += b2copy
 
@@ -361,20 +354,26 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
         try
             resp = Response()
             rd = ReadData()
-            rd.typ = :io
+
             rd.src = file
             seekend(file)
             rd.sz = position(file)
             seekstart(file)
 
             p_rd = pointer_from_objref(rd)
+            p_resp = pointer_from_objref(resp)
+
 
             command = "STOR " * file_name
             @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
+
             @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
             @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
             @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
+
+            @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
+            @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
             @ce_curl curl_easy_perform
             process_response(ctxt, resp)
