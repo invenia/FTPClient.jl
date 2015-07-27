@@ -2,7 +2,7 @@ module FTPClient
 
 using LibCURL
 
-import Base.convert, Base.show
+import Base.convert, Base.show, Base.open
 
 export RequestOptions, Response, ConnContext
 export ftp_init, ftp_cleanup, ftp_connect, ftp_close_connection, ftp_get, ftp_put, ftp_command
@@ -51,12 +51,10 @@ type ReadData
 end
 
 type WriteData
-    typ::Symbol
-    path::String
     buffer::IO
     bytes_recd::Int
 
-    WriteData() = new(:undefined, "", IOBuffer(), 0)
+    WriteData() = new(IOBuffer(), 0)
 end
 
 type ConnContext
@@ -78,15 +76,7 @@ function write_file_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Void
     wd = unsafe_pointer_to_objref(p_wd)
     nbytes = sz * n
 
-    if wd.typ == :io
-        wd.buffer = Base.open(wd.path, "w")
-    end
-
     write(wd.buffer, buff, nbytes)
-
-    if wd.typ == :io
-       close(wd.buffer)
-    end
 
     wd.bytes_recd += nbytes
 
@@ -282,22 +272,28 @@ function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
             resp = Response()
             wd = WriteData()
 
-            if isempty(save_path)
-                wd.typ = :buffer
-            else
-                wd.typ = :io
-                wd.path = save_path
+            if ~isempty(save_path)
+                wd.buffer = open(save_path, "w")
             end
 
             p_wd = pointer_from_objref(wd)
+            p_resp = pointer_from_objref(resp)
+
 
             command = "RETR " * file_name
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
             @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
             @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
+            @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
+            @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
+
             @ce_curl curl_easy_perform
             process_response(ctxt, resp)
+
+            if ~isempty(save_path)
+                close(wd.buffer)
+            end
 
             if isopen(wd.buffer)
                 seekstart(wd.buffer)
@@ -438,7 +434,6 @@ function ftp_command(ctxt::ConnContext, cmd::String)
         try
             resp = Response()
             wd = WriteData()
-            wd.typ = :buffer
             p_wd = pointer_from_objref(wd)
 
             resp = Response()
