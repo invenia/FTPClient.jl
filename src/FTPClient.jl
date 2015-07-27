@@ -30,7 +30,7 @@ type Response
     total_time::FloatingPoint
     bytes_recd::Int
 
-    Response() = new(IOBuffer(), Vector{String}(), 0, 0.0, 0)
+    Response() = new(IOBuffer(), String[], 0, 0.0, 0)
 end
 
 function show(io::IO, o::Response)
