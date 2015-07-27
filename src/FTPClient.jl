@@ -20,7 +20,9 @@ type RequestOptions
     username::String
     passwd::String
 
-    RequestOptions(; blocking=true, implicit=false, ssl=false, verify_peer=true, active_mode=false, username="", passwd="") = new(blocking, implicit, ssl, verify_peer, active_mode, username, passwd)
+    function RequestOptions(; blocking=true, implicit=false, ssl=false, verify_peer=true, active_mode=false, username="", passwd="")
+        new(blocking, implicit, ssl, verify_peer, active_mode, username, passwd)
+    end
 end
 
 type Response
