@@ -19,9 +19,17 @@ type RequestOptions
     active_mode::Bool
     username::String
     passwd::String
+    url::String
 
-    function RequestOptions(; blocking=true, implicit=false, ssl=false, verify_peer=true, active_mode=false, username="", passwd="")
-        new(blocking, implicit, ssl, verify_peer, active_mode, username, passwd)
+    function RequestOptions(; blocking=true, implicit=false, ssl=false, verify_peer=true, active_mode=false, username="", passwd="", url="localhost")
+
+        if implicit
+            url = "ftps://" * String(url) * "/"
+        else
+            url = "ftp://"* String(url) * "/"
+        end
+
+        new(blocking, implicit, ssl, verify_peer, active_mode, username, passwd, url)
     end
 end
 
@@ -65,7 +73,7 @@ type ConnContext
     options::RequestOptions
     close_ostream::Bool
 
-    ConnContext(options::RequestOptions ; url="") = new(C_NULL, url, options, false)
+    ConnContext(options::RequestOptions) = new(C_NULL, options.url, options, false)
 end
 
 
@@ -148,7 +156,7 @@ function set_opt_blocking(options::RequestOptions)
         return o2
 end
 
-function setup_easy_handle(url, options::RequestOptions)
+function setup_easy_handle(options::RequestOptions)
     ctxt = ConnContext(options)
 
     curl = curl_easy_init()
@@ -158,15 +166,9 @@ function setup_easy_handle(url, options::RequestOptions)
 
     p_ctxt = pointer_from_objref(ctxt)
 
-    if options.implicit
-        url = "ftps://" * String(url) * "/"
-    else
-        url = "ftp://"* String(url) * "/"
-    end
+    ctxt.url = options.url
 
-    ctxt.url = url
-
-    @ce_curl curl_easy_setopt CURLOPT_URL url
+    @ce_curl curl_easy_setopt CURLOPT_URL options.url
     # @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
     if (~isempty(options.username) && ~isempty(options.passwd))
@@ -243,11 +245,11 @@ Download file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(url::String, file_name::String, options::RequestOptions=RequestOptions(), save_path::String="")
+function ftp_get(file_name::String, options::RequestOptions=RequestOptions(), save_path::String="")
     if options.blocking
         ctxt = false
         try
-            ctxt = setup_easy_handle(url, options)
+            ctxt = setup_easy_handle(options)
             resp = ftp_get(ctxt, file_name, save_path)
 
             return resp
@@ -307,6 +309,7 @@ function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
             return resp
 
         catch e
+            println(ctxt)
             cleanup_easy_context(ctxt)
             throw(e)
         end
@@ -331,12 +334,12 @@ Upload file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(url::String, file_name::String, file::IO, options::RequestOptions=RequestOptions())
+function ftp_put(file_name::String, file::IO, options::RequestOptions=RequestOptions())
     if options.blocking
         ctxt = false
         try
 
-            ctxt = setup_easy_handle(url, options)
+            ctxt = setup_easy_handle(options)
             resp = ftp_put(ctxt, file_name, file)
 
             return resp
@@ -406,11 +409,11 @@ Pass FTP command with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_command(url::String, cmd::String, options::RequestOptions=RequestOptions())
+function ftp_command(cmd::String, options::RequestOptions=RequestOptions())
     if options.blocking
         ctxt = false
         try
-            ctxt = setup_easy_handle(url, options)
+            ctxt = setup_easy_handle(options)
             resp = ftp_command(ctxt, cmd)
 
             return resp
@@ -483,12 +486,12 @@ Establish connection to FTP server.
 
 returns ctxt::ConnContext
 """ ->
-function ftp_connect(url::String, options::RequestOptions=RequestOptions())
+function ftp_connect(options::RequestOptions=RequestOptions())
     if options.blocking
         ctxt = false
         try
             resp = Response()
-            ctxt = setup_easy_handle(url, options)
+            ctxt = setup_easy_handle(options)
 
             @ce_curl curl_easy_perform
             process_response(ctxt, resp)
