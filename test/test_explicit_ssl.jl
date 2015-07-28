@@ -11,7 +11,7 @@ options = RequestOptions(ssl=true, implicit=false, active_mode=false, verify_pee
 println("Test non-persistent connection using ssl, explicit security and passive mode:\n")
 
 # test 1, download file from server
-resp = ftp_get(url, file_name, options)
+resp = ftp_get(file_name, options)
 @test resp.code == 226
 println("Test 1 passed.\n$resp")
 # rm(file_name)
@@ -19,7 +19,7 @@ println("Test 1 passed.\n$resp")
 # test 2, upload file to server
 try
     file = open(upload_file)
-    resp = ftp_put(url, "test_upload.txt", file, options)
+    resp = ftp_put("test_upload.txt", file, options)
     @test resp.code ==226
     println("Test 2 passed.\n$resp")
     close(file)
@@ -28,7 +28,7 @@ catch e
 end
 
 # test 3, pass command to server
-resp = ftp_command(url, "PWD", options)
+resp = ftp_command("PWD", options)
 @test resp.code == 257
 println("Test 3 passed.\n$resp")
 
@@ -40,7 +40,7 @@ options = RequestOptions(ssl=true, implicit=false, active_mode=true, verify_peer
 println("Test non-persistent connection using ssl, explicit security and active mode:\n")
 
 # test 4, download file from server
-resp = ftp_get(url, file_name, options)
+resp = ftp_get(file_name, options)
 @test resp.code == 226
 println("Test 4 passed.\n$resp")
 # rm(file_name)
@@ -48,7 +48,7 @@ println("Test 4 passed.\n$resp")
 # test 5, upload file to server
 try
     file = open(upload_file)
-    resp = ftp_put(url, "test_upload.txt", file, options)
+    resp = ftp_put("test_upload.txt", file, options)
     @test resp.code ==226
     println("Test 5 passed.\n$resp")
     close(file)
@@ -57,7 +57,7 @@ catch e
 end
 
 # test 6, pass command to server
-resp = ftp_command(url, "PWD", options)
+resp = ftp_command("PWD", options)
 @test resp.code == 257
 println("Test 6 passed.\n$resp")
 
@@ -69,7 +69,7 @@ options = RequestOptions(ssl=true, implicit=false, active_mode=false, verify_pee
 println("Test persistent connection using ssl, explicit security and passive mode:\n")
 
 # test 7, establish connection
-ctxt, resp = ftp_connect(url, options)
+ctxt, resp = ftp_connect(options)
 @test resp.code == 226
 println("Test 7 passed.\n$(resp)")
 
@@ -105,7 +105,7 @@ options = RequestOptions(ssl=true, implicit=false, active_mode=true, verify_peer
 println("Test persistent connection using ssl, explicit security and active mode:\n")
 
 # test 11, establish connection
-ctxt, resp = ftp_connect(url, options)
+ctxt, resp = ftp_connect(options)
 @test resp.code == 226
 println("Test 11 passed.\n$(resp)")
 

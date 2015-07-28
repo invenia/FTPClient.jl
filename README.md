@@ -7,9 +7,9 @@ FTP client based on [LibCURL.jl](https://github.com/JuliaWeb/LibCURL.jl).
 
 Functions for non-persistent connection:
 ```julia
-ftp_get(url::String, file_name::String, options::RequestOptions, save_path::String)
-ftp_put(url::String, file_name::String, file::IO, options::RequestOptions)
-ftp_command(url::String, cmd::String, options::RequestOptions)
+ftp_get(file_name::String, options::RequestOptions, save_path::String)
+ftp_put(file_name::String, file::IO, options::RequestOptions)
+ftp_command(cmd::String, options::RequestOptions)
 ```
 - These functions all establish a connection, perform the desired operation then close the connection and return a `Response` object. Any data retrieved from server is in `Response.body`.
 
@@ -25,7 +25,7 @@ ftp_command(url::String, cmd::String, options::RequestOptions)
 
 Functions for persistent connection:
 ```julia
-ftp_connect(url::String, options::RequestOptions)
+ftp_connect(options::RequestOptions)
 ftp_get(ctxt::ConnContext, file_name::String, save_path::String)
 ftp_put(ctxt::ConnContext, file_name::String, file::IO)
 ftp_command(ctxt::ConnContext, cmd::String)
@@ -60,6 +60,7 @@ ftp_close_connection(ctxt::ConnContext)
         headers::Vector{Tuple}
         username::String
         passwd::String
+        url::String
     end
     ```
     - `blocking`: default is true
@@ -75,19 +76,19 @@ Using non-peristent connection and FTPS with implicit security:
 using FTPClient
 
 ftp_init()
-options = RequestOptions(ssl=true, implicit=true, username="user1", passwd="1234")
+options = RequestOptions(ssl=true, implicit=true, username="user1", passwd="1234", url="localhost")
 
-resp = ftp_get("localhost", "download_file.txt", options)
+resp = ftp_get("download_file.txt", options)
 io_buffer = resp.body
 
-resp = ftp_get("localhost", "download_file.txt", options, "Documents/downloaded_file.txt")
+resp = ftp_get("download_file.txt", options, "Documents/downloaded_file.txt")
 io_stream = resp.body
 
 file = open("upload_file.txt")
-resp = ftp_put("localhost", "upload_file.txt", file, options)
+resp = ftp_put("upload_file.txt", file, options)
 close(file)
 
-resp = ftp_command("localhost", "LIST", options)
+resp = ftp_command("LIST", options)
 dir = resp.body
 
 ftp_cleanup()
@@ -98,9 +99,9 @@ Using persistent connection and FTPS with explicit security:
 using FTPClient
 
 ftp_init()
-options = RequestOptions(ssl=true, username="user2", passwd="5678")
+options = RequestOptions(ssl=true, username="user2", passwd="5678", url="localhost")
 
-ctxt = ftp_connect("localhost", options)
+ctxt = ftp_connect(options)
 
 resp = ftp_get(ctxt, "download_file.txt")
 io_buffer = resp.body
