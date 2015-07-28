@@ -127,7 +127,7 @@ Tests must be run from the main directory
 
 To set up the mock FTP server
 - Add the [JavaCall.jl](https://github.com/aviks/JavaCall.jl) package with `Pkg.add("JavaCall”)`
-- Build dependencies via `Pkg.build("FTPClient")
+- Build dependencies via `Pkg.build("FTPClient")`
 
 The mock FTP server does not work with SSL. To run the non-ssl tests:
     `julia test/runtests.jl`
