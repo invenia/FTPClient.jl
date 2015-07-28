@@ -1,6 +1,5 @@
 module FTPObject
 
-using Debug
 using FTPClient
 
 import Base.show, Base.readdir, Base.cd, Base.pwd, Base.rm, Base.close, Base.download
@@ -17,7 +16,8 @@ type FTP
                     verify_peer=ver_peer,   active_mode=act_mode, username=user, passwd=pswd)
         ctxt, resp = ftp_connect(host, options)
 
-        if (resp.code == 226)
+        if resp.code == 226
+            println(resp.headers)
             new(ctxt)
         else
             error("Failed to connect to server.")
@@ -44,7 +44,7 @@ end
 function download(ftp::FTP, file_name::String, save_path::String="")
     resp = ftp_get(ftp.ctxt, file_name, save_path)
 
-    if (resp.code == 226)
+    if resp.code == 226
         file = resp.body
     else
         error("Failed to download \'$file_name\'.")
@@ -68,7 +68,7 @@ end
 function readdir(ftp::FTP)
     resp = ftp_command(ftp.ctxt, "LIST")
 
-    if (resp.code == 226)
+    if resp.code == 226
         dir = split(readall(resp.body), '\n')
         dir = filter( x -> ~isempty(x), dir)
         dir = [ split(line)[end] for line in dir ]
@@ -83,7 +83,7 @@ function cd(ftp::FTP, dir::String)
     end
     resp = ftp_command(ftp.ctxt, "CWD $dir")
 
-    if (resp.code != 250)
+    if resp.code != 250
         error("Failed to change directory.")
     end
 end
@@ -91,7 +91,7 @@ end
 function pwd(ftp::FTP)
     resp = ftp_command(ftp.ctxt, "PWD")
 
-    if (resp.code == 257)
+    if resp.code == 257
         dir = split(resp.headers[end], '\"')[end-1]
     else
         error("Failed to get the current working directory.")
@@ -101,15 +101,23 @@ end
 function rm(ftp::FTP, file_name::String)
     resp = ftp_command(ftp.ctxt, "DELE $file_name")
 
-    if (resp.code != 250)
+    if resp.code != 250
         error("Failed to remove \'$file_name\'.")
+    end
+end
+
+function rmdir(ftp::FTP, dir_name::String)
+    resp = ftp_command(ftp.ctxt, "RMD dir_name")
+
+    if resp.code != 250
+        error("Failed to remove directory \'$dir_name\'.")
     end
 end
 
 function mkdir(ftp::FTP, dir::String)
     resp = ftp_command(ftp.ctxt, "MKD $dir")
 
-    if (resp.code != 257)
+    if resp.code != 257
         error("Failed to make directory \'$dir\'.")
     end
 end
