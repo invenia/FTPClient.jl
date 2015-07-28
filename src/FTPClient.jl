@@ -30,7 +30,7 @@ type Response
     total_time::Float64
     bytes_recd::Int
 
-    Response() = new(IOBuffer(), Vector{String}(), 0, 0.0, 0)
+    Response() = new(IOBuffer(), String[], 0, 0.0, 0)
 end
 
 function show(io::IO, o::Response)
@@ -242,8 +242,9 @@ function ftp_get(url::String, file_name::String, options::RequestOptions=Request
             resp = ftp_get(ctxt, file_name, save_path)
 
             return resp
-        finally
+        catch
             cleanup_easy_context(ctxt)
+            rethrow()
         end
     else
         return remotecall(myid(), ftp_get, url, file_name, set_opt_blocking(options), save_path)
@@ -297,9 +298,9 @@ function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
 
             return resp
 
-        catch e
+        catch
             cleanup_easy_context(ctxt)
-            throw(e)
+            rethow()
         end
     else
         return remotecall(myid(), ftp_get, ctxt, file_name, save_path)
@@ -332,8 +333,9 @@ function ftp_put(url::String, file_name::String, file::IO, options::RequestOptio
 
             return resp
 
-        finally
+        catch
             cleanup_easy_context(ctxt)
+            rethrow()
         end
     else
         return remotecall(myid(), ftp_put, url, file_name, file, set_opt_blocking(options))
@@ -380,9 +382,9 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
 
             return resp
 
-        catch e
+        catch
             cleanup_easy_context(ctxt)
-            throw(e)
+            rethrow()
         end
     else
         return remotecall(myid(), ftp_put, url, file_name, file, set_opt_blocking(options))
@@ -412,8 +414,9 @@ function ftp_command(url::String, cmd::String, options::RequestOptions=RequestOp
 
             return resp
 
-        finally
+        catch
             cleanup_easy_context(ctxt)
+            rethrow()
         end
     else
         # Todo: figure out non-blocking
@@ -458,9 +461,9 @@ function ftp_command(ctxt::ConnContext, cmd::String)
 
             return resp
 
-        catch e
+        catch
             cleanup_easy_context(ctxt)
-            throw(e)
+            rethrow()
         end
     else
 
@@ -492,9 +495,9 @@ function ftp_connect(url::String, options::RequestOptions=RequestOptions())
 
             return ctxt, resp
 
-        catch e
+        catch
             cleanup_easy_context(ctxt)
-            throw(e)
+            rethrow()
         end
     else
         # Todo: figure out non-blocking
