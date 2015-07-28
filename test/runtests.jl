@@ -30,7 +30,7 @@ function set_command_response(request::String, code::Int64, reponse::String)
     @assert result == 1 "set_command_response failed"
 end
 
-url = "localhost"
+host = "localhost"
 user = "test"
 pswd = "test"
 home_dir = "/"
@@ -82,7 +82,7 @@ else
     set_file("/" * file_name, file_contents)
     set_command_response("AUTH", 230, "Login successful.")
     port = start_server()
-    url = "$url:$port"
+    host = "$host:$port"
 
     # Note: If LibCURL complains that the server doesn't listen it probably means that
     # the MockFtpServer isn't ready to accept connections yet.
