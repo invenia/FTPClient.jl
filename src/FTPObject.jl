@@ -15,7 +15,7 @@ type FTP
     function FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="")
         options = RequestOptions(blocking=block, implicit=implt, ssl=ssl,
                     verify_peer=ver_peer, active_mode=act_mode,
-                    username=user, passwd=pswd, url=host)
+                    username=user, passwd=pswd, hostname=host)
         ctxt, resp = ftp_connect(options)
 
         if (resp.code == 226)

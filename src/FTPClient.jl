@@ -20,16 +20,21 @@ type RequestOptions
     username::String
     passwd::String
     url::String
+    hostname::String
 
-    function RequestOptions(; blocking=true, implicit=false, ssl=false, verify_peer=true, active_mode=false, username="", passwd="", url="localhost")
+    function RequestOptions(; blocking=true, implicit=false, ssl=false,
+            verify_peer=true, active_mode=false, username="",
+            passwd="", url=nothing, hostname="localhost")
 
-        if implicit
-            url = "ftps://" * String(url) * "/"
-        else
-            url = "ftp://"* String(url) * "/"
+        if url == nothing
+            if implicit
+                url = "ftps://" * String(hostname) * "/"
+            else
+                url = "ftp://"* String(hostname) * "/"
+            end
         end
 
-        new(blocking, implicit, ssl, verify_peer, active_mode, username, passwd, url)
+        new(blocking, implicit, ssl, verify_peer, active_mode, username, passwd, url, hostname)
     end
 end
 

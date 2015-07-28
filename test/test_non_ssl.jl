@@ -8,7 +8,7 @@ ftp_init()
 # Non-persistent connection tests, passive mode
 ###############################################################################
 
-options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, url=url)
+options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
 println("\nTest non-persistent connection with passive mode:\n")
 
 # test 1, download file from server
@@ -33,7 +33,7 @@ println("\nTest 3 passed.\n$resp")
 # Non-persistent connection tests, active mode
 ###############################################################################
 
-options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, url=url)
+options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
 println("\nTest non-persistent connection with active mode:\n")
 
 # test 4, download file from server
@@ -58,7 +58,7 @@ println("\nTest 6 passed.\n$resp")
 # Persistent connection tests, passive mode
 ###############################################################################
 
-options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, url=url)
+options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
 println("\nTest persistent connection with passive mode:\n")
 
 # test 7, establish connection
@@ -90,7 +90,7 @@ close(file)
 # Persistent connection tests, active mode
 ###############################################################################
 
-options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, url=url)
+options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
 println("\nTest persistent connection with active mode:\n")
 
 # test 11, establish connection
