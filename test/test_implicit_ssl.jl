@@ -134,7 +134,7 @@ end
 ftp_close_connection(ctxt)
 
 # test 15 & 16, test uploading text from a buffer
-ctxt, resp = ftp_connect(url, options)
+ctxt, resp = ftp_connect(options)
 @test resp.code == 226
 println("Test 15 passed.\n$(resp)")
 
