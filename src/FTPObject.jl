@@ -3,9 +3,9 @@ module FTPObject
 using FTPClient
 
 import Base.show, Base.readdir, Base.cd, Base.pwd, Base.rm, Base.close, Base.download
-import Base.mkdir
+import Base.mkdir, Base.ascii, Base.mv
 
-export FTP, upload, rmdir
+export FTP, upload, binary, rmdir
 
 
 type FTP
@@ -59,7 +59,7 @@ function upload(ftp::FTP, file_name::String, file=nothing)
 
     resp = ftp_put(ftp.ctxt, file_name, file)
 
-    if (resp.code != 226 || resp.code != 56)
+    if (resp.code != 226 && resp.code != 56)
         error("Failed to upload \'$file_name\'")
     elseif (resp.code == 56)
         println("Did not get response from server")
@@ -123,4 +123,34 @@ function mkdir(ftp::FTP, dir::String)
     end
 end
 
+function mv(ftp::FTP, file_name::String, new_name::String)
+    resp = ftp_command(ftp.ctxt, "RNFR $file_name")
+
+    if resp.code == 350
+        resp = ftp_command(ftp.ctxt, "RNTO $new_name")
+
+        if resp.code != 250
+            error("Failed to rename \'$file_name\'.")
+        end
+    else
+        error("Failed to rename \'$file_name\'.")
+    end
 end
+
+function binary(ftp::FTP)
+    resp = ftp_command(ftp.ctxt, "TYPE I")
+
+    if resp.code != 200
+        error("Failed to switch to binary mode.")
+    end
+end
+
+function ascii(ftp::FTP)
+    resp = ftp_command(ftp.ctxt, "TYPE A")
+
+    if resp.code != 200
+        error("Failed to switch to ASCII mode.")
+    end
+end
+
+end # module
