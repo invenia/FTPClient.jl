@@ -5,6 +5,7 @@ using FTPClient
 ###############################################################################
 
 testdir = "testdir"
+new_file = "new_name.txt"
 
 ftp_init()
 
@@ -90,20 +91,30 @@ path = pwd(ftp)
 @test path == "/"
 println("\nTest 28 passed.\n$(ftp)")
 
-# test 29, remove the uploaded file
-rm(ftp, upload_file)
+# test 29, rename uploaded file
+mv(ftp, upload_file, new_file)
 println("\nTest 29 passed.\n$(ftp)")
 
-# test 30, try removing a file that doesn't exists
+# test 30, remove the uploaded file
+rm(ftp, new_file)
+println("\nTest 30 passed.\n$(ftp)")
+
+# test 31, try removing a file that doesn't exists
 try
-    rm(ftp, upload_file)
+    rm(ftp, new_file)
 catch e
-    if e.msg == "Failed to remove '$(upload_file)'."
-        println("\nTest 30 passed.\n$(ftp)")
+    if e.msg == "Failed to remove '$(new_file)'."
+        println("\nTest 31 passed.\n$(ftp)")
     else
         rethrow(e)
     end
 end
+
+binary(ftp)
+println("\nTest 32 passed.\n$(ftp)")
+
+ascii(ftp)
+println("\nTest 33 passed.\n$(ftp)")
 
 close(ftp)
 ftp_cleanup()
