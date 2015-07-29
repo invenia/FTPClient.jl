@@ -28,10 +28,19 @@ function show(io::IO, ftp::FTP)
     end
 end
 
+
+@doc """
+Close FTP connection.
+""" ->
 function close(ftp::FTP)
     ftp_close_connection(ftp.ctxt)
 end
 
+
+@doc """
+Download the file "file_name" from FTP server and return IOStream.
+If "save_path" is not specified, contents are written to and returned as IOBuffer.
+""" ->
 function download(ftp::FTP, file_name::String, save_path::String="")
     resp = ftp_get(ftp.ctxt, file_name, save_path)
 
@@ -42,6 +51,11 @@ function download(ftp::FTP, file_name::String, save_path::String="")
     end
 end
 
+
+@doc """
+Upload IO object "file" to the FTP server and save as "file_name".
+If "file" is not specified, the file "file_name" is uploaded.
+""" ->
 function upload(ftp::FTP, file_name::String, file=nothing)
     if file == nothing
         file = open(file_name)
@@ -56,6 +70,10 @@ function upload(ftp::FTP, file_name::String, file=nothing)
     end
 end
 
+
+@doc """
+Returns the contents of the current working directory of the FTP server.
+""" ->
 function readdir(ftp::FTP)
     resp = ftp_command(ftp.ctxt, "LIST")
 
@@ -68,6 +86,10 @@ function readdir(ftp::FTP)
     end
 end
 
+
+@doc """
+Sets the current working directory of the FTP server to "dir".
+""" ->
 function cd(ftp::FTP, dir::String)
     if (~endswith(dir, "/"))
         dir *= "/"
@@ -79,6 +101,10 @@ function cd(ftp::FTP, dir::String)
     end
 end
 
+
+@doc """
+Get the current working directory of the FTP server
+""" ->
 function pwd(ftp::FTP)
     resp = ftp_command(ftp.ctxt, "PWD")
 
@@ -89,6 +115,10 @@ function pwd(ftp::FTP)
     end
 end
 
+
+@doc """
+Delete file "file_name" from FTP server.
+""" ->
 function rm(ftp::FTP, file_name::String)
     resp = ftp_command(ftp.ctxt, "DELE $file_name")
 
@@ -97,6 +127,10 @@ function rm(ftp::FTP, file_name::String)
     end
 end
 
+
+@doc """
+Delete directory "dir_name" from FTP server.
+""" ->
 function rmdir(ftp::FTP, dir_name::String)
     resp = ftp_command(ftp.ctxt, "RMD $dir_name")
 
@@ -105,6 +139,10 @@ function rmdir(ftp::FTP, dir_name::String)
     end
 end
 
+
+@doc """
+Make directory "dir" on FTP server.
+""" ->
 function mkdir(ftp::FTP, dir::String)
     resp = ftp_command(ftp.ctxt, "MKD $dir")
 
@@ -113,6 +151,10 @@ function mkdir(ftp::FTP, dir::String)
     end
 end
 
+
+@doc """
+Move (rename) file "file_name" to "new_name" on FTP server.
+""" ->
 function mv(ftp::FTP, file_name::String, new_name::String)
     resp = ftp_command(ftp.ctxt, "RNFR $file_name")
 
@@ -127,6 +169,10 @@ function mv(ftp::FTP, file_name::String, new_name::String)
     end
 end
 
+
+@doc """
+Set the transfer mode to binary.
+""" ->
 function binary(ftp::FTP)
     resp = ftp_command(ftp.ctxt, "TYPE I")
 
@@ -135,6 +181,10 @@ function binary(ftp::FTP)
     end
 end
 
+
+@doc """
+Set the transfer mode to ASCII.
+""" ->
 function ascii(ftp::FTP)
     resp = ftp_command(ftp.ctxt, "TYPE A")
 
