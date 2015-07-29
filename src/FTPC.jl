@@ -1,11 +1,4 @@
-# module FTPC
-
 using LibCURL
-
-import Base.convert, Base.show, Base.open
-
-export RequestOptions, Response, ConnContext
-export ftp_init, ftp_cleanup, ftp_connect, ftp_close_connection, ftp_get, ftp_put, ftp_command
 
 ##############################
 # Type definitions
@@ -524,7 +517,3 @@ Close connection FTP server.
 function ftp_close_connection(ctxt::ConnContext)
     cleanup_easy_context(ctxt)
 end
-
-# end #module
-
-

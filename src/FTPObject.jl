@@ -1,14 +1,3 @@
-# module FTPObject
-
-# push!(LOAD_PATH, dirname(@__FILE__()))
-# using FTPC
-
-import Base.show, Base.readdir, Base.cd, Base.pwd, Base.rm, Base.close, Base.download
-import Base.mkdir, Base.ascii, Base.mv
-
-export FTP, upload, binary, rmdir
-
-
 type FTP
     ctxt::ConnContext
 
@@ -153,5 +142,3 @@ function ascii(ftp::FTP)
         error("Failed to switch to ASCII mode.")
     end
 end
-
-# end # module
