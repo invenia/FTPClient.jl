@@ -5,7 +5,7 @@ using FTPClient
 import Base.show, Base.readdir, Base.cd, Base.pwd, Base.rm, Base.close, Base.download
 import Base.mkdir
 
-export FTP, upload
+export FTP, upload, rmdir
 
 
 type FTP
@@ -108,7 +108,7 @@ function rm(ftp::FTP, file_name::String)
 end
 
 function rmdir(ftp::FTP, dir_name::String)
-    resp = ftp_command(ftp.ctxt, "RMD dir_name")
+    resp = ftp_command(ftp.ctxt, "RMD $dir_name")
 
     if resp.code != 250
         error("Failed to remove directory \'$dir_name\'.")
