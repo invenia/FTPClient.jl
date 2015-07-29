@@ -1,6 +1,7 @@
-module FTPObject
+# module FTPObject
 
-using FTPClient
+# push!(LOAD_PATH, dirname(@__FILE__()))
+# using FTPC
 
 import Base.show, Base.readdir, Base.cd, Base.pwd, Base.rm, Base.close, Base.download
 import Base.mkdir, Base.ascii, Base.mv
@@ -153,4 +154,4 @@ function ascii(ftp::FTP)
     end
 end
 
-end # module
+# end # module
