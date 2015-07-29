@@ -8,7 +8,6 @@ type FTP
         ctxt, resp = ftp_connect(options)
 
         if resp.code == 226
-            println(resp.headers)
             new(ctxt)
         else
             error("Failed to connect to server.")
@@ -62,6 +61,7 @@ function upload(ftp::FTP, file_name::String, file=nothing)
     end
 
     resp = ftp_put(ftp.ctxt, file_name, file)
+    close(file)
 
     if (resp.code != 226 && resp.code != 56)
         error("Failed to upload \'$file_name\'")

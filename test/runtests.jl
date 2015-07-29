@@ -87,9 +87,13 @@ else
     # Note: If LibCURL complains that the server doesn't listen it probably means that
     # the MockFtpServer isn't ready to accept connections yet.
 
-    fp = joinpath(dirname(@__FILE__), "test_non_ssl.jl")
-    println("$fp ...\n")
-    include(fp)
+    test_files = ["test_non_ssl.jl", "test_ftp_object.jl"]
+
+    for file in test_files
+        fp = joinpath(dirname(@__FILE__), file)
+        println("$fp ...\n")
+        include(fp)
+    end
 
     stop_server()
     JavaCall.destroy()
