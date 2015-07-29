@@ -149,5 +149,225 @@ catch e
 end
 ftp_close_connection(ctxt)
 
+###############################################################################
+# FTPObject
+###############################################################################
 
+testdir = "testdir"
+test_upload = "test_upload.txt"
+
+###############################################################################
+# Persistent connection tests using ssl, implicit security, passive mode
+###############################################################################
+
+println("\nTest persistent connection with passive mode:\n")
+
+# test 17, establish connection
+ftp = FTP(ssl=true, implt=true, act_mode=true, ver_peer=false, user=user, pswd=pswd, host=host)
+println("\nTest 17 passed.\n$(ftp)")
+
+# test 18, get a list of directories
+readdir(ftp)
+println("\nTest 18 passed.\n$(ftp)")
+
+# test 19, download file from server
+download(ftp, file_name)
+println("\nTest 19 passed.\n$(ftp)")
+
+# test 20, upload a file (our test server sometimes thorws an error)
+try
+    upload(ftp, test_upload)
+    println("\nTest 20 passed.\n$(ftp)")
+    close(ftp)
+catch e
+    println("Test 20 failed: $e\n")
+finally
+    ftp = FTP(ssl=true, implt=true, act_mode=false, ver_peer=false, user=user, pswd=pswd, host=host)
+end
+
+# Just trying to make sure our test directory doesn't exsit
+try
+    rmdir(ftp, "testdir")
+catch e
+    println("The directory either doesn't exists or couldn't remove it.")
+end
+
+# test 21, make a diretory
+mkdir(ftp, testdir)
+println("\nTest 21 passed.\n$(ftp)")
+
+# test 22, try making a directory that already exists
+try
+    mkdir(ftp, testdir)
+catch e
+    if e.msg == "Failed to make directory '$(testdir)'."
+        println("\nTest 22 passed.\n$(ftp)")
+    else
+        rethrow(e)
+    end
+end
+
+# test 23, change directory
+cd(ftp, testdir)
+println("\nTest 23 passed.\n$(ftp)")
+
+# test 24, try changing to a directory that doesn't exsit
+try
+    cd(ftp, "not_a_directory")
+catch e
+    if e.msg == "Failed to change directory."
+        println("\nTest 24 passed.\n$(ftp)")
+    else
+        rethrow(e)
+    end
+end
+
+# test 25, go to parent directory
+cd(ftp, "..")
+readdir(ftp)
+println("\nTest 25 passed.\n$(ftp)")
+
+# test 26, remove the test directory
+rmdir(ftp, testdir)
+println("\nTest 26 passed.\n$(ftp)")
+
+# test 27, try removing a directory that doesn't exists
+try
+    rmdir(ftp, testdir)
+catch e
+    if e.msg == "Failed to remove directory '$(testdir)'."
+        println("\nTest 27 passed.\n$(ftp)")
+    else
+        rethrow(e)
+    end
+end
+
+# test 28, get current directory path
+pwd(ftp)
+println("\nTest 28 passed.\n$(ftp)")
+
+# test 29, remove the uploaded
+rm(ftp, test_upload)
+println("\nTest 29 passed.\n$(ftp)")
+
+# test 30, try removing a file that doesn't exists
+try
+    rm(ftp, test_upload)
+catch e
+    if e.msg == "Failed to remove '$(test_upload)'."
+        println("\nTest 30 passed.\n$(ftp)")
+    else
+        rethrow(e)
+    end
+end
+
+close(ftp)
+ftp_cleanup()
+
+###############################################################################
+# Persistent connection tests using ssl, implicit security, active mode
+###############################################################################
+
+println("\nTest persistent connection with active mode:\n")
+
+# test 31, establish connection
+ftp = FTP(ssl=true, implt=true, act_mode=true, ver_peer=false, user=user, pswd=pswd, host=host)
+println("\nTest 31 passed.\n$(ftp)")
+
+# test 32, get a list of directories
+readdir(ftp)
+println("\nTest 32 passed.\n$(ftp)")
+
+# test 33, download file from server
+download(ftp, file_name)
+println("\nTest 33 passed.\n$(ftp)")
+
+# test 34, upload a file (our test server sometimes thorws an error)
+try
+    upload(ftp, test_upload)
+    println("\nTest 34 passed.\n$(ftp)")
+    close(ftp)
+catch e
+    println("Test 34 failed: $e\n")
+finally
+    ftp = FTP(ssl=true, implt=true, act_mode=true, ver_peer=false, user=user, pswd=pswd, host=host)
+end
+
+# Just trying to make sure our test directory doesn't exsit
+try
+    rmdir(ftp, "testdir")
+catch e
+    println("The directory either doesn't exists or couldn't remove it.")
+end
+
+# test 35, make a diretory
+mkdir(ftp, testdir)
+println("\nTest 35 passed.\n$(ftp)")
+
+# test 36, try making a directory that already exists
+try
+    mkdir(ftp, testdir)
+catch e
+    if e.msg == "Failed to make directory '$(testdir)'."
+        println("\nTest 36 passed.\n$(ftp)")
+    else
+        rethrow(e)
+    end
+end
+
+# test 37, change directory
+cd(ftp, testdir)
+println("\nTest 37 passed.\n$(ftp)")
+
+# test 38, try changing to a directory that doesn't exsit
+try
+    cd(ftp, "not_a_directory")
+catch e
+    if e.msg == "Failed to change directory."
+        println("\nTest 38 passed.\n$(ftp)")
+    else
+        rethrow(e)
+    end
+end
+
+# test 39, go to parent directory
+cd(ftp, "..")
+readdir(ftp)
+println("\nTest 39 passed.\n$(ftp)")
+
+# test 40, remove the test directory
+rmdir(ftp, testdir)
+println("\nTest 40 passed.\n$(ftp)")
+
+# test 41, try removing a directory that doesn't exists
+try
+    rmdir(ftp, testdir)
+catch e
+    if e.msg == "Failed to remove directory '$(testdir)'."
+        println("\nTest 41 passed.\n$(ftp)")
+    else
+        rethrow(e)
+    end
+end
+
+# test 42, get current directory path
+pwd(ftp)
+println("\nTest 42 passed.\n$(ftp)")
+
+# test 43, remove the uploaded
+rm(ftp, test_upload)
+println("\nTest 43 passed.\n$(ftp)")
+
+# test 44, try removing a file that doesn't exists
+try
+    rm(ftp, test_upload)
+catch e
+    if e.msg == "Failed to remove '$(test_upload)'."
+        println("\nTest 44 passed.\n$(ftp)")
+    else
+        rethrow(e)
+    end
+end
+
+close(ftp)
 ftp_cleanup()
