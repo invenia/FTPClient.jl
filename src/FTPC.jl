@@ -248,7 +248,7 @@ function ftp_get(file_name::String, options::RequestOptions=RequestOptions(), sa
             cleanup_easy_context(ctxt)
         end
     else
-        return remotecall(myid(), ftp_get, url, file_name, set_opt_blocking(options), save_path)
+        return remotecall(myid(), ftp_get, file_name, set_opt_blocking(options), save_path)
     end
 end
 
@@ -303,7 +303,7 @@ function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
             rethrow()
         end
     else
-        return remotecall(myid(), ftp_get, ctxt, file_name, save_path)
+        return remotecall(myid(), ftp_get, file_name, set_opt_blocking(ctxt.options), save_path)
     end
 end
 
@@ -337,7 +337,7 @@ function ftp_put(file_name::String, file::IO, options::RequestOptions=RequestOpt
             cleanup_easy_context(ctxt)
         end
     else
-        return remotecall(myid(), ftp_put, url, file_name, file, set_opt_blocking(options))
+        return remotecall(myid(), ftp_put, file_name, file, set_opt_blocking(options))
     end
 end
 
@@ -390,7 +390,7 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
             rethrow()
         end
     else
-        return remotecall(myid(), ftp_put, url, file_name, file, set_opt_blocking(options))
+        return remotecall(myid(), ftp_put, file_name, file, set_opt_blocking(ctxt.options))
     end
 end
 
@@ -486,7 +486,7 @@ Establish connection to FTP server.
 
 returns ctxt::ConnContext
 """ ->
-function ftp_connect(options::RequestOptions=RequestOptions())
+function ftp_connect(options::RequestOptions=RequestOptions(), blocking=true)
     if options.blocking
         ctxt = false
         try
@@ -496,6 +496,8 @@ function ftp_connect(options::RequestOptions=RequestOptions())
             @ce_curl curl_easy_perform
             process_response(ctxt, resp)
 
+            ctxt.options.blocking = blocking
+
             return ctxt, resp
 
         catch
@@ -503,7 +505,7 @@ function ftp_connect(options::RequestOptions=RequestOptions())
             rethrow()
         end
     else
-        # Todo: figure out non-blocking
+        return remotecall(myid(), ftp_connect, set_opt_blocking(options), false)
     end
 end
 
