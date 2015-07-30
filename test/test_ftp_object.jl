@@ -25,16 +25,9 @@ buff = download(ftp, file_name)
 @test readall(buff) == file_contents
 println("\nTest 19 passed.\n$(ftp)")
 
-# test 20, upload a file (our test server sometimes throws an error)
-try
-    upload(ftp, upload_file)
-    println("\nTest 20 passed.\n$(ftp)")
-    close(ftp)
-catch e
-    println("Test 20 failed: $e\n")
-finally
-    ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-end
+# test 20, upload a file
+upload(ftp, upload_file)
+println("\nTest 20 passed.\n$(ftp)")
 
 # test 21, make a diretory
 mkdir(ftp, testdir)

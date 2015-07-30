@@ -274,7 +274,6 @@ function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
             p_wd = pointer_from_objref(wd)
             p_resp = pointer_from_objref(resp)
 
-
             command = "RETR " * file_name
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
             @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
@@ -381,6 +380,10 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
             @ce_curl curl_easy_perform
             process_response(ctxt, resp)
 
+            # resest handle defaults
+            @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
+            @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(0)
+
             return resp
 
         catch e
@@ -443,6 +446,7 @@ function ftp_command(ctxt::ConnContext, cmd::String)
 
             @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
             @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
+
             @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
             @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
