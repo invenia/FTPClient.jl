@@ -3,6 +3,7 @@ FTP client based on [LibCURL.jl](https://github.com/JuliaWeb/LibCURL.jl).
 
 ### Usage
 
+#### FTPC functions
 `ftp_init()` and  `ftp_cleanup()` need to be used once per session.
 
 Functions for non-persistent connection:
@@ -68,7 +69,24 @@ ftp_close_connection(ctxt::ConnContext)
     - `ssl`: use FTPS, default is false
     - `verify_peer`: verify authenticity of peer's certificate, default is true
     - `active_mode`: use active mode to establish data connection, default is false
-
+    
+    
+#### FTPObject functions 
+```julia
+FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="")
+close(ftp::FTP)
+download(ftp::FTP, file_name::String, save_path::String="")
+upload(ftp::FTP, file_name::String, file=nothing)
+readdir(ftp::FTP)
+cd(ftp::FTP, dir::String)
+pwd(ftp::FTP)
+rm(ftp::FTP, file_name::String)
+rmdir(ftp::FTP, dir_name::String)
+mkdir(ftp::FTP, dir::String)
+mv(ftp::FTP, file_name::String, new_name::String)
+binary(ftp::FTP)
+ascii(ftp::FTP)
+```
 ### Examples
 
 Using non-peristent connection and FTPS with implicit security:
@@ -120,20 +138,55 @@ ftp_close_connection(ctxt)
 ftp_cleanup()
 ```
 
+Using the FTP object with a persistent connection and FTPS with implicit security:
+```julia
+ftp_init()
+ftp = FTP(host="localhost", implt=true, ssl=true, user="user3", pswd="2468" )
+
+dir_list = readdir(ftp)
+cd(ftp, "Documents/School")
+pwd(ftp)
+
+# download file contents to buffer
+buff = download(ftp, "Assignment1.txt")
+
+# download and save file to specified path
+file = download(ftp, "Assignment2.txt", "./A2/Assignment2.txt")
+
+# upload contents of buffer and save to file
+buff = IOBuffer("Buffer to upload.")
+upload(ftp, "upload_buffer.txt", buff)
+
+# upload local file to server
+upload(ftp, "upload_file.txt", file)
+
+mv(ftp, "upload_file.txt", "Assignment3.txt")
+
+rm(ftp, "upload_buffer.txt")
+
+mkdir(ftp, "TEMP_DIR")
+rmdir(ftp, "TEMP_DIR")
+
+# set transfer mode to binary or ascii
+binary(ftp)
+ascii(ftp)
+
+close(ftp)
+ftp_cleanup()
+```
+
 ### Running Tests
 
-Tests must be run from the main directory
-
-`julia test/runtests.jl <use_ssl> <use_implicit> <username> <password>`
+`julia runtests.jl <use_ssl> <use_implicit> <username> <password>`
 
 To set up the mock FTP server
 - Add the [JavaCall.jl](https://github.com/aviks/JavaCall.jl) package with `Pkg.add("JavaCall”)`
 - Build dependencies via `Pkg.build("FTPClient")`
 
-The mock FTP server does not work with SSL. To run the non-ssl tests:
-    `julia test/runtests.jl`
+The mock FTP server does not work with SSL. To run the non-ssl tests and FTPObject tests:
+    `julia runtests.jl`
 
 The ssl tests can be run if you have a local ftp server set up.
-- To run the tests using implicit security: `julia test/runtests.jl true true <username> <password>`
-- To run the tests using explicit security: `julia test/runtests.jl true false <username> <password>`
+- To run the tests using implicit security: `julia runtests.jl true true <username> <password>`
+- To run the tests using explicit security: `julia runtests.jl true false <username> <password>`
 
