@@ -109,5 +109,21 @@ println("\nTest 32 passed.\n$(ftp)")
 ascii(ftp)
 println("\nTest 33 passed.\n$(ftp)")
 
+println("\nTest FTPObject with non-blocking upload/download:\n")
+
+# test connect with non-blocking call
+ftp = FTP(block=false, ssl=false, user=user, pswd=pswd, host=host)
+println("\nTest 34 passed.\n$(ftp)")
+
+# test 35, download file from server
+buff = download(ftp, file_name)
+@test readall(buff) == file_contents
+println("\nTest 35 passed.\n$(ftp)")
+
+# test 36, upload a file
+upload(ftp, upload_file)
+println("\nTest 36 passed.\n$(ftp)")
+
+
 close(ftp)
 ftp_cleanup()

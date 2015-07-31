@@ -66,6 +66,29 @@ end
 
 
 @doc """
+Non-blocking download of file "file_name" from FTP server. Returns a RemoteRef.
+""" ->
+function non_block_download(ftp::FTP, file_name::String, save_path::String="")
+    ftp.ctxt.options.blocking = false
+    ref = ftp_get(ftp.ctxt, file_name, save_path)
+end
+
+
+@doc """
+Get the response from non_block_download. Returns an IO object.
+""" ->
+function get_download_resp(ref)
+    resp = process_response(ref)
+
+    if resp.code == 226
+        file = resp.body
+    else
+        error("Failed to download \'$file_name\'.")
+    end
+end
+
+
+@doc """
 Upload IO object "file" to the FTP server and save as "file_name".
 If "file" is not specified, the file "file_name" is uploaded.
 """ ->
@@ -78,6 +101,31 @@ function upload(ftp::FTP, file_name::String, file=nothing)
     resp = process_response(resp)
 
     close(file)
+
+    if (resp.code != 226)
+        error("Failed to upload \'$file_name\'")
+    end
+end
+
+
+@doc """
+Non-blocking upload of "file" to the FTP server. Returns a RemoteRef.
+""" ->
+function non_block_upload(ftp::FTP, file_name::String, file=nothing)
+    if file == nothing
+        file = open(file_name)
+    end
+
+    ftp.ctxt.options.blocking = false
+    ref = ftp_put(ftp.ctxt, file_name, file)
+end
+
+
+@doc """
+Process response form non_block_upload. Throws error if upload failed.
+""" ->
+function get_upload_resp(ref)
+    resp = process_response(ref)
 
     if (resp.code != 226)
         error("Failed to upload \'$file_name\'")
