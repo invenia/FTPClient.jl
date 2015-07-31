@@ -488,11 +488,10 @@ function ftp_connect(options::RequestOptions=RequestOptions())
     if options.blocking
         ctxt = false
         try
-            resp = Response()
             ctxt = setup_easy_handle(options)
 
-            @ce_curl curl_easy_perform
-            process_response(ctxt, resp)
+            # ping the server
+            resp = ftp_command(ctxt, "LIST")
 
             ctxt.options.blocking = ctxt.options.reset_blocking
 

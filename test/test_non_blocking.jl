@@ -7,6 +7,10 @@ facts("Non-blocking tests") do
 
 ftp_init()
 
+expected_list = "drwxrwxrwx  1 none     none                   0 Jul 31  2015 test_directory\n" *
+                "-rw-rw-rw-  1 none     none                  21 Jul 31  2015 test_upload.txt\n" *
+                "-rwxrwxrwx  1 none     none                  12 Jul 31  2015 test_download.txt\n"
+
 context("Non-persistent connection tests, passive mode") do
 
     options = RequestOptions(blocking=false, ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
@@ -52,8 +56,9 @@ context("Changed directory and get file") do
     rcall = ftp_connect(options)
     ctxt, resp = fetch(rcall)
     @fact resp.code --> 226
+    @fact expected_list.data --> readall(resp.body).data
 
-    resp = ftp_command(ctxt, "CWD test_directory/")
+    resp = ftp_command(ctxt, "CWD $directory_name/")
     @fact resp.code --> 250
 
     rcall = ftp_get(ctxt, file_name2)
