@@ -1,3 +1,13 @@
+
+function process_response(resp)
+    if isa(resp, RemoteRef)
+        resp = fetch(resp)
+    end
+
+    return resp
+end
+
+
 type FTP
     ctxt::ConnContext
 
@@ -5,7 +15,9 @@ type FTP
         options = RequestOptions(blocking=block, implicit=implt, ssl=ssl,
                     verify_peer=ver_peer, active_mode=act_mode,
                     username=user, passwd=pswd, hostname=host)
-        ctxt, resp = ftp_connect(options)
+
+        resp = ftp_connect(options)
+        ctxt, resp = process_response(resp)
 
         if resp.code == 226
             new(ctxt)
@@ -14,6 +26,7 @@ type FTP
         end
     end
 end
+
 
 function show(io::IO, ftp::FTP)
     o = ftp.ctxt.options
@@ -42,6 +55,30 @@ If "save_path" is not specified, contents are written to and returned as IOBuffe
 """ ->
 function download(ftp::FTP, file_name::String, save_path::String="")
     resp = ftp_get(ftp.ctxt, file_name, save_path)
+    resp = process_response(resp)
+
+    if resp.code == 226
+        file = resp.body
+    else
+        error("Failed to download \'$file_name\'.")
+    end
+end
+
+
+@doc """
+Non-blocking download of file "file_name" from FTP server. Returns a RemoteRef.
+""" ->
+function non_block_download(ftp::FTP, file_name::String, save_path::String="")
+    ftp.ctxt.options.blocking = false
+    ref = ftp_get(ftp.ctxt, file_name, save_path)
+end
+
+
+@doc """
+Get the response from non_block_download. Returns an IO object.
+""" ->
+function get_download_resp(ref)
+    resp = process_response(ref)
 
     if resp.code == 226
         file = resp.body
@@ -61,12 +98,37 @@ function upload(ftp::FTP, file_name::String, file=nothing)
     end
 
     resp = ftp_put(ftp.ctxt, file_name, file)
+    resp = process_response(resp)
+
     close(file)
 
-    if (resp.code != 226 && resp.code != 56)
+    if (resp.code != 226)
         error("Failed to upload \'$file_name\'")
-    elseif (resp.code == 56)
-        println("Did not get response from server")
+    end
+end
+
+
+@doc """
+Non-blocking upload of "file" to the FTP server. Returns a RemoteRef.
+""" ->
+function non_block_upload(ftp::FTP, file_name::String, file=nothing)
+    if file == nothing
+        file = open(file_name)
+    end
+
+    ftp.ctxt.options.blocking = false
+    ref = ftp_put(ftp.ctxt, file_name, file)
+end
+
+
+@doc """
+Process response form non_block_upload. Throws error if upload failed.
+""" ->
+function get_upload_resp(ref)
+    resp = process_response(ref)
+
+    if (resp.code != 226)
+        error("Failed to upload \'$file_name\'")
     end
 end
 

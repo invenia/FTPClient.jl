@@ -17,7 +17,7 @@ println("\nTest 17 passed.\n$(ftp)")
 
 # test 18, get a list of directory's contents
 dir = readdir(ftp)
-@test dir == ["test_upload.txt", "test_download.txt"]
+@test dir == ["test_directory","test_upload.txt","test_download.txt"]
 println("\nTest 18 passed.\n$(ftp)")
 
 # test 19, download file from server
@@ -108,6 +108,32 @@ println("\nTest 32 passed.\n$(ftp)")
 
 ascii(ftp)
 println("\nTest 33 passed.\n$(ftp)")
+
+println("\nTest FTPObject with non-blocking upload/download:\n")
+
+# test connect with non-blocking call
+ftp = FTP(block=false, ssl=false, user=user, pswd=pswd, host=host)
+println("\nTest 34 passed.\n$(ftp)")
+
+# test 35, download file from server using blocking function
+buff = download(ftp, file_name)
+@test readall(buff) == file_contents
+println("\nTest 35 passed.\n$(ftp)")
+
+# test 36, upload a file using blocking function
+upload(ftp, upload_file)
+println("\nTest 36 passed.\n$(ftp)")
+
+# test 37, download file from server using non-blocking function
+ref = non_block_download(ftp, file_name)
+buff = get_download_resp(ref)
+@test readall(buff) == file_contents
+println("\nTest 37 passed.\n$(ftp)")
+
+# test 38, upload a file using blocking function
+ref = non_block_upload(ftp, upload_file)
+get_upload_resp(ref)
+println("\nTest 38 passed.\n$(ftp)")
 
 close(ftp)
 ftp_cleanup()

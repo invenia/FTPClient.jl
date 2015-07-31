@@ -14,6 +14,7 @@ type RequestOptions
     passwd::String
     url::String
     hostname::String
+    reset_blocking::Bool
 
     function RequestOptions(; blocking=true, implicit=false, ssl=false,
             verify_peer=true, active_mode=false, username="",
@@ -27,7 +28,7 @@ type RequestOptions
             end
         end
 
-        new(blocking, implicit, ssl, verify_peer, active_mode, username, passwd, url, hostname)
+        new(blocking, implicit, ssl, verify_peer, active_mode, username, passwd, url, hostname, blocking)
     end
 end
 
@@ -248,7 +249,7 @@ function ftp_get(file_name::String, options::RequestOptions=RequestOptions(), sa
             cleanup_easy_context(ctxt)
         end
     else
-        return remotecall(myid(), ftp_get, url, file_name, set_opt_blocking(options), save_path)
+        return remotecall(myid(), ftp_get, file_name, set_opt_blocking(options), save_path)
     end
 end
 
@@ -264,6 +265,8 @@ returns resp::Response
 function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
     if ctxt.options.blocking
         try
+            ctxt.options.blocking = ctxt.options.reset_blocking
+
             resp = Response()
             wd = WriteData()
 
@@ -303,6 +306,7 @@ function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
             rethrow()
         end
     else
+        ctxt.options.blocking = true
         return remotecall(myid(), ftp_get, ctxt, file_name, save_path)
     end
 end
@@ -337,7 +341,7 @@ function ftp_put(file_name::String, file::IO, options::RequestOptions=RequestOpt
             cleanup_easy_context(ctxt)
         end
     else
-        return remotecall(myid(), ftp_put, url, file_name, file, set_opt_blocking(options))
+        return remotecall(myid(), ftp_put, file_name, file, set_opt_blocking(options))
     end
 end
 
@@ -353,6 +357,8 @@ returns resp::Response
 function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
     if ctxt.options.blocking
         try
+            ctxt.options.blocking = ctxt.options.reset_blocking
+
             resp = Response()
             rd = ReadData()
 
@@ -390,7 +396,8 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
             rethrow()
         end
     else
-        return remotecall(myid(), ftp_put, url, file_name, file, set_opt_blocking(options))
+        ctxt.options.blocking = true
+        return remotecall(myid(), ftp_put, ctxt, file_name, file)
     end
 end
 
@@ -409,19 +416,14 @@ Pass FTP command with non-persistent connection.
 returns resp::Response
 """ ->
 function ftp_command(cmd::String, options::RequestOptions=RequestOptions())
-    if options.blocking
-        ctxt = false
-        try
-            ctxt = setup_easy_handle(options)
-            resp = ftp_command(ctxt, cmd)
+    ctxt = false
+    try
+        ctxt = setup_easy_handle(options)
+        resp = ftp_command(ctxt, cmd)
 
-            return resp
-
-        finally
-            cleanup_easy_context(ctxt)
-        end
-    else
-        # Todo: figure out non-blocking
+        return resp
+    finally
+        cleanup_easy_context(ctxt)
     end
 end
 
@@ -434,42 +436,38 @@ Pass FTP command with persistent connection.
 returns resp::Response
 """ ->
 function ftp_command(ctxt::ConnContext, cmd::String)
-    if ctxt.options.blocking
-        try
-            resp = Response()
-            wd = WriteData()
-            p_wd = pointer_from_objref(wd)
+    try
+        resp = Response()
+        wd = WriteData()
+        p_wd = pointer_from_objref(wd)
 
-            resp = Response()
-            p_resp = pointer_from_objref(resp)
+        resp = Response()
+        p_resp = pointer_from_objref(resp)
 
-            @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
-            @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
+        @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
+        @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
-            @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
-            @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
+        @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
+        @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
-            @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
+        @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
 
-            @ce_curl curl_easy_perform
-            process_response(ctxt, resp)
+        @ce_curl curl_easy_perform
+        process_response(ctxt, resp)
 
-            resp.body = seekstart(wd.buffer)
-            resp.bytes_recd = wd.bytes_recd
+        resp.body = seekstart(wd.buffer)
+        resp.bytes_recd = wd.bytes_recd
 
-            cmd = split(cmd)
-            if (resp.code == 250 && cmd[1] == "CWD")
-                ctxt.url *= cmd[2]
-            end
-
-            return resp
-
-        catch
-            cleanup_easy_context(ctxt)
-            rethrow()
+        cmd = split(cmd)
+        if (resp.code == 250 && cmd[1] == "CWD")
+            ctxt.url *= cmd[2]
         end
-    else
 
+        return resp
+
+    catch
+        cleanup_easy_context(ctxt)
+        rethrow()
     end
 end
 
@@ -490,11 +488,12 @@ function ftp_connect(options::RequestOptions=RequestOptions())
     if options.blocking
         ctxt = false
         try
-            resp = Response()
             ctxt = setup_easy_handle(options)
 
-            @ce_curl curl_easy_perform
-            process_response(ctxt, resp)
+            # ping the server
+            resp = ftp_command(ctxt, "LIST")
+
+            ctxt.options.blocking = ctxt.options.reset_blocking
 
             return ctxt, resp
 
@@ -503,7 +502,7 @@ function ftp_connect(options::RequestOptions=RequestOptions())
             rethrow()
         end
     else
-        # Todo: figure out non-blocking
+        return remotecall(myid(), ftp_connect, set_opt_blocking(options))
     end
 end
 

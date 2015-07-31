@@ -35,6 +35,8 @@ user = "test"
 pswd = "test"
 home_dir = "/"
 file_name = "test_download.txt"
+file_name2 = "test_download2.txt"
+directory_name = "test_directory"
 file_contents = "hello, world"
 upload_file = "test_upload.txt"
 f =  open(upload_file, "w")
@@ -80,6 +82,7 @@ else
 
     set_user(user, pswd, home_dir)
     set_file("/" * file_name, file_contents)
+    set_file("/" * directory_name * "/" * file_name2, file_contents)
     set_command_response("AUTH", 230, "Login successful.")
     port = start_server()
     host = "$host:$port"
@@ -87,7 +90,7 @@ else
     # Note: If LibCURL complains that the server doesn't listen it probably means that
     # the MockFtpServer isn't ready to accept connections yet.
 
-    test_files = ["test_non_ssl.jl", "test_ftp_object.jl"]
+    test_files = ["test_non_ssl.jl", "test_ftp_object.jl", "test_non_blocking.jl"]
 
     for file in test_files
         fp = joinpath(dirname(@__FILE__), file)

@@ -16,7 +16,11 @@ export RequestOptions,
        FTP,
        upload,
        binary,
-       rmdir
+       rmdir,
+       non_block_download,
+       get_download_resp,
+       non_block_upload,
+       get_upload_resp
 
 include("FTPC.jl")
 include("FTPObject.jl")
