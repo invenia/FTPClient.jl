@@ -177,16 +177,17 @@ ftp_cleanup()
 
 ### Running Tests
 
-`julia runtests.jl <use_ssl> <use_implicit> <username> <password>`
+`julia --color=yes test/runtests.jl <use_ssl> <use_implicit> <username> <password>`
 
 To set up the mock FTP server
 - Add the [JavaCall.jl](https://github.com/aviks/JavaCall.jl) package with `Pkg.add("JavaCall”)`
+- Add the [FactCheck.jl](https://github.com/JuliaLang/FactCheck.jl) package with `Pkg.add("FactCheck")`
 - Build dependencies via `Pkg.build("FTPClient")`
 
 The mock FTP server does not work with SSL. To run the non-ssl tests and FTPObject tests:
-    `julia runtests.jl`
+    `julia --color=yes test/runtests.jl`
 
 The ssl tests can be run if you have a local ftp server set up.
-- To run the tests using implicit security: `julia runtests.jl true true <username> <password>`
-- To run the tests using explicit security: `julia runtests.jl true false <username> <password>`
+- To run the tests using implicit security: `julia --color=yes test/runtests.jl true true <username> <password>`
+- To run the tests using explicit security: `julia --color=yes test/runtests.jl true false <username> <password>`
 

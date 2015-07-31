@@ -45,7 +45,7 @@ context("Persistent connection tests, active mode") do
 
 end
 
-context("Chagned directory and get file") do
+context("Changed directory and get file") do
 
     options = RequestOptions(blocking=false, ssl=false, username=user, passwd=pswd, hostname=host)
 
