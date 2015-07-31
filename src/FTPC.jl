@@ -422,7 +422,6 @@ function ftp_command(cmd::String, options::RequestOptions=RequestOptions())
         resp = ftp_command(ctxt, cmd)
 
         return resp
-
     finally
         cleanup_easy_context(ctxt)
     end

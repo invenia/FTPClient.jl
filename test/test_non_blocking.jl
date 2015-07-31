@@ -1,0 +1,67 @@
+using FTPClient
+using Base.Test
+using Debug
+using FactCheck
+
+facts("Non-blocking tests") do
+
+ftp_init()
+
+context("Non-persistent connection tests, passive mode") do
+
+    options = RequestOptions(blocking=false, ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
+
+    rcall = ftp_get(file_name, options)
+    resp = fetch(rcall)
+    @fact resp.code --> 226
+
+    file = open(upload_file)
+    rcall = ftp_put("test_upload.txt", file, options)
+    resp = fetch(rcall)
+    @fact resp.code --> 226
+    close(file)
+
+end
+
+context("Persistent connection tests, active mode") do
+
+    options = RequestOptions(blocking=false, ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
+
+    rcall = ftp_connect(options)
+    ctxt, resp = fetch(rcall)
+    @fact resp.code --> 226
+
+    rcall = ftp_get(ctxt, file_name)
+    resp = fetch(rcall)
+    @fact resp.code --> 226
+
+    file = open(upload_file)
+    rcall = ftp_put(ctxt, "test_upload.txt", file)
+    resp = fetch(rcall)
+    @fact resp.code --> 226
+
+    ftp_close_connection(ctxt)
+    close(file)
+
+end
+
+context("Chagned directory and get file") do
+
+    options = RequestOptions(blocking=false, ssl=false, username=user, passwd=pswd, hostname=host)
+
+    rcall = ftp_connect(options)
+    ctxt, resp = fetch(rcall)
+    @fact resp.code --> 226
+
+    resp = ftp_command(ctxt, "CWD test_directory/")
+    @fact resp.code --> 250
+
+    rcall = ftp_get(ctxt, file_name2)
+    resp = fetch(rcall)
+    @fact resp.code --> 226
+
+end
+
+ftp_cleanup()
+
+end

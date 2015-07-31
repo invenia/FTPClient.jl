@@ -17,7 +17,7 @@ println("\nTest 17 passed.\n$(ftp)")
 
 # test 18, get a list of directory's contents
 dir = readdir(ftp)
-@test dir == ["test_upload.txt", "test_download.txt"]
+@test dir == ["test_directory","test_upload.txt","test_download.txt"]
 println("\nTest 18 passed.\n$(ftp)")
 
 # test 19, download file from server

@@ -4,12 +4,10 @@ import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 import org.mockftpserver.fake.FakeFtpServer;
 import org.mockftpserver.fake.UserAccount;
-// import org.mockftpserver.stub.example.RemoteFile;
 
 public class MockFTPServerJulia
 {
 
-//    private RemoteFile remoteFile;
     private static FakeFtpServer fakeFtpServer = new FakeFtpServer();
 
     public static int setUp()
@@ -22,10 +20,6 @@ public class MockFTPServerJulia
         System.out.println("Server started");
 
         int port = fakeFtpServer.getServerControlPort();
-
-//        remoteFile = new RemoteFile();
-//        remoteFile.setServer("localhost");
-//        remoteFile.setPort(port);
 
         return port;
     }
@@ -40,9 +34,15 @@ public class MockFTPServerJulia
 
     public static boolean setFile(String fileName, String content)
     {
-        FileSystem fileSystem = new UnixFakeFileSystem();
-        fileSystem.add(new FileEntry(fileName, content));
-        fakeFtpServer.setFileSystem(fileSystem);
+
+        if(fakeFtpServer.getFileSystem() == null)
+        {
+            FileSystem fileSystem = new UnixFakeFileSystem();
+            fakeFtpServer.setFileSystem(fileSystem);
+        }
+
+        FileEntry file = new FileEntry(fileName, content);
+        fakeFtpServer.getFileSystem().add(file);
 
         return true;
     }
@@ -54,13 +54,6 @@ public class MockFTPServerJulia
 
         return true;
     }
-
-//    public static boolean didFileUpload(String fileName, String expected)
-//    {
-//        String actuals = remoteFile.readFile(fileName);
-//
-//        return expected.equals(actuals);
-//    }
 
     public static boolean tearDown()
     {
