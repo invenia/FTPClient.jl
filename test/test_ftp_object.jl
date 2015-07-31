@@ -115,15 +115,25 @@ println("\nTest FTPObject with non-blocking upload/download:\n")
 ftp = FTP(block=false, ssl=false, user=user, pswd=pswd, host=host)
 println("\nTest 34 passed.\n$(ftp)")
 
-# test 35, download file from server
+# test 35, download file from server using blocking function
 buff = download(ftp, file_name)
 @test readall(buff) == file_contents
 println("\nTest 35 passed.\n$(ftp)")
 
-# test 36, upload a file
+# test 36, upload a file using blocking function
 upload(ftp, upload_file)
 println("\nTest 36 passed.\n$(ftp)")
 
+# test 37, download file from server using non-blocking function
+ref = non_block_download(ftp, file_name)
+buff = get_download_resp(ref)
+@test readall(buff) == file_contents
+println("\nTest 37 passed.\n$(ftp)")
+
+# test 38, upload a file using blocking function
+ref = non_block_upload(ftp, upload_file)
+get_upload_resp(ref)
+println("\nTest 38 passed.\n$(ftp)")
 
 close(ftp)
 ftp_cleanup()

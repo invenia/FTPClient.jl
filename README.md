@@ -69,9 +69,9 @@ ftp_close_connection(ctxt::ConnContext)
     - `ssl`: use FTPS, default is false
     - `verify_peer`: verify authenticity of peer's certificate, default is true
     - `active_mode`: use active mode to establish data connection, default is false
-    
-    
-#### FTPObject functions 
+
+
+#### FTPObject functions
 ```julia
 FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="")
 close(ftp::FTP)
@@ -181,7 +181,7 @@ ftp_cleanup()
 
 To set up the mock FTP server
 - Add the [JavaCall.jl](https://github.com/aviks/JavaCall.jl) package with `Pkg.add("JavaCall”)`
-- Add the [FactCheck.jl](https://github.com/JuliaLang/FactCheck.jl) package with `Pkg.add("FactCheck")`
+- Add the [FactCheck.jl](https://github.com/JuliaLang/FactCheck.jl) package with `Pkg.add("FactCheck")`, may need to update the package to get most recent version (v0.3.1).
 - Build dependencies via `Pkg.build("FTPClient")`
 
 The mock FTP server does not work with SSL. To run the non-ssl tests and FTPObject tests:
