@@ -7,6 +7,7 @@ julia:
   - nightly
 notifications:
   email: false
+sudo: false
 # uncomment the following lines to override the default test script
 #script:
 #  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
