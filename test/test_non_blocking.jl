@@ -7,9 +7,7 @@ facts("Non-blocking tests") do
 
 ftp_init()
 
-expected_list = "drwxrwxrwx  1 none     none                   0 Jul 31  2015 test_directory\n" *
-                "-rw-rw-rw-  1 none     none                  21 Jul 31  2015 test_upload.txt\n" *
-                "-rwxrwxrwx  1 none     none                  12 Jul 31  2015 test_download.txt\n"
+expected_list = [directory_name, file_name]
 
 context("Non-persistent connection tests, passive mode") do
 
@@ -56,7 +54,10 @@ context("Changed directory and get file") do
     rcall = ftp_connect(options)
     ctxt, resp = fetch(rcall)
     @fact resp.code --> 226
-    @fact expected_list.data --> readall(resp.body).data
+    text = readall(resp.body)
+    for expected in expected_list
+        @fact contains(text, expected) --> true "$expected is not in text\n$text"
+    end
 
     resp = ftp_command(ctxt, "CWD $directory_name/")
     @fact resp.code --> 250
@@ -64,6 +65,8 @@ context("Changed directory and get file") do
     rcall = ftp_get(ctxt, file_name2)
     resp = fetch(rcall)
     @fact resp.code --> 226
+
+    ftp_close_connection(ctxt)
 
 end
 
