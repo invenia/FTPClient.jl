@@ -1,6 +1,5 @@
 using FTPClient
 using Base.Test
-using Debug
 
 ftp_init()
 
@@ -120,3 +119,4 @@ close(file)
 
 ftp_cleanup()
 
+println("FTPC non-ssl tests passed.\n\n")

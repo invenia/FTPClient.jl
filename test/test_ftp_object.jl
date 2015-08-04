@@ -137,3 +137,6 @@ println("\nTest 38 passed.\n$(ftp)")
 
 close(ftp)
 ftp_cleanup()
+
+println("FTPObject tests passed.\n\n")
+

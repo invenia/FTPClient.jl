@@ -149,3 +149,6 @@ catch e
 end
 ftp_close_connection(ctxt)
 
+ftp_cleanup()
+
+println("FTPC implicit ssl tests passed.\n\n")
