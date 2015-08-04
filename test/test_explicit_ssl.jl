@@ -134,3 +134,5 @@ end
 ftp_close_connection(ctxt)
 
 ftp_cleanup()
+
+println("\nFTPC explicit ssl tests passed.\n")

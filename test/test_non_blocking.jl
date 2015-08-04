@@ -1,6 +1,5 @@
 using FTPClient
 using Base.Test
-using Debug
 using FactCheck
 
 facts("Non-blocking tests") do
@@ -71,5 +70,7 @@ context("Changed directory and get file") do
 end
 
 ftp_cleanup()
+
+println("\nNon-blocking tests passed.\n")
 
 end
