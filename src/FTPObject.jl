@@ -100,8 +100,6 @@ function upload(ftp::FTP, file_name::String, file=nothing)
     resp = ftp_put(ftp.ctxt, file_name, file)
     resp = process_response(resp)
 
-    close(file)
-
     if (resp.code != 226)
         error("Failed to upload \'$file_name\'")
     end
