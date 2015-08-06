@@ -1,6 +1,11 @@
 # FTPClient
 FTP client based on [LibCURL.jl](https://github.com/JuliaWeb/LibCURL.jl).
 
+[![Build Status](https://travis-ci.org/invenia/FTPClient.jl.svg?)](https://travis-ci.org/invenia/FTPClient.jl)
+
+[![Build status](https://ci.appveyor.com/api/projects/status/sqsge28jvto74nhs?svg=true)](https://ci.appveyor.com/project/adrienne-pind-invenia/ftpclient-jl)
+
+
 ### Usage
 
 #### FTPC functions
