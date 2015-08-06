@@ -389,6 +389,8 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
             @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
             @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(0)
 
+            close(file)
+
             return resp
 
         catch
