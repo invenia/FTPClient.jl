@@ -10,4 +10,6 @@ notifications:
 sudo: false
 script:
  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
- - julia --check-bounds=yes --color=yes -e 'Pkg.clone(pwd()); Pkg.build("FTPClient"); Pkg.test("FTPClient")'
+ - julia --check-bounds=yes --color=yes -e 'Pkg.clone("https://github.com/samuel-massinon-invenia/LibCURL.jl.git");
+            Pkg.checkout("LibCurl", "pull-request/fc0866d6");
+            Pkg.clone(pwd()); Pkg.build("FTPClient"); Pkg.test("FTPClient"; coverage=true)'
