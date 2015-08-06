@@ -1,2 +1,10 @@
 *.jl.cov
 *.jl.mem
+
+# Ignore files we can build.
+deps/ext
+test/MockFTPServerJulia.class
+test/test_upload.txt
+
+# Ignore system files
+.DS_Store
