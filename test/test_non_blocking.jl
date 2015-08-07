@@ -1,6 +1,5 @@
 using FTPClient
 using Base.Test
-using FactCheck
 
 facts("Non-blocking tests") do
 

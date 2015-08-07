@@ -117,6 +117,26 @@ println("\nTest 14 passed.\n$(resp)")
 ftp_close_connection(ctxt)
 close(file)
 
+
+facts("Non-ssl tests") do
+
+save_file = "test_file_save_path.txt"
+save_path = pwd() * "/" * save_file
+
+context("download a file to a specific path") do
+
+    resp = ftp_get(file_name, options, save_path)
+    @fact resp.code --> 226
+    @fact isfile(save_file) --> true
+    file = open(save_file)
+    @fact readall(file) --> file_contents
+    close(file)
+    rm(save_file)
+
+end
+
+end
+
 ftp_cleanup()
 
 println("FTPC non-ssl tests passed.\n\n")
