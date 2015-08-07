@@ -140,8 +140,6 @@ macro ce_curl(f, args...)
     end
 end
 
-null_cb(curl) = return nothing
-
 function set_opt_blocking(options::RequestOptions)
         o2 = deepcopy(options)
         o2.blocking = true

@@ -1,6 +1,7 @@
 push!(LOAD_PATH, "./src")
 
 using FTPClient
+using FactCheck
 using Base.Test
 using JavaCall
 
@@ -30,7 +31,13 @@ function set_command_response(request::String, code::Int64, reponse::String)
     @assert result == 1 "set_command_response failed"
 end
 
+function set_errors()
+    result = jcall(MockFTPServerJulia, "setErrors", jboolean, ())
+    @assert result == 1 "set_errors failed"
+end
+
 host = "localhost"
+original_host = host
 user = "test"
 pswd = "test"
 home_dir = "/"
@@ -85,7 +92,7 @@ else
     set_file("/" * directory_name * "/" * file_name2, file_contents)
     set_command_response("AUTH", 230, "Login successful.")
     port = start_server()
-    host = "$host:$port"
+    host = "$original_host:$port"
 
     # Note: If LibCURL complains that the server doesn't listen it probably means that
     # the MockFtpServer isn't ready to accept connections yet.
@@ -98,10 +105,21 @@ else
         include(fp)
     end
 
+    # Basic commands will now error
+    set_errors()
+
+    test_file = "test_client_errors.jl"
+    fp = joinpath(dirname(@__FILE__), test_file)
+    println("$fp ...\n")
+    include(fp)
+
     stop_server()
     JavaCall.destroy()
+
 end
 
 # Done testing
 rm(upload_file)
 
+# Throws errors when a @fact failed a test.
+exitstatus()

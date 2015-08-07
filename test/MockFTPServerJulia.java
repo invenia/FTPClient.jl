@@ -1,9 +1,13 @@
 import org.mockftpserver.core.command.StaticReplyCommandHandler;
+import org.mockftpserver.core.command.CommandNames;
 import org.mockftpserver.fake.filesystem.FileEntry;
 import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 import org.mockftpserver.fake.FakeFtpServer;
 import org.mockftpserver.fake.UserAccount;
+import org.mockftpserver.stub.command.ListCommandHandler;
+import org.mockftpserver.stub.command.RetrCommandHandler;
+import org.mockftpserver.stub.command.StorCommandHandler;
 
 public class MockFTPServerJulia
 {
@@ -28,6 +32,21 @@ public class MockFTPServerJulia
     {
         StaticReplyCommandHandler featCommandHandler = new StaticReplyCommandHandler(code, response);
         fakeFtpServer.setCommandHandler(request, featCommandHandler);
+
+        return true;
+    }
+
+    public static boolean setErrors()
+    {
+        ListCommandHandler listCommandHandler = new ListCommandHandler();
+        RetrCommandHandler retrCommandHandler = new RetrCommandHandler();
+        StorCommandHandler storCommandHandler = new StorCommandHandler();
+        listCommandHandler.setFinalReplyCode(550);
+        retrCommandHandler.setFinalReplyCode(550);
+        storCommandHandler.setFinalReplyCode(550);
+        fakeFtpServer.setCommandHandler(CommandNames.RETR, retrCommandHandler);
+        fakeFtpServer.setCommandHandler(CommandNames.LIST, listCommandHandler);
+        fakeFtpServer.setCommandHandler(CommandNames.STOR, storCommandHandler);
 
         return true;
     }
