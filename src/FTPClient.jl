@@ -3,6 +3,13 @@ module FTPClient
 import Base: convert, show, open, mkdir, ascii, mv
 import Base: readdir, cd, pwd, rm, close, download
 
+type FTPClientError <: Exception
+       msg::String
+       lib_curl_error::Uint32
+end
+
+Base.showerror(io::IO, err::FTPClientError) = print(io, err.msg, " :: LibCURL error #", err.lib_curl_error)
+
 export RequestOptions,
        Response,
        ConnContext,
@@ -20,7 +27,8 @@ export RequestOptions,
        non_block_download,
        get_download_resp,
        non_block_upload,
-       get_upload_resp
+       get_upload_resp,
+       FTPClientError
 
 include("FTPC.jl")
 include("FTPObject.jl")

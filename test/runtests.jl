@@ -36,6 +36,23 @@ function set_errors()
     @assert result == 1 "set_errors failed"
 end
 
+function set_list_error()
+    result = jcall(MockFTPServerJulia, "setListError", jboolean, ())
+    @assert result == 1 "set_list_error failed"
+end
+
+function set_type_error()
+    result = jcall(MockFTPServerJulia, "setTypeError", jboolean, ())
+    @assert result == 1 "set_type_error failed"
+end
+
+function undo_errors()
+    result = jcall(MockFTPServerJulia, "undoErrors", jboolean, ())
+    @assert result == 1 "undo_errors failed"
+end
+
+new_file = "new_name.txt"
+testdir = "testdir"
 host = "localhost"
 original_host = host
 user = "test"
