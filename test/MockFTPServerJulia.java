@@ -5,9 +5,12 @@ import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 import org.mockftpserver.fake.FakeFtpServer;
 import org.mockftpserver.fake.UserAccount;
-import org.mockftpserver.stub.command.ListCommandHandler;
+import org.mockftpserver.stub.command.NlstCommandHandler;
 import org.mockftpserver.stub.command.RetrCommandHandler;
 import org.mockftpserver.stub.command.StorCommandHandler;
+import org.mockftpserver.stub.command.ListCommandHandler;
+import org.mockftpserver.stub.command.PwdCommandHandler;
+import org.mockftpserver.stub.command.TypeCommandHandler;
 
 public class MockFTPServerJulia
 {
@@ -36,17 +39,56 @@ public class MockFTPServerJulia
         return true;
     }
 
-    public static boolean setErrors()
+    public static boolean undoErrors()
     {
-        ListCommandHandler listCommandHandler = new ListCommandHandler();
+        NlstCommandHandler nlstCommandHandler = new NlstCommandHandler();
         RetrCommandHandler retrCommandHandler = new RetrCommandHandler();
         StorCommandHandler storCommandHandler = new StorCommandHandler();
-        listCommandHandler.setFinalReplyCode(550);
+        PwdCommandHandler pwdCommandHandler = new PwdCommandHandler();
+        ListCommandHandler listCommandHandler = new ListCommandHandler();
+        TypeCommandHandler typeCommandHandler = new TypeCommandHandler();
+        fakeFtpServer.setCommandHandler(CommandNames.NLST, nlstCommandHandler);
+        fakeFtpServer.setCommandHandler(CommandNames.RETR, retrCommandHandler);
+        fakeFtpServer.setCommandHandler(CommandNames.STOR, storCommandHandler);
+        fakeFtpServer.setCommandHandler(CommandNames.PWD, pwdCommandHandler);
+        fakeFtpServer.setCommandHandler(CommandNames.LIST, listCommandHandler);
+        fakeFtpServer.setCommandHandler(CommandNames.TYPE, typeCommandHandler);
+
+        return true;
+    }
+
+    public static boolean setErrors()
+    {
+        NlstCommandHandler nlstCommandHandler = new NlstCommandHandler();
+        RetrCommandHandler retrCommandHandler = new RetrCommandHandler();
+        StorCommandHandler storCommandHandler = new StorCommandHandler();
+        PwdCommandHandler pwdCommandHandler = new PwdCommandHandler();
+        nlstCommandHandler.setFinalReplyCode(550);
         retrCommandHandler.setFinalReplyCode(550);
         storCommandHandler.setFinalReplyCode(550);
+        pwdCommandHandler.setReplyCode(451);
+        fakeFtpServer.setCommandHandler(CommandNames.NLST, nlstCommandHandler);
         fakeFtpServer.setCommandHandler(CommandNames.RETR, retrCommandHandler);
-        fakeFtpServer.setCommandHandler(CommandNames.LIST, listCommandHandler);
         fakeFtpServer.setCommandHandler(CommandNames.STOR, storCommandHandler);
+        fakeFtpServer.setCommandHandler(CommandNames.PWD, pwdCommandHandler);
+
+        return true;
+    }
+
+    public static boolean setListError()
+    {
+        ListCommandHandler listCommandHandler = new ListCommandHandler();
+        listCommandHandler.setFinalReplyCode(550);
+        fakeFtpServer.setCommandHandler(CommandNames.LIST, listCommandHandler);
+
+        return true;
+    }
+
+    public static boolean setTypeError()
+    {
+        TypeCommandHandler typeCommandHandler = new TypeCommandHandler();
+        typeCommandHandler.setReplyCode(451);
+        fakeFtpServer.setCommandHandler(CommandNames.TYPE, typeCommandHandler);
 
         return true;
     }
