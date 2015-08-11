@@ -2,7 +2,7 @@
 function process_response(resp)
     if isa(resp, RemoteRef)
         resp = fetch(resp)
-        if(isa(resp, FTPClientError))
+        if(isa(resp, RemoteException))
             throw(resp)
         end
     end
