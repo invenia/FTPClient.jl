@@ -4,9 +4,6 @@ using FTPClient
 # FTPObject
 ###############################################################################
 
-testdir = "testdir"
-new_file = "new_name.txt"
-
 ftp_init()
 
 println("\nTest FTPObject with persistent connection:\n")
@@ -34,30 +31,16 @@ mkdir(ftp, testdir)
 println("\nTest 21 passed.\n$(ftp)")
 
 # test 22, try making a directory that already exists
-try
-    mkdir(ftp, testdir)
-catch e
-    if e.msg == "Failed to make directory '$(testdir)'."
-        println("\nTest 22 passed.\n$(ftp)")
-    else
-        rethrow(e)
-    end
-end
+@test_throws FTPClientError mkdir(ftp, testdir)
+println("\nTest 22 passed.\n$(ftp)")
 
 # test 23, change directory
 cd(ftp, testdir)
 println("\nTest 23 passed.\n$(ftp)")
 
 # test 24, try changing to a directory that doesn't exsit
-try
-    cd(ftp, "not_a_directory")
-catch e
-    if e.msg == "Failed to change directory."
-        println("\nTest 24 passed.\n$(ftp)")
-    else
-        rethrow(e)
-    end
-end
+@test_throws FTPClientError cd(ftp, "not_a_directory")
+println("\nTest 24 passed.\n$(ftp)")
 
 # test 25, go to parent directory
 cd(ftp, "..")
@@ -69,15 +52,8 @@ rmdir(ftp, testdir)
 println("\nTest 26 passed.\n$(ftp)")
 
 # test 27, try removing a directory that doesn't exists
-try
-    rmdir(ftp, testdir)
-catch e
-    if e.msg == "Failed to remove directory '$(testdir)'."
-        println("\nTest 27 passed.\n$(ftp)")
-    else
-        rethrow(e)
-    end
-end
+@test_throws FTPClientError rmdir(ftp, testdir)
+println("\nTest 27 passed.\n$(ftp)")
 
 # test 28, get current directory path
 path = pwd(ftp)
@@ -93,15 +69,8 @@ rm(ftp, new_file)
 println("\nTest 30 passed.\n$(ftp)")
 
 # test 31, try removing a file that doesn't exists
-try
-    rm(ftp, new_file)
-catch e
-    if e.msg == "Failed to remove '$(new_file)'."
-        println("\nTest 31 passed.\n$(ftp)")
-    else
-        rethrow(e)
-    end
-end
+@test_throws FTPClientError rm(ftp, new_file)
+println("\nTest 31 passed.\n$(ftp)")
 
 binary(ftp)
 println("\nTest 32 passed.\n$(ftp)")

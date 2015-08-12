@@ -135,7 +135,7 @@ macro ce_curl(f, args...)
         cc = $(esc(f))(ctxt.curl, $(args...))
 
         if(cc != CURLE_OK && cc != CURLE_FTP_COULDNT_RETR_FILE)
-            error(string($f) * "() failed: error $cc, " * bytestring(curl_easy_strerror(cc)))
+            throw(FTPClientError("", cc))
         end
     end
 end
@@ -368,7 +368,6 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
             p_rd = pointer_from_objref(rd)
             p_resp = pointer_from_objref(resp)
 
-
             command = "STOR " * file_name
             @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
@@ -387,13 +386,13 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
             @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
             @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(0)
 
-            close(file)
-
             return resp
 
         catch
             cleanup_easy_context(ctxt)
             rethrow()
+        finally
+            close(file)
         end
     else
         ctxt.options.blocking = true

@@ -2,6 +2,9 @@
 function process_response(resp)
     if isa(resp, RemoteRef)
         resp = fetch(resp)
+        if(isa(resp, RemoteException))
+            throw(resp)
+        end
     end
 
     return resp
@@ -16,14 +19,17 @@ type FTP
                     verify_peer=ver_peer, active_mode=act_mode,
                     username=user, passwd=pswd, hostname=host)
 
-        resp = ftp_connect(options)
+        try
+            resp = ftp_connect(options)
+        catch err
+            if(isa(err, FTPClientError))
+                err.msg = "Failed to connect."
+            end
+            rethrow()
+        end
         ctxt, resp = process_response(resp)
 
-        if resp.code == 226
-            new(ctxt)
-        else
-            error("Failed to connect to server.")
-        end
+        new(ctxt)
     end
 end
 
@@ -54,14 +60,19 @@ Download the file "file_name" from FTP server and return IOStream.
 If "save_path" is not specified, contents are written to and returned as IOBuffer.
 """ ->
 function download(ftp::FTP, file_name::String, save_path::String="")
-    resp = ftp_get(ftp.ctxt, file_name, save_path)
-    resp = process_response(resp)
 
-    if resp.code == 226
-        file = resp.body
-    else
-        error("Failed to download \'$file_name\'.")
+    try
+        resp = ftp_get(ftp.ctxt, file_name, save_path)
+    catch err
+        if(isa(err, FTPClientError))
+            err.msg = "Failed to download $file_name."
+        end
+        rethrow()
     end
+
+    resp = process_response(resp)
+    return resp.body
+
 end
 
 
@@ -78,13 +89,11 @@ end
 Get the response from non_block_download. Returns an IO object.
 """ ->
 function get_download_resp(ref)
+
     resp = process_response(ref)
 
-    if resp.code == 226
-        file = resp.body
-    else
-        error("Failed to download \'$file_name\'.")
-    end
+    return resp.body
+
 end
 
 
@@ -97,12 +106,18 @@ function upload(ftp::FTP, file_name::String, file=nothing)
         file = open(file_name)
     end
 
-    resp = ftp_put(ftp.ctxt, file_name, file)
-    resp = process_response(resp)
+    resp = nothing
 
-    if (resp.code != 226)
-        error("Failed to upload \'$file_name\'")
+    try
+        resp = ftp_put(ftp.ctxt, file_name, file)
+    catch err
+        if(isa(err, FTPClientError))
+            err.msg = "Failed to upload $file_name."
+        end
+        rethrow()
     end
+
+    resp = process_response(resp)
 end
 
 
@@ -123,11 +138,9 @@ end
 Process response form non_block_upload. Throws error if upload failed.
 """ ->
 function get_upload_resp(ref)
+
     resp = process_response(ref)
 
-    if (resp.code != 226)
-        error("Failed to upload \'$file_name\'")
-    end
 end
 
 
@@ -135,15 +148,22 @@ end
 Returns the contents of the current working directory of the FTP server.
 """ ->
 function readdir(ftp::FTP)
-    resp = ftp_command(ftp.ctxt, "LIST")
 
-    if resp.code == 226
-        dir = split(readall(resp.body), '\n')
-        dir = filter( x -> ~isempty(x), dir)
-        dir = [ split(line)[end] for line in dir ]
-    else
-        error("Failed to read directory.")
+    resp = nothing
+
+    try
+        resp = ftp_command(ftp.ctxt, "LIST")
+    catch err
+        if(isa(err, FTPClientError))
+            err.msg = "Failed to list directories."
+        end
+        rethrow()
     end
+
+    dir = split(readall(resp.body), '\n')
+    dir = filter( x -> ~isempty(x), dir)
+    dir = [ split(line)[end] for line in dir ]
+
 end
 
 
@@ -151,14 +171,17 @@ end
 Sets the current working directory of the FTP server to "dir".
 """ ->
 function cd(ftp::FTP, dir::String)
+
     if (~endswith(dir, "/"))
         dir *= "/"
     end
+
     resp = ftp_command(ftp.ctxt, "CWD $dir")
 
-    if resp.code != 250
-        error("Failed to change directory.")
+    if(resp.code != 250)
+        throw(FTPClientError("Failed to change to directory $dir. $resp.code", 0))
     end
+
 end
 
 
@@ -166,13 +189,15 @@ end
 Get the current working directory of the FTP server
 """ ->
 function pwd(ftp::FTP)
+
     resp = ftp_command(ftp.ctxt, "PWD")
 
-    if resp.code == 257
-        dir = split(resp.headers[end], '\"')[end-1]
-    else
-        error("Failed to get the current working directory.")
+    if(resp.code != 257)
+        throw(FTPClientError("Failed to get the current working directory. $resp.code", 0))
     end
+
+    dir = split(resp.headers[end], '\"')[end-1]
+
 end
 
 
@@ -180,11 +205,13 @@ end
 Delete file "file_name" from FTP server.
 """ ->
 function rm(ftp::FTP, file_name::String)
+
     resp = ftp_command(ftp.ctxt, "DELE $file_name")
 
-    if resp.code != 250
-        error("Failed to remove \'$file_name\'.")
+    if(resp.code != 250)
+        throw(FTPClientError("Failed to remove $file_name. $resp.code", 0))
     end
+
 end
 
 
@@ -192,11 +219,13 @@ end
 Delete directory "dir_name" from FTP server.
 """ ->
 function rmdir(ftp::FTP, dir_name::String)
+
     resp = ftp_command(ftp.ctxt, "RMD $dir_name")
 
-    if resp.code != 250
-        error("Failed to remove directory \'$dir_name\'.")
+    if(resp.code != 250)
+        throw(FTPClientError("Failed to remove $dir_name. $resp.code", 0))
     end
+
 end
 
 
@@ -204,11 +233,13 @@ end
 Make directory "dir" on FTP server.
 """ ->
 function mkdir(ftp::FTP, dir::String)
+
     resp = ftp_command(ftp.ctxt, "MKD $dir")
 
-    if resp.code != 257
-        error("Failed to make directory \'$dir\'.")
+    if(resp.code != 257)
+        throw(FTPClientError("Failed to make $dir. $resp.code", 0))
     end
+
 end
 
 
@@ -216,17 +247,19 @@ end
 Move (rename) file "file_name" to "new_name" on FTP server.
 """ ->
 function mv(ftp::FTP, file_name::String, new_name::String)
+
     resp = ftp_command(ftp.ctxt, "RNFR $file_name")
 
-    if resp.code == 350
-        resp = ftp_command(ftp.ctxt, "RNTO $new_name")
-
-        if resp.code != 250
-            error("Failed to rename \'$file_name\'.")
-        end
-    else
-        error("Failed to rename \'$file_name\'.")
+    if(resp.code != 350)
+        throw(FTPClientError("Failed to move $file_name. $resp.code", 0))
     end
+
+    resp = ftp_command(ftp.ctxt, "RNTO $new_name")
+
+    if(resp.code != 250)
+        throw(FTPClientError("Failed to move $file_name. $resp.code", 0))
+    end
+
 end
 
 
@@ -234,11 +267,13 @@ end
 Set the transfer mode to binary.
 """ ->
 function binary(ftp::FTP)
+
     resp = ftp_command(ftp.ctxt, "TYPE I")
 
-    if resp.code != 200
-        error("Failed to switch to binary mode.")
+    if(resp.code != 200)
+        throw(FTPClientError("Failed to switch to binary mode. $resp.code", 0))
     end
+
 end
 
 
@@ -248,7 +283,8 @@ Set the transfer mode to ASCII.
 function ascii(ftp::FTP)
     resp = ftp_command(ftp.ctxt, "TYPE A")
 
-    if resp.code != 200
-        error("Failed to switch to ASCII mode.")
+    if(resp.code != 200)
+        throw(FTPClientError("Failed to switch to ascii mode. $resp.code", 0))
     end
+
 end
