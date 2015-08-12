@@ -90,16 +90,7 @@ Get the response from non_block_download. Returns an IO object.
 """ ->
 function get_download_resp(ref)
 
-    resp = nothing
-
-    try
-        resp = process_response(ref)
-    catch err
-        if(isa(err, FTPClientError))
-            err.msg = "Failed to download file."
-        end
-        rethrow()
-    end
+    resp = process_response(ref)
 
     return resp.body
 
@@ -148,14 +139,7 @@ Process response form non_block_upload. Throws error if upload failed.
 """ ->
 function get_upload_resp(ref)
 
-    try
-        resp = process_response(ref)
-    catch err
-        if(isa(err, FTPClientError))
-            err.msg = "Failed to upload."
-        end
-        rethrow()
-    end
+    resp = process_response(ref)
 
 end
 
@@ -267,13 +251,13 @@ function mv(ftp::FTP, file_name::String, new_name::String)
     resp = ftp_command(ftp.ctxt, "RNFR $file_name")
 
     if(resp.code != 350)
-        throw(FTPClientError("Failed to rename $file_name. $resp.code", 0))
+        throw(FTPClientError("Failed to move $file_name. $resp.code", 0))
     end
 
     resp = ftp_command(ftp.ctxt, "RNTO $new_name")
 
     if(resp.code != 250)
-        throw(FTPClientError("Failed to rename $file_name. $resp.code", 0))
+        throw(FTPClientError("Failed to move $file_name. $resp.code", 0))
     end
 
 end

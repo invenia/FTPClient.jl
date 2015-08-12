@@ -1,5 +1,21 @@
 ftp_init()
 
+facts("Test FTPClientError") do
+
+context("ftp_connect error") do
+
+    buff = IOBuffer()
+    msg = "This will go into the message"
+    lib_curl_error = 765
+    error = FTPClientError(msg, lib_curl_error)
+    showerror(buff, error)
+    seekstart(buff)
+    @fact "$msg :: LibCURL error #$lib_curl_error" --> readall(buff)
+
+end
+
+end
+
 facts("Testing for client failure in FTPC.jl") do
 
 context("ftp_connect error") do
@@ -96,7 +112,7 @@ end
 
 context("FTP object error when moving bad directories 2") do
     ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-    @fact_throws FTPClientError mv(ftp, test_file, "")
+    @fact_throws FTPClientError mv(ftp, file_name, "")
     close(ftp)
 end
 
