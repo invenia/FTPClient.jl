@@ -197,3 +197,8 @@ The ssl tests can be run if you have a local ftp server set up.
 - To run the tests using implicit security: `julia --color=yes test/runtests.jl true true <username> <password>`
 - To run the tests using explicit security: `julia --color=yes test/runtests.jl true false <username> <password>`
 
+### Code Coverage 
+
+There are parts of the code that are not executed when running the basic test. This is because the Mock Server does not support ssl and we cannot run effective tests for those lines of code.
+
+There are however separate tests for ssl. That requires setting up a local ftp server and following the steps above.
