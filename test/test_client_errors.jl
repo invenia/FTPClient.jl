@@ -39,9 +39,9 @@ context("FTP object error when downloading, blocking") do
 end
 
 context("FTP object error when downloading, non-blocking") do
-    ftp = FTP(ssl=false, block=false,  user=user, pswd=pswd, host=host)
+    ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
     ref = non_block_download(ftp, file_name)
-    @fact_throws FTPClientError get_download_resp(ref)
+    @fact_throws RemoteException get_download_resp(ref)
     close(ftp)
 end
 
@@ -52,9 +52,9 @@ context("FTP object error when uploading, blocking") do
 end
 
 context("FTP object error when uploading, non-blocking") do
-    ftp = FTP(ssl=false, block=false,  user=user, pswd=pswd, host=host)
+    ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
     ref = non_block_upload(ftp, upload_file)
-    @fact_throws FTPClientError get_upload_resp(ref)
+    @fact_throws RemoteException get_upload_resp(ref)
     close(ftp)
 end
 
