@@ -114,6 +114,7 @@ println("\nTest 39 passed.\n$(ftp)")
 # test 40, get directory list with space in name
 dir = readdir(ftp)
 @test dir == [dir_with_space, directory_name, upload_file, file_name]
+println("\nTest 40 passed.\n$(ftp)")
 
 # test 41, change to directory with spaces in name
 cd(ftp, dir_with_space)
