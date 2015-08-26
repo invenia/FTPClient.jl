@@ -4,6 +4,9 @@ using FTPClient
 # FTPObject
 ###############################################################################
 
+dir_with_space = "Dir name with space"
+file_with_space = "file with space.txt"
+space_file_contents = "test file with space.\n"
 ftp_init()
 
 println("\nTest FTPObject with persistent connection:\n")
@@ -103,6 +106,38 @@ println("\nTest 37 passed.\n$(ftp)")
 ref = non_block_upload(ftp, upload_file)
 get_upload_resp(ref)
 println("\nTest 38 passed.\n$(ftp)")
+
+# test 39, make a directory with spaces in name
+mkdir(ftp, dir_with_space)
+println("\nTest 39 passed.\n$(ftp)")
+
+# test 40, get directory list with space in name
+dir = readdir(ftp)
+@test dir == [dir_with_space, directory_name, upload_file, file_name]
+
+# test 41, change to directory with spaces in name
+cd(ftp, dir_with_space)
+println("\nTest 41 passed.\n$(ftp)")
+
+# test 42, upload file with space in name
+upload(ftp, file_with_space, IOBuffer(space_file_contents))
+println("\nTest 42 passed.\n$(ftp)")
+dir = readdir(ftp)
+@test dir == [file_with_space]
+
+# test 43, download file with space in name
+buff = download(ftp, file_with_space)
+@test readall(buff) == space_file_contents
+println("\nTest 43 passed.\n$(ftp)")
+
+# test 44, remove file with space in name
+rm(ftp, file_with_space)
+println("\nTest 44 passed.\n$(ftp)")
+
+# test 45, remove directory with space in name
+cd(ftp, "..")
+rmdir(ftp, dir_with_space)
+println("\nTest 45 passed.\n$(ftp)")
 
 close(ftp)
 ftp_cleanup()

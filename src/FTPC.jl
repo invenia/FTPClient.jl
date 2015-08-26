@@ -459,7 +459,7 @@ function ftp_command(ctxt::ConnContext, cmd::String)
 
         cmd = split(cmd)
         if (resp.code == 250 && cmd[1] == "CWD")
-            ctxt.url *= cmd[2]
+            ctxt.url *= join(cmd[2:end], ' ')
         end
 
         return resp

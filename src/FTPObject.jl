@@ -162,7 +162,7 @@ function readdir(ftp::FTP)
 
     dir = split(readall(resp.body), '\n')
     dir = filter( x -> ~isempty(x), dir)
-    dir = [ split(line)[end] for line in dir ]
+    dir = [ join(split(line)[9:end], ' ') for line in dir ]
 
 end
 
