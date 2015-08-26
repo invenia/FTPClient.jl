@@ -143,3 +143,5 @@ end
 end
 
 ftp_cleanup()
+
+println("FTPClientError tests passed.\n\n")
