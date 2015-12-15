@@ -1,4 +1,7 @@
+using Compat
+
 module FTPClient
+typealias RemoteRef Future
 
 import Base: convert, show, open, mkdir, ascii, mv
 import Base: readdir, cd, pwd, rm, close, download
