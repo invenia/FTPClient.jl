@@ -1,7 +1,10 @@
 using Compat
 
 module FTPClient
-typealias RemoteRef Future
+
+if VERSION.minor >= 5
+       typealias RemoteRef Future
+end
 
 import Base: convert, show, open, mkdir, ascii, mv
 import Base: readdir, cd, pwd, rm, close, download
