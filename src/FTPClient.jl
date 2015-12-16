@@ -1,8 +1,6 @@
-using Compat
-
 module FTPClient
 
-if VERSION.minor >= 5
+if VERSION >= v"0.5-"
        typealias RemoteRef Future
 end
 
