@@ -1,5 +1,9 @@
 module FTPClient
 
+if VERSION >= v"0.5-"
+       typealias RemoteRef Future
+end
+
 import Base: convert, show, open, mkdir, ascii, mv
 import Base: readdir, cd, pwd, rm, close, download
 
@@ -34,3 +38,4 @@ include("FTPC.jl")
 include("FTPObject.jl")
 
 end
+
