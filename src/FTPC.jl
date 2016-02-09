@@ -83,7 +83,7 @@ function write_file_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Void
     wd = unsafe_pointer_to_objref(p_wd)
     nbytes = sz * n
 
-    write(wd.buffer, buff, nbytes)
+    unsafe_write(wd.buffer, buff, nbytes)
 
     wd.bytes_recd += nbytes
 
@@ -185,7 +185,7 @@ function setup_easy_handle(options::RequestOptions)
     return ctxt
 end
 
-function cleanup_easy_context(ctxt::Union(ConnContext,Bool))
+function cleanup_easy_context(ctxt::Union{ConnContext,Bool})
     if isa(ctxt, ConnContext)
         if (ctxt.curl != C_NULL)
             curl_easy_cleanup(ctxt.curl)
@@ -247,7 +247,7 @@ function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptio
             cleanup_easy_context(ctxt)
         end
     else
-        return remotecall(myid(), ftp_get, file_name, set_opt_blocking(options), save_path)
+        return remotecall(ftp_get, myid(), file_name, set_opt_blocking(options), save_path)
     end
 end
 
@@ -305,7 +305,7 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         end
     else
         ctxt.options.blocking = true
-        return remotecall(myid(), ftp_get, ctxt, file_name, save_path)
+        return remotecall(ftp_get, myid(), ctxt, file_name, save_path)
     end
 end
 
@@ -339,7 +339,7 @@ function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=Re
             cleanup_easy_context(ctxt)
         end
     else
-        return remotecall(myid(), ftp_put, file_name, file, set_opt_blocking(options))
+        return remotecall(ftp_put, myid(), file_name, file, set_opt_blocking(options))
     end
 end
 
@@ -396,7 +396,7 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO)
         end
     else
         ctxt.options.blocking = true
-        return remotecall(myid(), ftp_put, ctxt, file_name, file)
+        return remotecall(ftp_put, myid(), ctxt, file_name, file)
     end
 end
 
@@ -501,7 +501,7 @@ function ftp_connect(options::RequestOptions=RequestOptions())
             rethrow()
         end
     else
-        return remotecall(myid(), ftp_connect, set_opt_blocking(options))
+        return remotecall(ftp_connect, myid(), set_opt_blocking(options))
     end
 end
 

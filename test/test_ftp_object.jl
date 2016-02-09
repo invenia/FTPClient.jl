@@ -22,7 +22,7 @@ println("\nTest 18 passed.\n$(ftp)")
 
 # test 19, download file from server
 buff = download(ftp, file_name)
-@test readall(buff) == file_contents
+@test readstring(buff) == file_contents
 println("\nTest 19 passed.\n$(ftp)")
 
 # test 20, upload a file
@@ -89,7 +89,7 @@ println("\nTest 34 passed.\n$(ftp)")
 
 # test 35, download file from server using blocking function
 buff = download(ftp, file_name)
-@test readall(buff) == file_contents
+@test readstring(buff) == file_contents
 println("\nTest 35 passed.\n$(ftp)")
 
 # test 36, upload a file using blocking function
@@ -99,7 +99,7 @@ println("\nTest 36 passed.\n$(ftp)")
 # test 37, download file from server using non-blocking function
 ref = non_block_download(ftp, file_name)
 buff = get_download_resp(ref)
-@test readall(buff) == file_contents
+@test readstring(buff) == file_contents
 println("\nTest 37 passed.\n$(ftp)")
 
 # test 38, upload a file using blocking function
@@ -128,7 +128,7 @@ dir = readdir(ftp)
 
 # test 43, download file with space in name
 buff = download(ftp, file_with_space)
-@test readall(buff) == space_file_contents
+@test readstring(buff) == space_file_contents
 println("\nTest 43 passed.\n$(ftp)")
 
 # test 44, remove file with space in name

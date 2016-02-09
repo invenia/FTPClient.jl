@@ -129,7 +129,7 @@ context("download a file to a specific path") do
     @fact resp.code --> 226
     @fact isfile(save_file) --> true
     file = open(save_file)
-    @fact readall(file) --> file_contents
+    @fact readstring(file) --> file_contents
     close(file)
     rm(save_file)
 
