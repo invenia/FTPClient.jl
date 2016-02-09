@@ -59,7 +59,7 @@ end
 Download the file "file_name" from FTP server and return IOStream.
 If "save_path" is not specified, contents are written to and returned as IOBuffer.
 """ ->
-function download(ftp::FTP, file_name::String, save_path::String="")
+function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString="")
 
     try
         resp = ftp_get(ftp.ctxt, file_name, save_path)
@@ -79,7 +79,7 @@ end
 @doc """
 Non-blocking download of file "file_name" from FTP server. Returns a RemoteRef.
 """ ->
-function non_block_download(ftp::FTP, file_name::String, save_path::String="")
+function non_block_download(ftp::FTP, file_name::AbstractString, save_path::AbstractString="")
     ftp.ctxt.options.blocking = false
     ref = ftp_get(ftp.ctxt, file_name, save_path)
 end
@@ -101,7 +101,7 @@ end
 Upload IO object "file" to the FTP server and save as "file_name".
 If "file" is not specified, the file "file_name" is uploaded.
 """ ->
-function upload(ftp::FTP, file_name::String, file=nothing)
+function upload(ftp::FTP, file_name::AbstractString, file=nothing)
     if file == nothing
         file = open(file_name)
     end
@@ -124,7 +124,7 @@ end
 @doc """
 Non-blocking upload of "file" to the FTP server. Returns a RemoteRef.
 """ ->
-function non_block_upload(ftp::FTP, file_name::String, file=nothing)
+function non_block_upload(ftp::FTP, file_name::AbstractString, file=nothing)
     if file == nothing
         file = open(file_name)
     end
@@ -170,7 +170,7 @@ end
 @doc """
 Sets the current working directory of the FTP server to "dir".
 """ ->
-function cd(ftp::FTP, dir::String)
+function cd(ftp::FTP, dir::AbstractString)
 
     if (~endswith(dir, "/"))
         dir *= "/"
@@ -204,7 +204,7 @@ end
 @doc """
 Delete file "file_name" from FTP server.
 """ ->
-function rm(ftp::FTP, file_name::String)
+function rm(ftp::FTP, file_name::AbstractString)
 
     resp = ftp_command(ftp.ctxt, "DELE $file_name")
 
@@ -218,7 +218,7 @@ end
 @doc """
 Delete directory "dir_name" from FTP server.
 """ ->
-function rmdir(ftp::FTP, dir_name::String)
+function rmdir(ftp::FTP, dir_name::AbstractString)
 
     resp = ftp_command(ftp.ctxt, "RMD $dir_name")
 
@@ -232,7 +232,7 @@ end
 @doc """
 Make directory "dir" on FTP server.
 """ ->
-function mkdir(ftp::FTP, dir::String)
+function mkdir(ftp::FTP, dir::AbstractString)
 
     resp = ftp_command(ftp.ctxt, "MKD $dir")
 
@@ -246,7 +246,7 @@ end
 @doc """
 Move (rename) file "file_name" to "new_name" on FTP server.
 """ ->
-function mv(ftp::FTP, file_name::String, new_name::String)
+function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
 
     resp = ftp_command(ftp.ctxt, "RNFR $file_name")
 

@@ -16,18 +16,18 @@ function stop_server()
     @assert result == 1 "stop_server failed"
 end
 
-function set_user(name::String, password::String, home_dir::String)
-    result = jcall(MockFTPServerJulia, "setUser", jboolean, (JString, JString, JString), name, password, home_dir)
+function set_user(name::AbstractString, password::AbstractString, home_dir::AbstractString)
+    result = jcall(MockFTPServerJulia, "setUser", jboolean, (JAbstractString, JAbstractString, JAbstractString), name, password, home_dir)
     @assert result == 1 "set_user failed"
 end
 
-function set_file(name::String, content::String)
-    result = jcall(MockFTPServerJulia, "setFile", jboolean, (JString, JString), name, content)
+function set_file(name::AbstractString, content::AbstractString)
+    result = jcall(MockFTPServerJulia, "setFile", jboolean, (JAbstractString, JAbstractString), name, content)
     @assert result == 1 "set_file failed"
 end
 
-function set_command_response(request::String, code::Int64, reponse::String)
-    result = jcall(MockFTPServerJulia, "setCommandResponse", jboolean, (JString, jint, JString,), request, code, reponse)
+function set_command_response(request::AbstractString, code::Int64, reponse::AbstractString)
+    result = jcall(MockFTPServerJulia, "setCommandResponse", jboolean, (JAbstractString, jint, JAbstractString,), request, code, reponse)
     @assert result == 1 "set_command_response failed"
 end
 

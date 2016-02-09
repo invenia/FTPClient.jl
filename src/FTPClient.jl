@@ -8,8 +8,8 @@ import Base: convert, show, open, mkdir, ascii, mv
 import Base: readdir, cd, pwd, rm, close, download
 
 type FTPClientError <: Exception
-       msg::String
-       lib_curl_error::Uint32
+       msg::AbstractString
+       lib_curl_error::UInt32
 end
 
 Base.showerror(io::IO, err::FTPClientError) = print(io, err.msg, " :: LibCURL error #", err.lib_curl_error)
