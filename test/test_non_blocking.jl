@@ -52,7 +52,7 @@ context("Changed directory and get file") do
     rcall = ftp_connect(options)
     ctxt, resp = fetch(rcall)
     @fact resp.code --> 226
-    text = readstring(resp.body)
+    @compat text = readstring(resp.body)
     for expected in expected_list
         @fact contains(text, expected) --> true "$expected is not in text\n$text"
     end

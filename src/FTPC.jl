@@ -22,9 +22,9 @@ type RequestOptions
 
         if url == nothing
             if implicit
-                url = "ftps://" * AbstractString(hostname) * "/"
+                url = "ftps://" * string(hostname) * "/"
             else
-                url = "ftp://"* AbstractString(hostname) * "/"
+                url = "ftp://"* string(hostname) * "/"
             end
         end
 

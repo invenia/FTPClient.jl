@@ -27,7 +27,7 @@ function set_file(name::AbstractString, content::AbstractString)
     @assert result == 1 "set_file failed"
 end
 
-function set_command_response(request::AbstractString, code::Int64, reponse::AbstractString)
+function set_command_response(request::AbstractString, code::Integer, reponse::AbstractString)
     result = jcall(MockFTPServerJulia, "setCommandResponse", jboolean, (JString, jint, JString,), request, code, reponse)
     @assert result == 1 "set_command_response failed"
 end
