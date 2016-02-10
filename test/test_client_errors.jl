@@ -10,7 +10,7 @@ context("ftp_connect error") do
     error = FTPClientError(msg, lib_curl_error)
     showerror(buff, error)
     seekstart(buff)
-    @fact "$msg :: LibCURL error #$lib_curl_error" --> readstring(buff)
+    @compat @fact "$msg :: LibCURL error #$lib_curl_error" --> readstring(buff)
 
 end
 

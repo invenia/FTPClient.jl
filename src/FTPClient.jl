@@ -4,6 +4,8 @@ using Compat
 
 if VERSION >= v"0.5-"
        typealias RemoteRef Future
+else
+       typealias unsafe_write write
 end
 
 import Base: convert, show, open, mkdir, ascii, mv

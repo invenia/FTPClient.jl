@@ -4,6 +4,7 @@ using FTPClient
 using FactCheck
 using Base.Test
 using JavaCall
+using Compat
 
 function start_server()
     port = jcall(MockFTPServerJulia, "setUp", jint, ())
