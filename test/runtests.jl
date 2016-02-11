@@ -4,6 +4,7 @@ using FTPClient
 using FactCheck
 using Base.Test
 using JavaCall
+using Compat
 
 function start_server()
     port = jcall(MockFTPServerJulia, "setUp", jint, ())
@@ -16,17 +17,17 @@ function stop_server()
     @assert result == 1 "stop_server failed"
 end
 
-function set_user(name::String, password::String, home_dir::String)
+function set_user(name::AbstractString, password::AbstractString, home_dir::AbstractString)
     result = jcall(MockFTPServerJulia, "setUser", jboolean, (JString, JString, JString), name, password, home_dir)
     @assert result == 1 "set_user failed"
 end
 
-function set_file(name::String, content::String)
+function set_file(name::AbstractString, content::AbstractString)
     result = jcall(MockFTPServerJulia, "setFile", jboolean, (JString, JString), name, content)
     @assert result == 1 "set_file failed"
 end
 
-function set_command_response(request::String, code::Int64, reponse::String)
+function set_command_response(request::AbstractString, code::Integer, reponse::AbstractString)
     result = jcall(MockFTPServerJulia, "setCommandResponse", jboolean, (JString, jint, JString,), request, code, reponse)
     @assert result == 1 "set_command_response failed"
 end

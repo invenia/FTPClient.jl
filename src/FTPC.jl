@@ -10,10 +10,10 @@ type RequestOptions
     ssl::Bool
     verify_peer::Bool
     active_mode::Bool
-    username::String
-    passwd::String
-    url::String
-    hostname::String
+    username::AbstractString
+    passwd::AbstractString
+    url::AbstractString
+    hostname::AbstractString
     reset_blocking::Bool
 
     function RequestOptions(; blocking=true, implicit=false, ssl=false,
@@ -22,9 +22,9 @@ type RequestOptions
 
         if url == nothing
             if implicit
-                url = "ftps://" * String(hostname) * "/"
+                url = "ftps://" * string(hostname) * "/"
             else
-                url = "ftp://"* String(hostname) * "/"
+                url = "ftp://"* string(hostname) * "/"
             end
         end
 
@@ -34,12 +34,12 @@ end
 
 type Response
     body::IO
-    headers::Vector{String}
+    headers::Vector{AbstractString}
     code::UInt
     total_time::Float64
     bytes_recd::Int
 
-    Response() = new(IOBuffer(), String[], 0, 0.0, 0)
+    Response() = new(IOBuffer(), AbstractString[], 0, 0.0, 0)
 end
 
 function show(io::IO, o::Response)
@@ -66,7 +66,7 @@ end
 
 type ConnContext
     curl::Ptr{CURL}
-    url::String
+    url::AbstractString
     options::RequestOptions
     close_ostream::Bool
 
@@ -78,21 +78,21 @@ end
 # Callbacks
 ##############################
 
-function write_file_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Void})
+function write_file_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Void})
     # println("@write_file_cb")
     wd = unsafe_pointer_to_objref(p_wd)
     nbytes = sz * n
 
-    write(wd.buffer, buff, nbytes)
+    unsafe_write(wd.buffer, buff, nbytes)
 
     wd.bytes_recd += nbytes
 
     nbytes::Csize_t
 end
 
-c_write_file_cb = cfunction(write_file_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
+c_write_file_cb = cfunction(write_file_cb, Csize_t, (Ptr{UInt8}, Csize_t, Csize_t, Ptr{Void}))
 
-function header_command_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_resp::Ptr{Void})
+function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Ptr{Void})
     # println("@header_cb")
     resp = unsafe_pointer_to_objref(p_resp)
     nbytes = sz * n
@@ -104,7 +104,7 @@ function header_command_cb(buff::Ptr{Uint8}, sz::Csize_t, n::Csize_t, p_resp::Pt
     nbytes::Csize_t
 end
 
-c_header_command_cb = cfunction(header_command_cb, Csize_t, (Ptr{Uint8}, Csize_t, Csize_t, Ptr{Void}))
+c_header_command_cb = cfunction(header_command_cb, Csize_t, (Ptr{UInt8}, Csize_t, Csize_t, Ptr{Void}))
 
 function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_rd::Ptr{Void})
     # println("@curl_read_cb")
@@ -113,8 +113,8 @@ function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_rd::Ptr{Void})
     breq::Csize_t = rd.sz - rd.offset
     b2copy = bavail > breq ? breq : bavail
 
-    b_read = read(rd.src, Uint8, b2copy)
-    ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, Uint), out, b_read, b2copy)
+    b_read = read(rd.src, UInt8, b2copy)
+    ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, UInt), out, b_read, b2copy)
 
     rd.offset += b2copy
 
@@ -185,7 +185,7 @@ function setup_easy_handle(options::RequestOptions)
     return ctxt
 end
 
-function cleanup_easy_context(ctxt::Union(ConnContext,Bool))
+function cleanup_easy_context(ctxt::Union{ConnContext,Bool})
     if isa(ctxt, ConnContext)
         if (ctxt.curl != C_NULL)
             curl_easy_cleanup(ctxt.curl)
@@ -235,7 +235,7 @@ Download file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(file_name::String, options::RequestOptions=RequestOptions(), save_path::String="")
+function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptions(), save_path::AbstractString="")
     if options.blocking
         ctxt = false
         try
@@ -247,7 +247,7 @@ function ftp_get(file_name::String, options::RequestOptions=RequestOptions(), sa
             cleanup_easy_context(ctxt)
         end
     else
-        return remotecall(myid(), ftp_get, file_name, set_opt_blocking(options), save_path)
+        return remotecall(ftp_get, myid(), file_name, set_opt_blocking(options), save_path)
     end
 end
 
@@ -260,7 +260,7 @@ Download file with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
+function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString="")
     if ctxt.options.blocking
         try
             ctxt.options.blocking = ctxt.options.reset_blocking
@@ -305,7 +305,7 @@ function ftp_get(ctxt::ConnContext, file_name::String, save_path::String="")
         end
     else
         ctxt.options.blocking = true
-        return remotecall(myid(), ftp_get, ctxt, file_name, save_path)
+        return remotecall(ftp_get, myid(), ctxt, file_name, save_path)
     end
 end
 
@@ -325,7 +325,7 @@ Upload file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(file_name::String, file::IO, options::RequestOptions=RequestOptions())
+function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions())
     if options.blocking
         ctxt = false
         try
@@ -339,7 +339,7 @@ function ftp_put(file_name::String, file::IO, options::RequestOptions=RequestOpt
             cleanup_easy_context(ctxt)
         end
     else
-        return remotecall(myid(), ftp_put, file_name, file, set_opt_blocking(options))
+        return remotecall(ftp_put, myid(), file_name, file, set_opt_blocking(options))
     end
 end
 
@@ -352,7 +352,7 @@ Upload file with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
+function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO)
     if ctxt.options.blocking
         try
             ctxt.options.blocking = ctxt.options.reset_blocking
@@ -396,7 +396,7 @@ function ftp_put(ctxt::ConnContext, file_name::String, file::IO)
         end
     else
         ctxt.options.blocking = true
-        return remotecall(myid(), ftp_put, ctxt, file_name, file)
+        return remotecall(ftp_put, myid(), ctxt, file_name, file)
     end
 end
 
@@ -414,7 +414,7 @@ Pass FTP command with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_command(cmd::String, options::RequestOptions=RequestOptions())
+function ftp_command(cmd::AbstractString, options::RequestOptions=RequestOptions())
     ctxt = false
     try
         ctxt = setup_easy_handle(options)
@@ -434,7 +434,7 @@ Pass FTP command with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_command(ctxt::ConnContext, cmd::String)
+function ftp_command(ctxt::ConnContext, cmd::AbstractString)
     try
         resp = Response()
         wd = WriteData()
@@ -501,7 +501,7 @@ function ftp_connect(options::RequestOptions=RequestOptions())
             rethrow()
         end
     else
-        return remotecall(myid(), ftp_connect, set_opt_blocking(options))
+        return remotecall(ftp_connect, myid(), set_opt_blocking(options))
     end
 end
 
