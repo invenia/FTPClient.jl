@@ -2,7 +2,12 @@ push!(LOAD_PATH, "./src")
 
 using FTPClient
 using FactCheck
-using Base.Test
+if VERSION >= v"0.5-"
+    using Base.Test
+else
+    using BaseTestNext
+    const Test = BaseTestNext
+end
 using JavaCall
 using Compat
 
