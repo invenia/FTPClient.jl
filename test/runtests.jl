@@ -27,6 +27,11 @@ function set_file(name::AbstractString, content::AbstractString)
     @assert result == 1 "set_file failed"
 end
 
+function set_byte_file(name::AbstractString, content::AbstractString)
+    result = jcall(MockFTPServerJulia, "setByteFile", jboolean, (JString, JString), name, content)
+    @assert result == 1 "set_byte_file failed"
+end
+
 function set_command_response(request::AbstractString, code::Integer, reponse::AbstractString)
     result = jcall(MockFTPServerJulia, "setCommandResponse", jboolean, (JString, jint, JString,), request, code, reponse)
     @assert result == 1 "set_command_response failed"
@@ -63,6 +68,8 @@ file_name = "test_download.txt"
 file_name2 = "test_download2.txt"
 directory_name = "test_directory"
 file_contents = "hello, world"
+byte_file_contents = string(hex(rand(UInt64)), "0D0A", hex(rand(UInt64))) # This might not work in windows.
+byte_file_name = randstring(20)
 upload_file = "test_upload.txt"
 f =  open(upload_file, "w")
 write(f, "Test file to upload.\n")
@@ -108,6 +115,7 @@ else
     set_user(user, pswd, home_dir)
     set_file("/" * file_name, file_contents)
     set_file("/" * directory_name * "/" * file_name2, file_contents)
+    set_byte_file("/" * byte_file_name, byte_file_contents)
     set_command_response("AUTH", 230, "Login successful.")
     port = start_server()
     host = "$original_host:$port"

@@ -68,6 +68,7 @@ ftp_close_connection(ctxt::ConnContext)
         username::String
         passwd::String
         url::String
+        binary_mode::Bool
     end
     ```
     - `blocking`: default is true
@@ -75,11 +76,12 @@ ftp_close_connection(ctxt::ConnContext)
     - `ssl`: use FTPS, default is false
     - `verify_peer`: verify authenticity of peer's certificate, default is true
     - `active_mode`: use active mode to establish data connection, default is false
+    - `binary_mode`: used to tell the client to download files in binary mode, default is false
 
 
 #### FTPObject functions
 ```julia
-FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="")
+FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=false)
 close(ftp::FTP)
 download(ftp::FTP, file_name::String, save_path::String="")
 upload(ftp::FTP, file_name::String, file=nothing)
@@ -197,7 +199,15 @@ The ssl tests can be run if you have a local ftp server set up.
 - To run the tests using implicit security: `julia --color=yes test/runtests.jl true true <username> <password>`
 - To run the tests using explicit security: `julia --color=yes test/runtests.jl true false <username> <password>`
 
-### Code Coverage 
+#### 0.5 Issues
+
+[JavaCall.jl is not working in 0.5](https://github.com/aviks/JavaCall.jl/pull/30). If you want to be able to run tests, you need to get JavaCall.jl by running
+```julia
+Pkg.clone("https://github.com/samuel-massinon-invenia/JavaCall.jl.git")
+Pkg.checkout("JavaCall", "pull-request/bf8b4987")
+```
+
+### Code Coverage
 
 There are parts of the code that are not executed when running the basic test. This is because the Mock Server does not support ssl and we cannot run effective tests for those lines of code.
 

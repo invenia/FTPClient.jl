@@ -14,10 +14,10 @@ end
 type FTP
     ctxt::ConnContext
 
-    function FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="")
+    function FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=false)
         options = RequestOptions(blocking=block, implicit=implt, ssl=ssl,
                     verify_peer=ver_peer, active_mode=act_mode,
-                    username=user, passwd=pswd, hostname=host)
+                    username=user, passwd=pswd, hostname=host, binary_mode=binary_mode)
 
         try
             resp = ftp_connect(options)
@@ -268,6 +268,7 @@ Set the transfer mode to binary.
 """ ->
 function binary(ftp::FTP)
 
+    ftp.ctxt.options.binary_mode = true
     resp = ftp_command(ftp.ctxt, "TYPE I")
 
     if(resp.code != 200)
@@ -281,6 +282,8 @@ end
 Set the transfer mode to ASCII.
 """ ->
 function ascii(ftp::FTP)
+
+    ftp.ctxt.options.binary_mode = false
     resp = ftp_command(ftp.ctxt, "TYPE A")
 
     if(resp.code != 200)

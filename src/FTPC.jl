@@ -15,10 +15,11 @@ type RequestOptions
     url::AbstractString
     hostname::AbstractString
     reset_blocking::Bool
+    binary_mode::Bool
 
     function RequestOptions(; blocking=true, implicit=false, ssl=false,
             verify_peer=true, active_mode=false, username="",
-            passwd="", url=nothing, hostname="localhost")
+            passwd="", url=nothing, hostname="localhost", binary_mode=false)
 
         if url == nothing
             if implicit
@@ -28,7 +29,7 @@ type RequestOptions
             end
         end
 
-        new(blocking, implicit, ssl, verify_peer, active_mode, username, passwd, url, hostname, blocking)
+        new(blocking, implicit, ssl, verify_peer, active_mode, username, passwd, url, hostname, blocking, binary_mode)
     end
 end
 
@@ -275,7 +276,14 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
             p_wd = pointer_from_objref(wd)
             p_resp = pointer_from_objref(resp)
 
-            command = "RETR " * file_name
+            if ctxt.options.binary_mode
+                # We need to switch the url to point to the file directly
+                @ce_curl curl_easy_setopt CURLOPT_URL ctxt.options.url * file_name
+                command = "TYPE I" # means switch to binary
+            else
+                command = "RETR " * file_name
+            end
+
             @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
             @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
             @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
@@ -294,6 +302,11 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
                 seekstart(wd.buffer)
             end
 
+            if ctxt.options.binary_mode
+                # We need to switch it back to the original url
+                @ce_curl curl_easy_setopt CURLOPT_URL ctxt.options.url
+            end
+
             resp.bytes_recd = wd.bytes_recd
             resp.body = wd.buffer
 
@@ -308,7 +321,6 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         return remotecall(ftp_get, myid(), ctxt, file_name, save_path)
     end
 end
-
 
 ##############################
 # PUT

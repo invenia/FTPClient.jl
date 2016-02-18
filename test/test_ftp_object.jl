@@ -17,7 +17,8 @@ println("\nTest 17 passed.\n$(ftp)")
 
 # test 18, get a list of directory's contents
 dir = readdir(ftp)
-@test dir == ["test_directory","test_upload.txt","test_download.txt"]
+# Check if there are any differences
+@test setdiff(dir, ["test_directory",byte_file_name,"test_upload.txt","test_download.txt"]) == Array{ASCIIString,1}()
 println("\nTest 18 passed.\n$(ftp)")
 
 # test 19, download file from server
@@ -113,7 +114,8 @@ println("\nTest 39 passed.\n$(ftp)")
 
 # test 40, get directory list with space in name
 dir = readdir(ftp)
-@test dir == [dir_with_space, directory_name, upload_file, file_name]
+# Check if there are any differences
+@test setdiff(dir, [dir_with_space, directory_name, byte_file_name, upload_file, file_name]) == Array{ASCIIString,1}()
 println("\nTest 40 passed.\n$(ftp)")
 
 # test 41, change to directory with spaces in name
