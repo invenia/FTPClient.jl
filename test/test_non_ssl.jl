@@ -140,7 +140,7 @@ end
             ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host, binary_mode=false)
             resp = ftp_get(byte_file_name, ftp_options)
             bytes = read(resp.body)
-            @test bytes != hex2bytes(byte_file_contents)
+            @unix_only @test bytes != hex2bytes(byte_file_contents)
         end
         @testset "it is the same file when downloading in binary mode" begin
             ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host, binary_mode=true)
@@ -155,7 +155,7 @@ end
             ctxt, resp = ftp_connect(ftp_options)
             resp = ftp_get(ctxt, byte_file_name)
             bytes = read(resp.body)
-            @test bytes != hex2bytes(byte_file_contents)
+            @unix_only @test bytes != hex2bytes(byte_file_contents)
         end
         @testset "it is the same file when downloading in binary mode" begin
             ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host, binary_mode=true)
@@ -170,7 +170,7 @@ end
             ftp = FTP(user=user, pswd=pswd, host=host, binary_mode=false)
             buff = download(ftp, byte_file_name)
             bytes = read(buff)
-            @test bytes != hex2bytes(byte_file_contents)
+            @unix_only @test bytes != hex2bytes(byte_file_contents)
         end
         @testset "it is the same file when downloading in binary mode" begin
             ftp = FTP(user=user, pswd=pswd, host=host, binary_mode=true)
@@ -187,7 +187,7 @@ end
         binary(ftp)
         buff = download(ftp, byte_file_name)
         bytes = read(buff)
-        @test bytes == hex2bytes(byte_file_contents)
+        @unix_only @test bytes == hex2bytes(byte_file_contents)
         ascii(ftp)
         buff = download(ftp, byte_file_name)
         bytes = read(buff)
