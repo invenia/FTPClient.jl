@@ -102,7 +102,9 @@ Upload IO object "file" to the FTP server and save as "file_name".
 If "file" is not specified, the file "file_name" is uploaded.
 """ ->
 function upload(ftp::FTP, file_name::AbstractString, file=nothing)
+    close_file = false
     if file == nothing
+        close_file = true
         file = open(file_name)
     end
 
@@ -115,9 +117,14 @@ function upload(ftp::FTP, file_name::AbstractString, file=nothing)
             err.msg = "Failed to upload $file_name."
         end
         rethrow()
+    finally
+        resp = process_response(resp)
+        if close_file
+            close(file)
+        end
     end
 
-    resp = process_response(resp)
+    return resp
 end
 
 
@@ -131,6 +138,8 @@ function non_block_upload(ftp::FTP, file_name::AbstractString, file=nothing)
 
     ftp.ctxt.options.blocking = false
     ref = ftp_put(ftp.ctxt, file_name, file)
+
+    return ref
 end
 
 
