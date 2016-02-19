@@ -183,15 +183,15 @@ end
         ftp = FTP(user=user, pswd=pswd, host=host, binary_mode=false)
         buff = download(ftp, byte_file_name)
         bytes = read(buff)
-        @test bytes != hex2bytes(byte_file_contents)
+        @unix_only @test bytes != hex2bytes(byte_file_contents)
         binary(ftp)
         buff = download(ftp, byte_file_name)
         bytes = read(buff)
-        @unix_only @test bytes == hex2bytes(byte_file_contents)
+        @test bytes == hex2bytes(byte_file_contents)
         ascii(ftp)
         buff = download(ftp, byte_file_name)
         bytes = read(buff)
-        @test bytes != hex2bytes(byte_file_contents)
+        @unix_only @test bytes != hex2bytes(byte_file_contents)
     end
 end
 
