@@ -69,8 +69,10 @@ end
 
 context("FTP object error when uploading, non-blocking") do
     ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-    ref = non_block_upload(ftp, upload_file)
+    file = open(upload_file)
+    ref = non_block_upload(ftp, upload_file, file)
     @fact_throws RemoteException get_upload_resp(ref)
+    close(file)
     close(ftp)
 end
 

@@ -104,8 +104,10 @@ buff = get_download_resp(ref)
 println("\nTest 37 passed.\n$(ftp)")
 
 # test 38, upload a file using blocking function
-ref = non_block_upload(ftp, upload_file)
+file = open(upload_file)
+ref = non_block_upload(ftp, upload_file, file)
 get_upload_resp(ref)
+close(file)
 println("\nTest 38 passed.\n$(ftp)")
 
 # test 39, make a directory with spaces in name

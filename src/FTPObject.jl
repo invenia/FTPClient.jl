@@ -131,11 +131,7 @@ end
 @doc """
 Non-blocking upload of "file" to the FTP server. Returns a RemoteRef.
 """ ->
-function non_block_upload(ftp::FTP, file_name::AbstractString, file=nothing)
-    if file == nothing
-        file = open(file_name)
-    end
-
+function non_block_upload(ftp::FTP, file_name::AbstractString, file::IO)
     ftp.ctxt.options.blocking = false
     ref = ftp_put(ftp.ctxt, file_name, file)
 
