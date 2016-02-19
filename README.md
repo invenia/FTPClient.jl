@@ -212,3 +212,13 @@ Pkg.checkout("JavaCall", "pull-request/bf8b4987")
 There are parts of the code that are not executed when running the basic test. This is because the Mock Server does not support ssl and we cannot run effective tests for those lines of code.
 
 There are however separate tests for ssl. That requires setting up a local ftp server and following the steps above.
+
+## Troubleshoot
+
+### Downloaded files are unusable
+
+Try downloading file in both binary and ASCII mode to see if one of the files is usable. 
+
+### Other issues
+
+Please add any other problem or bugs to the issues page.
