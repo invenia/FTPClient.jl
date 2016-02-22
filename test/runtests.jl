@@ -1,6 +1,5 @@
 push!(LOAD_PATH, "./src")
 
-
 using FTPClient
 using FactCheck
 if VERSION >= v"0.5-"
@@ -11,8 +10,6 @@ else
 end
 using JavaCall
 using Compat
-
-println("Start testing")
 
 function start_server()
     port = jcall(MockFTPServerJulia, "setUp", jint, ())
