@@ -76,7 +76,7 @@ ftp_close_connection(ctxt::ConnContext)
     - `ssl`: use FTPS, default is false
     - `verify_peer`: verify authenticity of peer's certificate, default is true
     - `active_mode`: use active mode to establish data connection, default is false
-    - `binary_mode`: used to tell the client to download files in binary mode, default is false
+    - `binary_mode`: used to tell the client to download files in binary mode, default is true
 
 
 #### FTPObject functions
