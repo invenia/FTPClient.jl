@@ -84,7 +84,9 @@ ftp_close_connection(ctxt::ConnContext)
 FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=true)
 close(ftp::FTP)
 download(ftp::FTP, file_name::String, save_path::String="")
-upload(ftp::FTP, file_name::String, file=nothing)
+upload(ftp::FTP, local_name::AbstractString)
+upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString)
+upload(ftp::FTP, local_file::IO, remote_name::AbstractString)
 readdir(ftp::FTP)
 cd(ftp::FTP, dir::String)
 pwd(ftp::FTP)
@@ -161,12 +163,18 @@ buff = download(ftp, "Assignment1.txt")
 # download and save file to specified path
 file = download(ftp, "Assignment2.txt", "./A2/Assignment2.txt")
 
+# upload file upload_file_name
+upload(ftp, upload_file_name)
+
+# upload file upload_file_name and change name to "new_name"
+upload(ftp, upload_file_name, "new_name")
+
 # upload contents of buffer and save to file
 buff = IOBuffer("Buffer to upload.")
-upload(ftp, "upload_buffer.txt", buff)
+upload(ftp, buff, "upload_buffer.txt")
 
 # upload local file to server
-upload(ftp, "upload_file.txt", file)
+upload(ftp, file, "upload_file.txt")
 
 mv(ftp, "upload_file.txt", "Assignment3.txt")
 
