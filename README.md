@@ -81,7 +81,7 @@ ftp_close_connection(ctxt::ConnContext)
 
 #### FTPObject functions
 ```julia
-FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=false)
+FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=true)
 close(ftp::FTP)
 download(ftp::FTP, file_name::String, save_path::String="")
 upload(ftp::FTP, file_name::String, file=nothing)
