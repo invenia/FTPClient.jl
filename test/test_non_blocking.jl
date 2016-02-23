@@ -1,6 +1,3 @@
-using FTPClient
-using Base.Test
-
 facts("Non-blocking tests") do
 
 ftp_init()

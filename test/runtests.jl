@@ -2,7 +2,12 @@ push!(LOAD_PATH, "./src")
 
 using FTPClient
 using FactCheck
-using Base.Test
+if VERSION >= v"0.5-"
+    using Base.Test
+else
+    using BaseTestNext
+    const Test = BaseTestNext
+end
 using JavaCall
 using Compat
 
@@ -25,6 +30,11 @@ end
 function set_file(name::AbstractString, content::AbstractString)
     result = jcall(MockFTPServerJulia, "setFile", jboolean, (JString, JString), name, content)
     @assert result == 1 "set_file failed"
+end
+
+function set_byte_file(name::AbstractString, content::AbstractString)
+    result = jcall(MockFTPServerJulia, "setByteFile", jboolean, (JString, JString), name, content)
+    @assert result == 1 "set_byte_file failed"
 end
 
 function set_command_response(request::AbstractString, code::Integer, reponse::AbstractString)
@@ -63,6 +73,9 @@ file_name = "test_download.txt"
 file_name2 = "test_download2.txt"
 directory_name = "test_directory"
 file_contents = "hello, world"
+@unix_only byte_file_contents = string(hex(rand(UInt64)), "0D0A", hex(rand(UInt64)))
+@windows_only byte_file_contents = string(hex(rand(UInt64)), "0A", hex(rand(UInt64)), "1A1A1A")
+byte_file_name = randstring(20)
 upload_file = "test_upload.txt"
 f =  open(upload_file, "w")
 write(f, "Test file to upload.\n")
@@ -108,6 +121,7 @@ else
     set_user(user, pswd, home_dir)
     set_file("/" * file_name, file_contents)
     set_file("/" * directory_name * "/" * file_name2, file_contents)
+    set_byte_file("/" * byte_file_name, byte_file_contents)
     set_command_response("AUTH", 230, "Login successful.")
     port = start_server()
     host = "$original_host:$port"
