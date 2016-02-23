@@ -2,136 +2,257 @@
     ftp_init()
 
     @testset "Non-persistent connection tests, passive mode" begin
+
         options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
-        # test 1, download file from server
-        resp = ftp_get(file_name, options)
-        @test resp.code == 226
-        @test typeof(resp.total_time) == Float64
-        @test resp.bytes_recd == file_size
-        expected = Any["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory.",r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)","200 TYPE completed.","502 Command not implemented: SIZE.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
-        @test resp.headers[1:4] == expected[1:4]
-        @test ismatch(expected[5], resp.headers[5])
-        @test resp.headers[6:end] == expected[6:end]
+        expected_header_first_part = AbstractString["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory."]
+        expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
+        @test options.url == "ftp://" * string(host) * "/"
 
-        # test 2, upload file to server
-        file = open(upload_file)
-        resp = ftp_put("test_upload.txt", file, options)
-        @test resp.code == 226
-        println("\nTest 2 passed.\n$resp")
-        close(file)
+        @testset "ftp_get" begin
+            resp = ftp_get(file_name, options)
+            actual_body = readstring(resp.body)
+            @test resp.code == 226
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == file_size == length(actual_body)
+            @test actual_body == file_contents
+            expected_header_last_part = AbstractString["200 TYPE completed.","502 Command not implemented: SIZE.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
+            @test resp.headers[1:4] == expected_header_first_part
+            @test ismatch(expected_header_port, resp.headers[5])
+            @test resp.headers[6:end] == expected_header_last_part
+        end
 
-        # test 3, pass command to server
-        resp = ftp_command("PWD", options)
-        @test resp.code == 257
-        println("\nTest 3 passed.\n$resp")
+        @testset "ftp_put" begin
+            resp = nothing
+            open(upload_file) do file
+                resp = ftp_put("test_upload.txt", file, options)
+            end
+            @test resp.code == 226
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == 0
+            expected_header_last_part = AbstractString["200 TYPE completed.","150 File status okay; about to open data connection.","226 Created file test_upload.txt."]
+            @test resp.headers[1:4] == expected_header_first_part
+            @test ismatch(expected_header_port, resp.headers[5])
+            @test resp.headers[6:end] == expected_header_last_part
+        end
+
+        @testset "ftp_command" begin
+            resp = ftp_command("PWD", options)
+            @test resp.code == 257
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == 0
+            expected_header_last_part = AbstractString["200 TYPE completed.","257 \"/\" is current directory."]
+            @test resp.headers[1:4] == expected_header_first_part
+            @test ismatch(expected_header_port, resp.headers[5])
+            @test resp.headers[6:end] == expected_header_last_part
+        end
     end
 
-    # ###############################################################################
-    # Non-persistent connection tests, active mode
-    ###############################################################################
+    @testset "Non-persistent connection tests, active mode" begin
 
-    options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
-    println("\nTest non-persistent connection with active mode:\n")
+        options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
+        expected_header_first_part = AbstractString["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory.","200 EPRT completed.","200 TYPE completed."]
+        @test options.url == "ftp://" * string(host) * "/"
 
-    # test 4, download file from server
-    resp = ftp_get(file_name, options)
-    @test resp.code == 226
-    println("\nTest 4 passed.\n$resp")
-    # rm(file_name)
+        @testset "ftp_get" begin
+            resp = ftp_get(file_name, options)
+            actual_body = readstring(resp.body)
+            @test resp.code == 226
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == file_size == length(actual_body)
+            @test actual_body == file_contents
+            expected_header_last_part = AbstractString["502 Command not implemented: SIZE.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
+            @test resp.headers == [expected_header_first_part..., expected_header_last_part...]
+        end
 
-    # test 5, upload file to server
-    file = open(upload_file)
-    resp = ftp_put("test_upload.txt", file, options)
-    @test resp.code ==226
-    println("\nTest 5 passed.\n$resp")
-    close(file)
+        @testset "ftp_put" begin
+            resp = nothing
+            open(upload_file) do file
+                resp = ftp_put("test_upload.txt", file, options)
+            end
+            @test resp.code ==226
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == 0
+            expected_header_last_part = AbstractString["150 File status okay; about to open data connection.","226 Created file test_upload.txt."]
+            @test resp.headers == [expected_header_first_part..., expected_header_last_part...]
+        end
 
-    # test 6, pass command to server
-    resp = ftp_command("PWD", options)
-    @test resp.code == 257
-    println("\nTest 6 passed.\n$resp")
+        @testset "ftp_command" begin
+            resp = ftp_command("PWD", options)
+            @test resp.code == 257
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == 0
+            expected_header_last_part = AbstractString["257 \"/\" is current directory."]
+            @test resp.headers == [expected_header_first_part..., expected_header_last_part...]
+        end
+    end
 
     ###############################################################################
     # Persistent connection tests, passive mode
     ###############################################################################
 
-    options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
-    println("\nTest persistent connection with passive mode:\n")
+    @testset "Persistent connection tests, passive mode" begin
 
-    # test 7, establish connection
-    ctxt, resp = ftp_connect(options)
-    @test resp.code == 226
-    println("\nTest 7 passed.\n$(resp)")
+        options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
+        @test options.url == "ftp://" * string(host) * "/"
 
-    # test 8, pass command to server
-    resp = ftp_command(ctxt, "PWD")
-    @test resp.code == 257
-    println("\nTest 8 passed.\n$(resp)")
+        expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
 
-    # test 9, download file from server
-    resp = ftp_get(ctxt, file_name)
-    @test resp.code == 226
-    println("\nTest 9 passed.\n$(resp)")
-    # rm(file_name)
+        @testset "ftp_connect" begin
+            ctxt, resp = ftp_connect(options)
+            actual_body = readstring(resp.body)
+            @test resp.code == 226
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == length(actual_body)
+            @test contains(actual_body, file_name)
+            @test contains(actual_body, directory_name)
+            @test contains(actual_body, byte_file_name)
+            @test contains(actual_body, upload_file)
+            expected_header_first_part = AbstractString["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory."]
+            expected_header_last_part = AbstractString["200 TYPE completed.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
+            @test resp.headers[1:4] == expected_header_first_part
+            @test ismatch(expected_header_port, resp.headers[5])
+            @test resp.headers[6:end] == expected_header_last_part
+            @test typeof(ctxt.curl) == Ptr{CURL}
+            @test ctxt.url == options.url == "ftp://" * string(host) * "/"
+            @test ctxt.options == options
+            ftp_close_connection(ctxt)
+        end
 
-    # test 10, upload file to server
-    file = open(upload_file)
-    resp = ftp_put(ctxt, "test_upload.txt", file)
-    @test resp.code ==226
-    println("\nTest 10 passed.\n$(resp)")
+        @testset "ftp_command" begin
+            ctxt, resp = ftp_connect(options)
+            resp = ftp_command(ctxt, "PWD")
+            actual_body = readstring(resp.body)
+            @test resp.code == 257
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == length(actual_body) == 0
+            @test actual_body == ""
+            @test ismatch(expected_header_port, resp.headers[1])
+            @test resp.headers[2:end] == AbstractString["257 \"/\" is current directory."]
+            @test typeof(ctxt.curl) == Ptr{CURL}
+            @test ctxt.url == options.url == "ftp://" * string(host) * "/"
+            @test ctxt.options == options
+            ftp_close_connection(ctxt)
+        end
 
-    ftp_close_connection(ctxt)
-    close(file)
+        @testset "ftp_get" begin
+            ctxt, resp = ftp_connect(options)
+            resp = ftp_get(ctxt, file_name)
+            actual_body = readstring(resp.body)
+            @test resp.code == 226
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == file_size == length(actual_body)
+            @test actual_body == file_contents
+            @test ismatch(expected_header_port, resp.headers[1])
+            @test resp.headers[2:end] == AbstractString["200 TYPE completed.","502 Command not implemented: SIZE.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
+            @test typeof(ctxt.curl) == Ptr{CURL}
+            @test ctxt.url == options.url == "ftp://" * string(host) * "/"
+            @test ctxt.options == options
+            ftp_close_connection(ctxt)
+        end
 
-    ###############################################################################
-    # Persistent connection tests, active mode
-    ###############################################################################
-
-    options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
-    println("\nTest persistent connection with active mode:\n")
-
-    # test 11, establish connection
-    ctxt, resp = ftp_connect(options)
-    @test resp.code == 226
-    println("\nTest 11 passed.\n$(resp)")
-
-    # test 12, pass command to server
-    resp = ftp_command(ctxt, "PWD")
-    @test resp.code == 257
-    println("\nTest 12 passed.\n$(resp)")
-
-    # test 13, download file from server
-    resp = ftp_get(ctxt, file_name)
-    @test resp.code == 226
-    println("\nTest 13 passed.\n$(resp)")
-    # rm(file_name)
-
-    # test 14, upload file to server
-    file = open(upload_file)
-    resp = ftp_put(ctxt, "test_upload.txt", file)
-    @test resp.code ==226
-    println("\nTest 14 passed.\n$(resp)")
-
-    ftp_close_connection(ctxt)
-    close(file)
-
-
-    facts("Non-ssl tests") do
-
-    save_file = "test_file_save_path.txt"
-    save_path = pwd() * "/" * save_file
-
-    context("download a file to a specific path") do
-
-        resp = ftp_get(file_name, options, save_path)
-        @fact resp.code --> 226
-        @fact isfile(save_file) --> true
-        file = open(save_file)
-        @compat @fact readstring(file) --> file_contents
-        close(file)
-        rm(save_file)
+        @testset "ftp_put" begin
+            ctxt, resp = ftp_connect(options)
+            open(upload_file) do file
+                resp = ftp_put(ctxt, "test_upload.txt", file)
+            end
+            actual_body = readstring(resp.body)
+            @test resp.code == 226
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == length(actual_body) == 0
+            @test actual_body == ""
+            @test ismatch(expected_header_port, resp.headers[1])
+            @test resp.headers[2:end] == AbstractString["200 TYPE completed.","150 File status okay; about to open data connection.","226 Created file test_upload.txt."]
+            @test typeof(ctxt.curl) == Ptr{CURL}
+            @test ctxt.url == options.url == "ftp://" * string(host) * "/"
+            @test ctxt.options == options
+            ftp_close_connection(ctxt)
+        end
 
     end
+
+    @testset "Persistent connection tests, active mode" begin
+
+        options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
+        @test options.url == "ftp://" * string(host) * "/"
+
+        @testset "ftp_connect" begin
+            ctxt, resp = ftp_connect(options)
+            actual_body = readstring(resp.body)
+            @test resp.code == 226
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == length(actual_body)
+            @test contains(actual_body, file_name)
+            @test contains(actual_body, directory_name)
+            @test contains(actual_body, byte_file_name)
+            @test contains(actual_body, upload_file)
+            @test resp.headers == AbstractString["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory.","200 EPRT completed.","200 TYPE completed.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
+            @test typeof(ctxt.curl) == Ptr{CURL}
+            @test ctxt.url == options.url == "ftp://" * string(host) * "/"
+            @test ctxt.options == options
+            ftp_close_connection(ctxt)
+        end
+
+        @testset "ftp_command" begin
+            ctxt, resp = ftp_connect(options)
+            resp = ftp_command(ctxt, "PWD")
+            actual_body = readstring(resp.body)
+            @test resp.code == 257
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == length(actual_body) == 0
+            @test actual_body == ""
+            @test resp.headers == AbstractString["200 EPRT completed.","257 \"/\" is current directory."]
+            @test typeof(ctxt.curl) == Ptr{CURL}
+            @test ctxt.url == options.url == "ftp://" * string(host) * "/"
+            @test ctxt.options == options
+            ftp_close_connection(ctxt)
+        end
+
+        @testset "ftp_get" begin
+            ctxt, resp = ftp_connect(options)
+            resp = ftp_get(ctxt, file_name)
+            actual_body = readstring(resp.body)
+            @test resp.code == 226
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == file_size == length(actual_body)
+            @test actual_body == file_contents
+            @test resp.headers == AbstractString["200 EPRT completed.","200 TYPE completed.","502 Command not implemented: SIZE.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
+            @test typeof(ctxt.curl) == Ptr{CURL}
+            @test ctxt.url == options.url == "ftp://" * string(host) * "/"
+            @test ctxt.options == options
+            ftp_close_connection(ctxt)
+        end
+
+        @testset "ftp_put" begin
+            ctxt, resp = ftp_connect(options)
+            open(upload_file) do file
+                resp = ftp_put(ctxt, "test_upload.txt", file)
+            end
+            actual_body = readstring(resp.body)
+            @test resp.code == 226
+            @test typeof(resp.total_time) == Float64
+            @test resp.bytes_recd == length(actual_body) == 0
+            @test actual_body == ""
+            @test resp.headers == AbstractString["200 EPRT completed.","200 TYPE completed.","150 File status okay; about to open data connection.","226 Created file test_upload.txt."]
+            @test typeof(ctxt.curl) == Ptr{CURL}
+            @test ctxt.url == options.url == "ftp://" * string(host) * "/"
+            @test ctxt.options == options
+            ftp_close_connection(ctxt)
+        end
+
+    end
+
+    @testset "download a file to a specific path" begin
+
+        options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
+        save_file = "test_file_save_path.txt"
+        save_path = pwd() * "/" * save_file
+        resp = ftp_get(file_name, options, save_path)
+        @test resp.code == 226
+        @test isfile(save_file) == true
+        open(save_file) do file
+            @compat @fact readstring(file) --> file_contents
+        end
+        rm(save_file)
 
     end
 

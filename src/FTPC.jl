@@ -69,9 +69,8 @@ type ConnContext
     curl::Ptr{CURL}
     url::AbstractString
     options::RequestOptions
-    close_ostream::Bool
 
-    ConnContext(options::RequestOptions) = new(C_NULL, options.url, options, false)
+    ConnContext(options::RequestOptions) = new(C_NULL, options.url, options)
 end
 
 

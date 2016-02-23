@@ -14,8 +14,6 @@ end
 type FTP
     ctxt::ConnContext
 
-
-
     function FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=true)
         options = RequestOptions(blocking=block, implicit=implt, ssl=ssl,
                     verify_peer=ver_peer, active_mode=act_mode,
