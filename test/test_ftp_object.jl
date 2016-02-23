@@ -104,10 +104,10 @@ buff = get_download_resp(ref)
 println("\nTest 37 passed.\n$(ftp)")
 
 # test 38, upload a file using blocking function
-file = open(upload_file)
-ref = non_block_upload(ftp, upload_file, file)
-get_upload_resp(ref)
-close(file)
+open(upload_file) do file
+    ref = non_block_upload(ftp, upload_file, file)
+    get_upload_resp(ref)
+end
 println("\nTest 38 passed.\n$(ftp)")
 
 # test 39, make a directory with spaces in name
@@ -125,7 +125,7 @@ cd(ftp, dir_with_space)
 println("\nTest 41 passed.\n$(ftp)")
 
 # test 42, upload file with space in name
-upload(ftp, file_with_space, IOBuffer(space_file_contents))
+upload(ftp, IOBuffer(space_file_contents), file_with_space)
 println("\nTest 42 passed.\n$(ftp)")
 dir = readdir(ftp)
 @test dir == [file_with_space]
@@ -143,6 +143,26 @@ println("\nTest 44 passed.\n$(ftp)")
 cd(ftp, "..")
 rmdir(ftp, dir_with_space)
 println("\nTest 45 passed.\n$(ftp)")
+
+@testset "FTPClient FTPObject tests" begin
+    @testset "uploading a file with only the local file name" begin
+        ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+        resp = upload(ftp, upload_file)
+        @test resp.code == 226
+    end
+    @testset "uploading a file with remote local file name" begin
+        ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+        resp = upload(ftp, upload_file, "some name")
+        @test resp.code == 226
+    end
+    @testset "uploading a file with remote local file name" begin
+        ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+        open(upload_file) do local_file
+            resp = upload(ftp, local_file, "some other name")
+        end
+        @test resp.code == 226
+    end
+end
 
 close(ftp)
 ftp_cleanup()
