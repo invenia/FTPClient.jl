@@ -1,140 +1,140 @@
-ftp_init()
+@testset "FTPClient test non sll" begin
+    ftp_init()
 
-###############################################################################
-# Non-persistent connection tests, passive mode
-###############################################################################
+    @testset "Non-persistent connection tests, passive mode" begin
+        options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
+        # test 1, download file from server
+        resp = ftp_get(file_name, options)
+        @test resp.code == 226
+        @test typeof(resp.total_time) == Float64
+        @test resp.bytes_recd == file_size
+        expected = Any["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory.",r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)","200 TYPE completed.","502 Command not implemented: SIZE.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
+        @test resp.headers[1:4] == expected[1:4]
+        @test ismatch(expected[5], resp.headers[5])
+        @test resp.headers[6:end] == expected[6:end]
 
-options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
-println("\nTest non-persistent connection with passive mode:\n")
+        # test 2, upload file to server
+        file = open(upload_file)
+        resp = ftp_put("test_upload.txt", file, options)
+        @test resp.code == 226
+        println("\nTest 2 passed.\n$resp")
+        close(file)
 
-# test 1, download file from server
-resp = ftp_get(file_name, options)
-@test resp.code == 226
-println("\nTest 1 passed.\n$resp")
-# rm(file_name)
+        # test 3, pass command to server
+        resp = ftp_command("PWD", options)
+        @test resp.code == 257
+        println("\nTest 3 passed.\n$resp")
+    end
 
-# test 2, upload file to server
-file = open(upload_file)
-resp = ftp_put("test_upload.txt", file, options)
-@test resp.code ==226
-println("\nTest 2 passed.\n$resp")
-close(file)
+    # ###############################################################################
+    # Non-persistent connection tests, active mode
+    ###############################################################################
 
-# test 3, pass command to server
-resp = ftp_command("PWD", options)
-@test resp.code == 257
-println("\nTest 3 passed.\n$resp")
+    options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
+    println("\nTest non-persistent connection with active mode:\n")
 
-# ###############################################################################
-# Non-persistent connection tests, active mode
-###############################################################################
+    # test 4, download file from server
+    resp = ftp_get(file_name, options)
+    @test resp.code == 226
+    println("\nTest 4 passed.\n$resp")
+    # rm(file_name)
 
-options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
-println("\nTest non-persistent connection with active mode:\n")
-
-# test 4, download file from server
-resp = ftp_get(file_name, options)
-@test resp.code == 226
-println("\nTest 4 passed.\n$resp")
-# rm(file_name)
-
-# test 5, upload file to server
-file = open(upload_file)
-resp = ftp_put("test_upload.txt", file, options)
-@test resp.code ==226
-println("\nTest 5 passed.\n$resp")
-close(file)
-
-# test 6, pass command to server
-resp = ftp_command("PWD", options)
-@test resp.code == 257
-println("\nTest 6 passed.\n$resp")
-
-###############################################################################
-# Persistent connection tests, passive mode
-###############################################################################
-
-options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
-println("\nTest persistent connection with passive mode:\n")
-
-# test 7, establish connection
-ctxt, resp = ftp_connect(options)
-@test resp.code == 226
-println("\nTest 7 passed.\n$(resp)")
-
-# test 8, pass command to server
-resp = ftp_command(ctxt, "PWD")
-@test resp.code == 257
-println("\nTest 8 passed.\n$(resp)")
-
-# test 9, download file from server
-resp = ftp_get(ctxt, file_name)
-@test resp.code == 226
-println("\nTest 9 passed.\n$(resp)")
-# rm(file_name)
-
-# test 10, upload file to server
-file = open(upload_file)
-resp = ftp_put(ctxt, "test_upload.txt", file)
-@test resp.code ==226
-println("\nTest 10 passed.\n$(resp)")
-
-ftp_close_connection(ctxt)
-close(file)
-
-###############################################################################
-# Persistent connection tests, active mode
-###############################################################################
-
-options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
-println("\nTest persistent connection with active mode:\n")
-
-# test 11, establish connection
-ctxt, resp = ftp_connect(options)
-@test resp.code == 226
-println("\nTest 11 passed.\n$(resp)")
-
-# test 12, pass command to server
-resp = ftp_command(ctxt, "PWD")
-@test resp.code == 257
-println("\nTest 12 passed.\n$(resp)")
-
-# test 13, download file from server
-resp = ftp_get(ctxt, file_name)
-@test resp.code == 226
-println("\nTest 13 passed.\n$(resp)")
-# rm(file_name)
-
-# test 14, upload file to server
-file = open(upload_file)
-resp = ftp_put(ctxt, "test_upload.txt", file)
-@test resp.code ==226
-println("\nTest 14 passed.\n$(resp)")
-
-ftp_close_connection(ctxt)
-close(file)
-
-
-facts("Non-ssl tests") do
-
-save_file = "test_file_save_path.txt"
-save_path = pwd() * "/" * save_file
-
-context("download a file to a specific path") do
-
-    resp = ftp_get(file_name, options, save_path)
-    @fact resp.code --> 226
-    @fact isfile(save_file) --> true
-    file = open(save_file)
-    @compat @fact readstring(file) --> file_contents
+    # test 5, upload file to server
+    file = open(upload_file)
+    resp = ftp_put("test_upload.txt", file, options)
+    @test resp.code ==226
+    println("\nTest 5 passed.\n$resp")
     close(file)
-    rm(save_file)
 
-end
+    # test 6, pass command to server
+    resp = ftp_command("PWD", options)
+    @test resp.code == 257
+    println("\nTest 6 passed.\n$resp")
 
-end
+    ###############################################################################
+    # Persistent connection tests, passive mode
+    ###############################################################################
 
-@testset "FTPClient tests" begin
+    options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
+    println("\nTest persistent connection with passive mode:\n")
+
+    # test 7, establish connection
+    ctxt, resp = ftp_connect(options)
+    @test resp.code == 226
+    println("\nTest 7 passed.\n$(resp)")
+
+    # test 8, pass command to server
+    resp = ftp_command(ctxt, "PWD")
+    @test resp.code == 257
+    println("\nTest 8 passed.\n$(resp)")
+
+    # test 9, download file from server
+    resp = ftp_get(ctxt, file_name)
+    @test resp.code == 226
+    println("\nTest 9 passed.\n$(resp)")
+    # rm(file_name)
+
+    # test 10, upload file to server
+    file = open(upload_file)
+    resp = ftp_put(ctxt, "test_upload.txt", file)
+    @test resp.code ==226
+    println("\nTest 10 passed.\n$(resp)")
+
+    ftp_close_connection(ctxt)
+    close(file)
+
+    ###############################################################################
+    # Persistent connection tests, active mode
+    ###############################################################################
+
+    options = RequestOptions(ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
+    println("\nTest persistent connection with active mode:\n")
+
+    # test 11, establish connection
+    ctxt, resp = ftp_connect(options)
+    @test resp.code == 226
+    println("\nTest 11 passed.\n$(resp)")
+
+    # test 12, pass command to server
+    resp = ftp_command(ctxt, "PWD")
+    @test resp.code == 257
+    println("\nTest 12 passed.\n$(resp)")
+
+    # test 13, download file from server
+    resp = ftp_get(ctxt, file_name)
+    @test resp.code == 226
+    println("\nTest 13 passed.\n$(resp)")
+    # rm(file_name)
+
+    # test 14, upload file to server
+    file = open(upload_file)
+    resp = ftp_put(ctxt, "test_upload.txt", file)
+    @test resp.code ==226
+    println("\nTest 14 passed.\n$(resp)")
+
+    ftp_close_connection(ctxt)
+    close(file)
+
+
+    facts("Non-ssl tests") do
+
+    save_file = "test_file_save_path.txt"
+    save_path = pwd() * "/" * save_file
+
+    context("download a file to a specific path") do
+
+        resp = ftp_get(file_name, options, save_path)
+        @fact resp.code --> 226
+        @fact isfile(save_file) --> true
+        file = open(save_file)
+        @compat @fact readstring(file) --> file_contents
+        close(file)
+        rm(save_file)
+
+    end
+
+    end
+
     @testset "binary file download using options" begin
         @testset "it is not the same file when downloading in ascii mode" begin
             ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host, binary_mode=false)
@@ -193,8 +193,6 @@ end
         bytes = read(buff)
         @unix_only @test bytes != hex2bytes(byte_file_contents)
     end
+
+    ftp_cleanup()
 end
-
-ftp_cleanup()
-
-println("FTPC non-ssl tests passed.\n\n")
