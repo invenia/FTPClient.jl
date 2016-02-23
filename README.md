@@ -76,12 +76,12 @@ ftp_close_connection(ctxt::ConnContext)
     - `ssl`: use FTPS, default is false
     - `verify_peer`: verify authenticity of peer's certificate, default is true
     - `active_mode`: use active mode to establish data connection, default is false
-    - `binary_mode`: used to tell the client to download files in binary mode, default is false
+    - `binary_mode`: used to tell the client to download files in binary mode, default is true
 
 
 #### FTPObject functions
 ```julia
-FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=false)
+FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=true)
 close(ftp::FTP)
 download(ftp::FTP, file_name::String, save_path::String="")
 upload(ftp::FTP, file_name::String, file=nothing)

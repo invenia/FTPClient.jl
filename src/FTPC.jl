@@ -19,7 +19,7 @@ type RequestOptions
 
     function RequestOptions(; blocking=true, implicit=false, ssl=false,
             verify_peer=true, active_mode=false, username="",
-            passwd="", url=nothing, hostname="localhost", binary_mode=false)
+            passwd="", url=nothing, hostname="localhost", binary_mode=true)
 
         if url == nothing
             if implicit
@@ -278,13 +278,15 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
 
             if ctxt.options.binary_mode
                 # We need to switch the url to point to the file directly
-                @ce_curl curl_easy_setopt CURLOPT_URL ctxt.options.url * file_name
-                command = "TYPE I" # means switch to binary
+                # There's no need for a command
+                p = ctxt.url * file_name
+                @ce_curl curl_easy_setopt CURLOPT_URL p
             else
+                # RETR is stuck in ascii mode https://curl.haxx.se/mail/lib-2004-12/0219.html
                 command = "RETR " * file_name
+                @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
             end
 
-            @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
             @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
             @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
@@ -304,7 +306,7 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
 
             if ctxt.options.binary_mode
                 # We need to switch it back to the original url
-                @ce_curl curl_easy_setopt CURLOPT_URL ctxt.options.url
+                @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
             end
 
             resp.bytes_recd = wd.bytes_recd
