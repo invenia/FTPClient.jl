@@ -1,5 +1,7 @@
-@testset "FTPClient test non sll" begin
+@testset "FTPClient test non ssl" begin
     ftp_init()
+
+    non_ssl_test_upload = "test_upload.txt"
 
     @testset "Non-persistent connection tests, passive mode" begin
 
@@ -27,10 +29,12 @@
         end
 
         @testset "ftp_put" begin
+            @test !file_exists("/" * non_ssl_test_upload)
             resp = nothing
             open(upload_file) do file
-                resp = ftp_put("test_upload.txt", file, options)
+                resp = ftp_put(non_ssl_test_upload, file, options)
             end
+            @test file_exists("/" * non_ssl_test_upload)
             @test resp.code == 226
             @test typeof(resp.total_time) == Float64
             @test resp.bytes_recd == 0
@@ -39,6 +43,8 @@
             @test ismatch(expected_header_port, resp.headers[5])
             @test resp.headers[6:end] == expected_header_last_part ||
                 resp.headers[6:end] == [expected_header_last_part..., possible_end_to_headers]
+            remove("/" * non_ssl_test_upload)
+            @test !file_exists("/" * non_ssl_test_upload)
         end
 
         @testset "ftp_command" begin
@@ -77,16 +83,20 @@
         end
 
         @testset "ftp_put" begin
+            @test !file_exists("/" * non_ssl_test_upload)
             resp = nothing
             open(upload_file) do file
-                resp = ftp_put("test_upload.txt", file, options)
+                resp = ftp_put(non_ssl_test_upload, file, options)
             end
+            @test file_exists("/" * non_ssl_test_upload)
             @test resp.code ==226
             @test typeof(resp.total_time) == Float64
             @test resp.bytes_recd == 0
             expected_header_last_part = AbstractString["150 File status okay; about to open data connection.","226 Created file test_upload.txt."]
             @test resp.headers == [expected_header_first_part..., expected_header_last_part...] ||
                 resp.headers == [expected_header_first_part...,expected_header_last_part..., possible_end_to_headers]
+            remove("/" * non_ssl_test_upload)
+            @test !file_exists("/" * non_ssl_test_upload)
         end
 
         @testset "ftp_command" begin
@@ -116,7 +126,6 @@
             @test contains(actual_body, file_name)
             @test contains(actual_body, directory_name)
             @test contains(actual_body, byte_file_name)
-            @test contains(actual_body, upload_file)
             expected_header_first_part = AbstractString["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory."]
             expected_header_last_part = AbstractString["200 TYPE completed.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
             @test resp.headers[1:4] == expected_header_first_part
@@ -161,10 +170,12 @@
         end
 
         @testset "ftp_put" begin
+            @test !file_exists("/" * non_ssl_test_upload)
             ctxt, resp = ftp_connect(options)
             open(upload_file) do file
-                resp = ftp_put(ctxt, "test_upload.txt", file)
+                resp = ftp_put(ctxt, non_ssl_test_upload, file)
             end
+            @test file_exists("/" * non_ssl_test_upload)
             actual_body = readstring(resp.body)
             @test resp.code == 226
             @test typeof(resp.total_time) == Float64
@@ -176,6 +187,8 @@
             @test ctxt.url == options.url == "ftp://" * string(host) * "/"
             @test ctxt.options == options
             ftp_close_connection(ctxt)
+            remove("/" * non_ssl_test_upload)
+            @test !file_exists("/" * non_ssl_test_upload)
         end
 
     end
@@ -194,7 +207,6 @@
             @test contains(actual_body, file_name)
             @test contains(actual_body, directory_name)
             @test contains(actual_body, byte_file_name)
-            @test contains(actual_body, upload_file)
             @test resp.headers == AbstractString["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory.","200 EPRT completed.","200 TYPE completed.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
             @test typeof(ctxt.curl) == Ptr{CURL}
             @test ctxt.url == options.url == "ftp://" * string(host) * "/"
@@ -233,10 +245,12 @@
         end
 
         @testset "ftp_put" begin
+            @test !file_exists("/" * non_ssl_test_upload)
             ctxt, resp = ftp_connect(options)
             open(upload_file) do file
-                resp = ftp_put(ctxt, "test_upload.txt", file)
+                resp = ftp_put(ctxt, non_ssl_test_upload, file)
             end
+            @test file_exists("/" * non_ssl_test_upload)
             actual_body = readstring(resp.body)
             @test resp.code == 226
             @test typeof(resp.total_time) == Float64
@@ -247,6 +261,8 @@
             @test ctxt.url == options.url == "ftp://" * string(host) * "/"
             @test ctxt.options == options
             ftp_close_connection(ctxt)
+            remove("/" * non_ssl_test_upload)
+            @test !file_exists("/" * non_ssl_test_upload)
         end
 
     end
@@ -354,12 +370,14 @@
             end
 
             @testset "ftp_put" begin
+                @test !file_exists("/" * non_ssl_test_upload)
                 resp = nothing
                 open(upload_file) do file
-                    rcall = ftp_put("test_upload.txt", file, options)
+                    rcall = ftp_put(non_ssl_test_upload, file, options)
                     @test typeof(rcall) <: Future
                     resp = fetch(rcall)
                 end
+                @test file_exists("/" * non_ssl_test_upload)
                 @test resp.code == 226
                 @test typeof(resp.total_time) == Float64
                 @test resp.bytes_recd == 0
@@ -368,10 +386,11 @@
                 @test ismatch(expected_header_port, resp.headers[5])
                 @test resp.headers[6:end] == expected_header_last_part ||
                     resp.headers[6:end] == [expected_header_last_part..., possible_end_to_headers]
+                remove("/" * non_ssl_test_upload)
+                @test !file_exists("/" * non_ssl_test_upload)
             end
 
         end
-
 
         @testset "Persistent connection tests, active mode" begin
             options = RequestOptions(blocking=false, ssl=false, active_mode=true, username=user, passwd=pswd, hostname=host)
@@ -387,7 +406,6 @@
                 @test contains(actual_body, file_name)
                 @test contains(actual_body, directory_name)
                 @test contains(actual_body, byte_file_name)
-                @test contains(actual_body, upload_file)
                 @test resp.headers == AbstractString["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory.","200 EPRT completed.","200 TYPE completed.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
                 @test typeof(ctxt.curl) == Ptr{CURL}
                 @test ctxt.url == options.url == "ftp://" * string(host) * "/"
@@ -414,13 +432,15 @@
             end
 
             @testset "ftp_put" begin
+                @test !file_exists("/" * non_ssl_test_upload)
                 rcall = ftp_connect(options)
                 ctxt, resp = fetch(rcall)
                 open(upload_file) do file
-                    rcall = ftp_put(ctxt, "test_upload.txt", file)
+                    rcall = ftp_put(ctxt, non_ssl_test_upload, file)
                     @test typeof(rcall) <: Future
                     resp = fetch(rcall)
                 end
+                @test file_exists("/" * non_ssl_test_upload)
                 actual_body = readstring(resp.body)
                 @test resp.code == 226
                 @test typeof(resp.total_time) == Float64
@@ -431,6 +451,8 @@
                 @test ctxt.url == options.url == "ftp://" * string(host) * "/"
                 @test ctxt.options.blocking == options.blocking == false
                 ftp_close_connection(ctxt)
+                remove("/" * non_ssl_test_upload)
+                @test !file_exists("/" * non_ssl_test_upload)
             end
 
         end
@@ -466,7 +488,6 @@
         rcall = ftp_get(ctxt, file_name2)
         @test typeof(rcall) <: Future
         resp = fetch(rcall)
-        display(resp)
         actual_body = readstring(resp.body)
         @test resp.code == 226
         @test typeof(resp.total_time) == Float64

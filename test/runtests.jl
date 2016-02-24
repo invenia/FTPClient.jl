@@ -39,6 +39,11 @@ function set_byte_file(name::AbstractString, content::AbstractString)
     @assert result == 1 "set_byte_file failed"
 end
 
+function set_directory(name::AbstractString)
+    result = jcall(MockFTPServerJulia, "setDirectory", jboolean, (JString,), name)
+    @assert result == 1 "set_directory failed"
+end
+
 function set_command_response(request::AbstractString, code::Integer, reponse::AbstractString)
     result = jcall(MockFTPServerJulia, "setCommandResponse", jboolean, (JString, jint, JString,), request, code, reponse)
     @assert result == 1 "set_command_response failed"
@@ -62,6 +67,36 @@ end
 function undo_errors()
     result = jcall(MockFTPServerJulia, "undoErrors", jboolean, ())
     @assert result == 1 "undo_errors failed"
+end
+
+function remove(path::AbstractString)
+    result = jcall(MockFTPServerJulia, "remove", jboolean, (JString,), path)
+    @assert result == 1 "remove failed"
+end
+
+function file_exists(path::AbstractString)
+    return jcall(MockFTPServerJulia, "fileExists", jboolean, (JString,), path) == 1
+end
+
+function directory_exists(path::AbstractString)
+    return jcall(MockFTPServerJulia, "directoryExists", jboolean, (JString,), path) == 1
+end
+
+function set_files()
+    set_file("/" * file_name, file_contents)
+    set_file("/" * directory_name * "/" * file_name2, file_contents)
+    set_byte_file("/" * byte_file_name, byte_file_contents)
+
+    @assert file_exists("/" * file_name)
+    @assert directory_exists("/" * directory_name)
+    @assert file_exists("/" * directory_name * "/" * file_name2)
+    @assert file_exists("/" * byte_file_name)
+
+    # Making it's not always true
+    @assert !directory_exists("this directory does not exist")
+    @assert !file_exists("this file does not exists")
+    @assert !directory_exists("/" * file_name)
+    @assert !file_exists("/" * directory_name)
 end
 
 new_file = "new_name.txt"
@@ -122,9 +157,7 @@ else
     MockFTPServerJulia = @jimport MockFTPServerJulia
 
     set_user(user, pswd, home_dir)
-    set_file("/" * file_name, file_contents)
-    set_file("/" * directory_name * "/" * file_name2, file_contents)
-    set_byte_file("/" * byte_file_name, byte_file_contents)
+    set_files()
     set_command_response("AUTH", 230, "Login successful.")
     port = start_server()
     host = "$original_host:$port"
