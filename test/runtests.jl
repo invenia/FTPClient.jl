@@ -7,6 +7,7 @@ if VERSION >= v"0.5-"
 else
     using BaseTestNext
     const Test = BaseTestNext
+    typealias RemoteRef Future
 end
 using JavaCall
 using Compat
