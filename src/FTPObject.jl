@@ -98,33 +98,41 @@ end
 
 
 @doc """
-Upload IO object "file" to the FTP server and save as "file_name".
-If "file" is not specified, the file "file_name" is uploaded.
+Upload the file "local_name" to the FTP server and save as "local_name".
 """ ->
-function upload(ftp::FTP, file_name::AbstractString, file=nothing)
-    close_file = false
-    if file == nothing
-        close_file = true
-        file = open(file_name)
-    end
+function upload(ftp::FTP, local_name::AbstractString)
+    return upload(ftp, local_name, local_name)
+end
 
+
+@doc """
+Upload the file "local_name" to the FTP server and save as "remote_name".
+""" ->
+function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString)
+    open(local_name) do local_file
+        return upload(ftp, local_file, remote_name)
+    end
+end
+
+
+@doc """
+Upload IO object "local_file" to the FTP server and save as "remote_name".
+""" ->
+function upload(ftp::FTP, local_file::IO, remote_name::AbstractString)
     resp = nothing
 
     try
-        resp = ftp_put(ftp.ctxt, file_name, file)
+        resp = ftp_put(ftp.ctxt, remote_name, local_file)
     catch err
         if(isa(err, FTPClientError))
-            err.msg = "Failed to upload $file_name."
+            err.msg = "Failed to upload $remote_name."
         end
         rethrow()
     finally
         resp = process_response(resp)
-        if close_file
-            close(file)
-        end
     end
 
-    return resp
+    return process_response(resp)
 end
 
 

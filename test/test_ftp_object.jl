@@ -199,71 +199,27 @@
             close(ftp)
         end
 
+        @testset "FTPClient FTPObject tests" begin
+            @testset "uploading a file with only the local file name" begin
+                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+                resp = upload(ftp, upload_file)
+                @test resp.code == 226
+            end
+            @testset "uploading a file with remote local file name" begin
+                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+                resp = upload(ftp, upload_file, "some name")
+                @test resp.code == 226
+            end
+            @testset "uploading a file with remote local file name" begin
+                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+                resp = nothing
+                open(upload_file) do local_file
+                    resp = upload(ftp, local_file, "some other name")
+                end
+                @test resp.code == 226
+            end
+        end
+
     end
-
-    println("\nTest FTPObject with non-blocking upload/download:\n")
-
-    # test connect with non-blocking call
-    ftp = FTP(block=false, ssl=false, user=user, pswd=pswd, host=host)
-    println("\nTest 34 passed.\n$(ftp)")
-
-    # test 35, download file from server using blocking function
-    buff = download(ftp, file_name)
-    @compat @test readstring(buff) == file_contents
-    println("\nTest 35 passed.\n$(ftp)")
-
-    # test 36, upload a file using blocking function
-    upload(ftp, upload_file)
-    println("\nTest 36 passed.\n$(ftp)")
-
-    # test 37, download file from server using non-blocking function
-    ref = non_block_download(ftp, file_name)
-    buff = get_download_resp(ref)
-    @compat @test readstring(buff) == file_contents
-    println("\nTest 37 passed.\n$(ftp)")
-
-    # test 38, upload a file using blocking function
-    file = open(upload_file)
-    ref = non_block_upload(ftp, upload_file, file)
-    get_upload_resp(ref)
-    close(file)
-    println("\nTest 38 passed.\n$(ftp)")
-
-    # test 39, make a directory with spaces in name
-    mkdir(ftp, dir_with_space)
-    println("\nTest 39 passed.\n$(ftp)")
-
-    # test 40, get directory list with space in name
-    dir = readdir(ftp)
-    # Check if there are any differences
-    @test setdiff(dir, [dir_with_space, directory_name, byte_file_name, upload_file, file_name]) == Array{ASCIIString,1}()
-    println("\nTest 40 passed.\n$(ftp)")
-
-    # test 41, change to directory with spaces in name
-    cd(ftp, dir_with_space)
-    println("\nTest 41 passed.\n$(ftp)")
-
-    # test 42, upload file with space in name
-    upload(ftp, file_with_space, IOBuffer(space_file_contents))
-    println("\nTest 42 passed.\n$(ftp)")
-    dir = readdir(ftp)
-    @test dir == [file_with_space]
-
-    # test 43, download file with space in name
-    buff = download(ftp, file_with_space)
-    @compat @test readstring(buff) == space_file_contents
-    println("\nTest 43 passed.\n$(ftp)")
-
-    # test 44, remove file with space in name
-    rm(ftp, file_with_space)
-    println("\nTest 44 passed.\n$(ftp)")
-
-    # test 45, remove directory with space in name
-    cd(ftp, "..")
-    rmdir(ftp, dir_with_space)
-    println("\nTest 45 passed.\n$(ftp)")
-
-    close(ftp)
     ftp_cleanup()
-
 end
