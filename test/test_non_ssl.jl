@@ -6,6 +6,10 @@
         options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
         expected_header_first_part = AbstractString["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory."]
         expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
+
+        # The CI builds add this string to the end of the headers to non
+        # persistent connections.
+        possible_end_to_headers = "221 Service closing control connection."
         @test options.url == "ftp://" * string(host) * "/"
 
         @testset "ftp_get" begin
@@ -18,7 +22,8 @@
             expected_header_last_part = AbstractString["200 TYPE completed.","502 Command not implemented: SIZE.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
             @test resp.headers[1:4] == expected_header_first_part
             @test ismatch(expected_header_port, resp.headers[5])
-            @test resp.headers[6:end] == expected_header_last_part
+            @test resp.headers[6:end] == expected_header_last_part ||
+                resp.headers[6:end] == [expected_header_last_part..., possible_end_to_headers]
         end
 
         @testset "ftp_put" begin
@@ -32,7 +37,8 @@
             expected_header_last_part = AbstractString["200 TYPE completed.","150 File status okay; about to open data connection.","226 Created file test_upload.txt."]
             @test resp.headers[1:4] == expected_header_first_part
             @test ismatch(expected_header_port, resp.headers[5])
-            @test resp.headers[6:end] == expected_header_last_part
+            @test resp.headers[6:end] == expected_header_last_part ||
+                resp.headers[6:end] == [expected_header_last_part..., possible_end_to_headers]
         end
 
         @testset "ftp_command" begin
@@ -43,7 +49,8 @@
             expected_header_last_part = AbstractString["200 TYPE completed.","257 \"/\" is current directory."]
             @test resp.headers[1:4] == expected_header_first_part
             @test ismatch(expected_header_port, resp.headers[5])
-            @test resp.headers[6:end] == expected_header_last_part
+            @test resp.headers[6:end] == expected_header_last_part ||
+                resp.headers[6:end] == [expected_header_last_part..., possible_end_to_headers]
         end
     end
 
@@ -53,6 +60,10 @@
         expected_header_first_part = AbstractString["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory.","200 EPRT completed.","200 TYPE completed."]
         @test options.url == "ftp://" * string(host) * "/"
 
+        # The CI builds add this string to the end of the headers to non
+        # persistent connections.
+        possible_end_to_headers = "221 Service closing control connection."
+
         @testset "ftp_get" begin
             resp = ftp_get(file_name, options)
             actual_body = readstring(resp.body)
@@ -61,7 +72,8 @@
             @test resp.bytes_recd == file_size == length(actual_body)
             @test actual_body == file_contents
             expected_header_last_part = AbstractString["502 Command not implemented: SIZE.","150 File status okay; about to open data connection.","226 Closing data connection. Requested file action successful."]
-            @test resp.headers == [expected_header_first_part..., expected_header_last_part...]
+            @test resp.headers == [expected_header_first_part..., expected_header_last_part...] ||
+                resp.headers == [expected_header_first_part...,expected_header_last_part..., possible_end_to_headers]
         end
 
         @testset "ftp_put" begin
@@ -73,7 +85,8 @@
             @test typeof(resp.total_time) == Float64
             @test resp.bytes_recd == 0
             expected_header_last_part = AbstractString["150 File status okay; about to open data connection.","226 Created file test_upload.txt."]
-            @test resp.headers == [expected_header_first_part..., expected_header_last_part...]
+            @test resp.headers == [expected_header_first_part..., expected_header_last_part...] ||
+                resp.headers == [expected_header_first_part...,expected_header_last_part..., possible_end_to_headers]
         end
 
         @testset "ftp_command" begin
@@ -82,7 +95,8 @@
             @test typeof(resp.total_time) == Float64
             @test resp.bytes_recd == 0
             expected_header_last_part = AbstractString["257 \"/\" is current directory."]
-            @test resp.headers == [expected_header_first_part..., expected_header_last_part...]
+            @test resp.headers == [expected_header_first_part..., expected_header_last_part...] ||
+                resp.headers == [expected_header_first_part...,expected_header_last_part..., possible_end_to_headers]
         end
     end
 
