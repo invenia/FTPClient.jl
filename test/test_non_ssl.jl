@@ -339,7 +339,7 @@
 
             @testset "ftp_get" begin
                 rcall = ftp_get(file_name, options)
-                @test typeof(rcall) == Future
+                @test typeof(rcall) <: Future
                 resp = fetch(rcall)
                 actual_body = readstring(resp.body)
                 @test resp.code == 226
@@ -357,7 +357,7 @@
                 resp = nothing
                 open(upload_file) do file
                     rcall = ftp_put("test_upload.txt", file, options)
-                    @test typeof(rcall) == Future
+                    @test typeof(rcall) <: Future
                     resp = fetch(rcall)
                 end
                 @test resp.code == 226
@@ -378,7 +378,7 @@
 
             @testset "ftp_connect" begin
                 rcall = ftp_connect(options)
-                @test typeof(rcall) == Future
+                @test typeof(rcall) <: Future
                 ctxt, resp = fetch(rcall)
                 actual_body = readstring(resp.body)
                 @test resp.code == 226
@@ -399,7 +399,7 @@
                 rcall = ftp_connect(options)
                 ctxt, resp = fetch(rcall)
                 rcall = ftp_get(ctxt, file_name)
-                @test typeof(rcall) == Future
+                @test typeof(rcall) <: Future
                 resp = fetch(rcall)
                 actual_body = readstring(resp.body)
                 @test resp.code == 226
@@ -418,7 +418,7 @@
                 ctxt, resp = fetch(rcall)
                 open(upload_file) do file
                     rcall = ftp_put(ctxt, "test_upload.txt", file)
-                    @test typeof(rcall) == Future
+                    @test typeof(rcall) <: Future
                     resp = fetch(rcall)
                 end
                 actual_body = readstring(resp.body)
@@ -443,7 +443,7 @@
         expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
 
         rcall = ftp_connect(options)
-        @test typeof(rcall) == Future
+        @test typeof(rcall) <: Future
         ctxt, resp = fetch(rcall)
         @test resp.code == 226
         actual_body = readstring(resp.body)
@@ -464,7 +464,7 @@
         @test ctxt.options.blocking == options.blocking
 
         rcall = ftp_get(ctxt, file_name2)
-        @test typeof(rcall) == Future
+        @test typeof(rcall) <: Future
         resp = fetch(rcall)
         display(resp)
         actual_body = readstring(resp.body)
