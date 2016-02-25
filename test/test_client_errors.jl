@@ -1,4 +1,4 @@
-@testset "Client Errors" begin
+@testset "FTPClientError" begin
 
     ftp_init()
 

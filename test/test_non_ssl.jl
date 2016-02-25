@@ -1,4 +1,4 @@
-@testset "FTPClient test non ssl" begin
+@testset "FTPC.jl non ssl" begin
     ftp_init()
 
     non_ssl_test_upload = "test_upload.txt"
