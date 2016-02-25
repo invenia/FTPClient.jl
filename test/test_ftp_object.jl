@@ -50,7 +50,7 @@
         @testset "download non blocking" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             future = download(ftp, file_name; block=false)
-            @test typeof(future) == Future
+            @test typeof(future) <: Future
             buff = fetch(future)
             actual_buff = readstring(buff)
             @test actual_buff == file_contents
@@ -75,7 +75,7 @@
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             @test !file_exists("/" * upload_file)
             future = upload(ftp, upload_file; block=false)
-            @test typeof(future) == Future
+            @test typeof(future) <: Future
             resp = fetch(future)
             @test file_exists("/" * upload_file)
             no_unexpected_changes(ftp)
@@ -89,7 +89,7 @@
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             @test !file_exists("/" * upload_file)
             future = upload(ftp, upload_file, new_file; block=false)
-            @test typeof(future) == Future
+            @test typeof(future) <: Future
             resp = fetch(future)
             @test file_exists("/" * new_file)
             no_unexpected_changes(ftp)
@@ -105,7 +105,7 @@
             resp = nothing
             open(upload_file) do file
                 future = upload(ftp, file, new_file; block=false)
-                @test typeof(future) == Future
+                @test typeof(future) <: Future
                 resp = fetch(future)
             end
             @test file_exists("/" * new_file)
