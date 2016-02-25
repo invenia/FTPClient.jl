@@ -186,12 +186,18 @@ function setup_easy_handle(options::RequestOptions)
     return ctxt
 end
 
-function cleanup_easy_context(ctxt::Union{ConnContext,Bool})
-    if isa(ctxt, ConnContext)
-        if (ctxt.curl != C_NULL)
-            curl_easy_cleanup(ctxt.curl)
-            ctxt.curl = C_NULL
-        end
+function cleanup_easy_context(ctxt::ConnContext)
+    if (ctxt.curl != C_NULL)
+
+        # cleaning up should not write any data
+        @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION C_NULL
+        @ce_curl curl_easy_setopt CURLOPT_WRITEDATA C_NULL
+
+        @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION C_NULL
+        @ce_curl curl_easy_setopt CURLOPT_HEADERDATA C_NULL
+
+        curl_easy_cleanup(ctxt.curl)
+        ctxt.curl = C_NULL
     end
 end
 
