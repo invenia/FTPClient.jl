@@ -1,7 +1,6 @@
 push!(LOAD_PATH, "./src")
 
 using FTPClient
-using FactCheck
 if VERSION >= v"0.5-"
     using Base.Test
 else
@@ -10,7 +9,6 @@ else
     typealias Future RemoteRef
 end
 using JavaCall
-using Compat
 using LibCURL
 
 function start_server()
@@ -188,6 +186,3 @@ end
 
 # Done testing
 rm(upload_file)
-
-# Throws errors when a @fact failed a test.
-exitstatus()

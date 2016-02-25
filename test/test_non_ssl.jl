@@ -276,7 +276,7 @@
         @test resp.code == 226
         @test isfile(save_file) == true
         open(save_file) do file
-            @compat @fact readstring(file) --> file_contents
+            @test readstring(file) == file_contents
         end
         rm(save_file)
 
