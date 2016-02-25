@@ -10,6 +10,7 @@ else
 end
 using JavaCall
 using LibCURL
+using Compat
 
 function start_server()
     port = jcall(MockFTPServerJulia, "setUp", jint, ())
