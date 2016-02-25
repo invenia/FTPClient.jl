@@ -14,20 +14,20 @@ end
 type FTP
     ctxt::ConnContext
 
-    function FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=true)
-        options = RequestOptions(blocking=block, implicit=implt, ssl=ssl,
+    function FTP(;host="", implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=true)
+        options = RequestOptions(blocking=true, implicit=implt, ssl=ssl,
                     verify_peer=ver_peer, active_mode=act_mode,
                     username=user, passwd=pswd, hostname=host, binary_mode=binary_mode)
 
+        ctxt = nothing
         try
-            resp = ftp_connect(options)
+            ctxt, resp = ftp_connect(options)
         catch err
             if(isa(err, FTPClientError))
                 err.msg = "Failed to connect."
             end
             rethrow()
         end
-        ctxt, resp = process_response(resp)
 
         new(ctxt)
     end
@@ -58,59 +58,52 @@ end
 @doc """
 Download the file "file_name" from FTP server and return IOStream.
 If "save_path" is not specified, contents are written to and returned as IOBuffer.
+"block" indicates if you want a blocking call, default is true
 """ ->
-function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString="")
+function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString=""; block::Bool=true)
+    if block
+        return download_internal(ftp.ctxt, file_name, save_path)
+    else
+        return remotecall(download_internal, myid(), ftp.ctxt, file_name, save_path)
+    end
+end
 
+function download_internal(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString)
+    resp = nothing
     try
-        resp = ftp_get(ftp.ctxt, file_name, save_path)
+        resp = ftp_get(ctxt, file_name, save_path)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to download $file_name."
         end
         rethrow()
     end
-
-    resp = process_response(resp)
     return resp.body
-
-end
-
-
-@doc """
-Non-blocking download of file "file_name" from FTP server. Returns a RemoteRef.
-""" ->
-function non_block_download(ftp::FTP, file_name::AbstractString, save_path::AbstractString="")
-    ftp.ctxt.options.blocking = false
-    ref = ftp_get(ftp.ctxt, file_name, save_path)
-end
-
-
-@doc """
-Get the response from non_block_download. Returns an IO object.
-""" ->
-function get_download_resp(ref)
-
-    resp = process_response(ref)
-
-    return resp.body
-
 end
 
 
 @doc """
 Upload the file "local_name" to the FTP server and save as "local_name".
 """ ->
-function upload(ftp::FTP, local_name::AbstractString)
-    return upload(ftp, local_name, local_name)
+function upload(ftp::FTP, local_name::AbstractString; block::Bool=true)
+    if block
+        return upload(ftp, local_name, local_name)
+    else
+        return remotecall(upload, myid(), ftp, local_name, local_name)
+    end
 end
 
 
 @doc """
 Upload the file "local_name" to the FTP server and save as "remote_name".
 """ ->
-function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString)
-    open(local_name) do local_file
-        return upload(ftp, local_file, remote_name)
+function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString; block::Bool=true)
+    if block
+        open(local_name) do local_file
+            return upload(ftp, local_file, remote_name; block=block)
+        end
+    else
+        return remotecall(upload, myid(), ftp, local_name, remote_name)
     end
 end
 
@@ -118,42 +111,25 @@ end
 @doc """
 Upload IO object "local_file" to the FTP server and save as "remote_name".
 """ ->
-function upload(ftp::FTP, local_file::IO, remote_name::AbstractString)
-    resp = nothing
+function upload(ftp::FTP, local_file::IO, remote_name::AbstractString; block::Bool=true)
+    if block
+        return upload_internal(ftp.ctxt, local_file, remote_name)
+    else
+        return remotecall(upload_internal, myid(), ftp.ctxt, local_file, remote_name)
+    end
+end
 
+function upload_internal(ctxt::ConnContext, local_file::IO, remote_name::AbstractString)
+    resp = nothing
     try
-        resp = ftp_put(ftp.ctxt, remote_name, local_file)
+        resp = ftp_put(ctxt, remote_name, local_file)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to upload $remote_name."
         end
         rethrow()
-    finally
-        resp = process_response(resp)
     end
-
-    return process_response(resp)
-end
-
-
-@doc """
-Non-blocking upload of "file" to the FTP server. Returns a RemoteRef.
-""" ->
-function non_block_upload(ftp::FTP, file_name::AbstractString, file::IO)
-    ftp.ctxt.options.blocking = false
-    ref = ftp_put(ftp.ctxt, file_name, file)
-
-    return ref
-end
-
-
-@doc """
-Process response form non_block_upload. Throws error if upload failed.
-""" ->
-function get_upload_resp(ref)
-
-    resp = process_response(ref)
-
+    return resp
 end
 
 

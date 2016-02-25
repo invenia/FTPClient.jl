@@ -54,12 +54,12 @@ context("FTP object error when downloading, blocking") do
     close(ftp)
 end
 
-context("FTP object error when downloading, non-blocking") do
-    ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-    ref = non_block_download(ftp, file_name)
-    @fact_throws RemoteException get_download_resp(ref)
-    close(ftp)
-end
+#context("FTP object error when downloading, non-blocking") do
+#    ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+#    ref = non_block_download(ftp, file_name)
+#    @fact_throws RemoteException get_download_resp(ref)
+#    close(ftp)
+#end
 
 context("FTP object error when uploading, blocking") do
     ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
@@ -67,14 +67,14 @@ context("FTP object error when uploading, blocking") do
     close(ftp)
 end
 
-context("FTP object error when uploading, non-blocking") do
-    ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-    open(upload_file) do file
-        ref = non_block_upload(ftp, upload_file, file)
-        @fact_throws RemoteException get_upload_resp(ref)
-    end
-    close(ftp)
-end
+#context("FTP object error when uploading, non-blocking") do
+#    ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+#    open(upload_file) do file
+#        ref = non_block_upload(ftp, upload_file, file)
+#        @fact_throws RemoteException get_upload_resp(ref)
+#    end
+#    close(ftp)
+#end
 
 context("FTP object error when changing working directory") do
     ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)

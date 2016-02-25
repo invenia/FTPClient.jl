@@ -21,7 +21,6 @@
             @test ftp.ctxt.options.binary_mode == true
         end
 
-
         @testset "connection" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             no_unexpected_changes(ftp)
@@ -48,6 +47,18 @@
             close(ftp)
         end
 
+        @testset "download non blocking" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            future = download(ftp, file_name; block=false)
+            @test typeof(future) == Future
+            buff = fetch(future)
+            actual_buff = readstring(buff)
+            @test actual_buff == file_contents
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://" * host * "/"
+            close(ftp)
+        end
+
         @testset "upload" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             @test !file_exists("/" * upload_file)
@@ -57,6 +68,51 @@
             @test ftp.ctxt.url == "ftp://" * host * "/"
             remove("/" * upload_file)
             @test !file_exists("/" * upload_file)
+            close(ftp)
+        end
+
+        @testset "upload non blocking" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !file_exists("/" * upload_file)
+            future = upload(ftp, upload_file; block=false)
+            @test typeof(future) == Future
+            resp = fetch(future)
+            @test file_exists("/" * upload_file)
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://" * host * "/"
+            remove("/" * upload_file)
+            @test !file_exists("/" * upload_file)
+            close(ftp)
+        end
+
+        @testset "upload non blocking, give a name" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !file_exists("/" * upload_file)
+            future = upload(ftp, upload_file, new_file; block=false)
+            @test typeof(future) == Future
+            resp = fetch(future)
+            @test file_exists("/" * new_file)
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://" * host * "/"
+            remove("/" * new_file)
+            @test !file_exists("/" * new_file)
+            close(ftp)
+        end
+
+        @testset "upload non blocking, give a file" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !file_exists("/" * upload_file)
+            resp = nothing
+            open(upload_file) do file
+                future = upload(ftp, file, new_file; block=false)
+                @test typeof(future) == Future
+                resp = fetch(future)
+            end
+            @test file_exists("/" * new_file)
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://" * host * "/"
+            remove("/" * new_file)
+            @test !file_exists("/" * new_file)
             close(ftp)
         end
 
@@ -192,7 +248,7 @@
             close(ftp)
         end
 
-        @testset "binary" begin
+        @testset "ascii" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host, binary_mode=true)
             ascii(ftp)
             @test ftp.ctxt.options.binary_mode == false
