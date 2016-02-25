@@ -1,16 +1,3 @@
-
-function process_response(resp)
-    if isa(resp, RemoteRef)
-        resp = fetch(resp)
-        if(isa(resp, RemoteException))
-            throw(resp)
-        end
-    end
-
-    return resp
-end
-
-
 type FTP
     ctxt::ConnContext
 

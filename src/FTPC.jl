@@ -99,6 +99,7 @@ function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Pt
     hdrlines = split(bytestring(buff, convert(Int, nbytes)), "\r\n")
 
     hdrlines = filter(line -> ~isempty(line), hdrlines)
+    @assert typeof(resp) == Response
     append!(resp.headers, hdrlines)
 
     nbytes::Csize_t

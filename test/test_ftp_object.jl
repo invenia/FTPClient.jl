@@ -255,7 +255,7 @@
             close(ftp)
         end
 
-        @testset "FTPClient FTPObject tests" begin
+        @testset "upload" begin
             @testset "uploading a file with only the local file name" begin
                 ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
                 resp = upload(ftp, upload_file)
@@ -273,6 +273,25 @@
                     resp = upload(ftp, local_file, "some other name")
                 end
                 @test resp.code == 226
+            end
+        end
+
+        @testset "show" begin
+            @testset "active" begin
+                expected = "Host:      ftp://" * string(host) * "/\nUser:      $(user)\nTransfer:  active mode\nSecurity:  None\n\n"
+                buff = IOBuffer()
+                ftp = FTP(ssl=false, act_mode=true, user=user, pswd=pswd, host=host)
+                println(buff, ftp)
+                seekstart(buff)
+                @test readstring(buff) == expected
+            end
+            @testset "passive" begin
+                expected = "Host:      ftp://" * string(host) * "/\nUser:      $(user)\nTransfer:  passive mode\nSecurity:  None\n\n"
+                buff = IOBuffer()
+                ftp = FTP(ssl=false, act_mode=false, user=user, pswd=pswd, host=host)
+                println(buff, ftp)
+                seekstart(buff)
+                @test readstring(buff) == expected
             end
         end
 
