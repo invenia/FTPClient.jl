@@ -172,6 +172,11 @@ public class MockFTPServerJulia
         return fakeFtpServer.getFileSystem().isDirectory(path);
     }
 
+    public static String getFileContents(String path)
+    {
+        return convertStreamToString(((FileEntry)fakeFtpServer.getFileSystem().getEntry(path)).createInputStream());
+    }
+
     private static byte[] hexStringToByteArray(String s)
     {
         int len = s.length();
@@ -182,5 +187,12 @@ public class MockFTPServerJulia
                                  + Character.digit(s.charAt(i+1), 16));
         }
         return data;
+    }
+
+    // http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string/5445161#5445161
+    private static String convertStreamToString(java.io.InputStream is)
+    {
+        java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+        return s.hasNext() ? s.next() : "";
     }
 }

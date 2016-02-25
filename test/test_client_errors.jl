@@ -23,8 +23,8 @@
 
         @testset "ftp_put error" begin
             options = RequestOptions(blocking=true, ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
-            open(upload_file) do file
-                @test_throws FTPClientError ftp_put(upload_file, file, options)
+            open(upload_file_name) do file
+                @test_throws FTPClientError ftp_put(upload_file_name, file, options)
             end
         end
 
@@ -54,7 +54,7 @@
 
         @testset "FTP object error when uploading, blocking" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            @test_throws FTPClientError upload(ftp, upload_file)
+            @test_throws FTPClientError upload(ftp, upload_file_name)
             close(ftp)
         end
 

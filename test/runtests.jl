@@ -81,6 +81,10 @@ function directory_exists(path::AbstractString)
     return jcall(MockFTPServerJulia, "directoryExists", jboolean, (JString,), path) == 1
 end
 
+function get_file_contents(path::AbstractString)
+    return bytestring(jcall(MockFTPServerJulia, "getFileContents", JString, (JString,), path))
+end
+
 function set_files()
     set_file("/" * file_name, file_contents)
     set_file("/" * directory_name * "/" * file_name2, file_contents)
@@ -113,9 +117,10 @@ file_contents = randstring(file_size)
 @unix_only byte_file_contents = string("466F6F426172", "0D0A", "466F6F426172")
 @windows_only byte_file_contents = string("466F6F426172", "0A", "466F6F426172", "1A1A1A")
 byte_file_name = randstring(20)
-upload_file = "test_upload.txt"
-f =  open(upload_file, "w")
-write(f, "Test file to upload.\n")
+upload_file_name = "test_upload.txt"
+f =  open(upload_file_name, "w")
+upload_file_contents = randstring(100)
+write(f, upload_file_contents)
 close(f)
 
 
@@ -186,4 +191,4 @@ else
 end
 
 # Done testing
-rm(upload_file)
+rm(upload_file_name)

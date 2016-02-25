@@ -31,10 +31,11 @@
         @testset "ftp_put" begin
             @test !file_exists("/" * non_ssl_test_upload)
             resp = nothing
-            open(upload_file) do file
+            open(upload_file_name) do file
                 resp = ftp_put(non_ssl_test_upload, file, options)
             end
             @test file_exists("/" * non_ssl_test_upload)
+            @test get_file_contents("/" * non_ssl_test_upload) == upload_file_contents
             @test resp.code == 226
             @test typeof(resp.total_time) == Float64
             @test resp.bytes_recd == 0
@@ -85,10 +86,11 @@
         @testset "ftp_put" begin
             @test !file_exists("/" * non_ssl_test_upload)
             resp = nothing
-            open(upload_file) do file
+            open(upload_file_name) do file
                 resp = ftp_put(non_ssl_test_upload, file, options)
             end
             @test file_exists("/" * non_ssl_test_upload)
+            @test get_file_contents("/" * non_ssl_test_upload) == upload_file_contents
             @test resp.code ==226
             @test typeof(resp.total_time) == Float64
             @test resp.bytes_recd == 0
@@ -172,10 +174,11 @@
         @testset "ftp_put" begin
             @test !file_exists("/" * non_ssl_test_upload)
             ctxt, resp = ftp_connect(options)
-            open(upload_file) do file
+            open(upload_file_name) do file
                 resp = ftp_put(ctxt, non_ssl_test_upload, file)
             end
             @test file_exists("/" * non_ssl_test_upload)
+            @test get_file_contents("/" * non_ssl_test_upload) == upload_file_contents
             actual_body = readstring(resp.body)
             @test resp.code == 226
             @test typeof(resp.total_time) == Float64
@@ -247,10 +250,11 @@
         @testset "ftp_put" begin
             @test !file_exists("/" * non_ssl_test_upload)
             ctxt, resp = ftp_connect(options)
-            open(upload_file) do file
+            open(upload_file_name) do file
                 resp = ftp_put(ctxt, non_ssl_test_upload, file)
             end
             @test file_exists("/" * non_ssl_test_upload)
+            @test get_file_contents("/" * non_ssl_test_upload) == upload_file_contents
             actual_body = readstring(resp.body)
             @test resp.code == 226
             @test typeof(resp.total_time) == Float64
@@ -372,12 +376,13 @@
             @testset "ftp_put" begin
                 @test !file_exists("/" * non_ssl_test_upload)
                 resp = nothing
-                open(upload_file) do file
+                open(upload_file_name) do file
                     rcall = ftp_put(non_ssl_test_upload, file, options)
                     @test typeof(rcall) <: Future
                     resp = fetch(rcall)
                 end
                 @test file_exists("/" * non_ssl_test_upload)
+                @test get_file_contents("/" * non_ssl_test_upload) == upload_file_contents
                 @test resp.code == 226
                 @test typeof(resp.total_time) == Float64
                 @test resp.bytes_recd == 0
@@ -435,12 +440,13 @@
                 @test !file_exists("/" * non_ssl_test_upload)
                 rcall = ftp_connect(options)
                 ctxt, resp = fetch(rcall)
-                open(upload_file) do file
+                open(upload_file_name) do file
                     rcall = ftp_put(ctxt, non_ssl_test_upload, file)
                     @test typeof(rcall) <: Future
                     resp = fetch(rcall)
                 end
                 @test file_exists("/" * non_ssl_test_upload)
+                @test get_file_contents("/" * non_ssl_test_upload) == upload_file_contents
                 actual_body = readstring(resp.body)
                 @test resp.code == 226
                 @test typeof(resp.total_time) == Float64

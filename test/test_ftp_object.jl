@@ -61,37 +61,40 @@
 
         @testset "upload" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            @test !file_exists("/" * upload_file)
-            resp = upload(ftp, upload_file)
-            @test file_exists("/" * upload_file)
+            @test !file_exists("/" * upload_file_name)
+            resp = upload(ftp, upload_file_name)
+            @test file_exists("/" * upload_file_name)
+            @test get_file_contents("/" * upload_file_name) == upload_file_contents
             no_unexpected_changes(ftp)
             @test ftp.ctxt.url == "ftp://" * host * "/"
-            remove("/" * upload_file)
-            @test !file_exists("/" * upload_file)
+            remove("/" * upload_file_name)
+            @test !file_exists("/" * upload_file_name)
             close(ftp)
         end
 
         @testset "upload non blocking" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            @test !file_exists("/" * upload_file)
-            future = upload(ftp, upload_file; block=false)
+            @test !file_exists("/" * upload_file_name)
+            future = upload(ftp, upload_file_name; block=false)
             @test typeof(future) <: Future
             resp = fetch(future)
-            @test file_exists("/" * upload_file)
+            @test file_exists("/" * upload_file_name)
+            @test get_file_contents("/" * upload_file_name) == upload_file_contents
             no_unexpected_changes(ftp)
             @test ftp.ctxt.url == "ftp://" * host * "/"
-            remove("/" * upload_file)
-            @test !file_exists("/" * upload_file)
+            remove("/" * upload_file_name)
+            @test !file_exists("/" * upload_file_name)
             close(ftp)
         end
 
         @testset "upload non blocking, give a name" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            @test !file_exists("/" * upload_file)
-            future = upload(ftp, upload_file, new_file; block=false)
+            @test !file_exists("/" * upload_file_name)
+            future = upload(ftp, upload_file_name, new_file; block=false)
             @test typeof(future) <: Future
             resp = fetch(future)
             @test file_exists("/" * new_file)
+            @test get_file_contents("/" * new_file) == upload_file_contents
             no_unexpected_changes(ftp)
             @test ftp.ctxt.url == "ftp://" * host * "/"
             remove("/" * new_file)
@@ -101,14 +104,15 @@
 
         @testset "upload non blocking, give a file" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            @test !file_exists("/" * upload_file)
+            @test !file_exists("/" * upload_file_name)
             resp = nothing
-            open(upload_file) do file
+            open(upload_file_name) do file
                 future = upload(ftp, file, new_file; block=false)
                 @test typeof(future) <: Future
                 resp = fetch(future)
             end
             @test file_exists("/" * new_file)
+            @test get_file_contents("/" * new_file) == upload_file_contents
             no_unexpected_changes(ftp)
             @test ftp.ctxt.url == "ftp://" * host * "/"
             remove("/" * new_file)
@@ -208,11 +212,12 @@
 
         @testset "mv" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            set_file("/" * upload_file, file_contents)
-            @test file_exists("/" * upload_file)
-            mv(ftp, upload_file, new_file)
-            @test !file_exists("/" * upload_file)
+            set_file("/" * upload_file_name, upload_file_contents)
+            @test file_exists("/" * upload_file_name)
+            mv(ftp, upload_file_name, new_file)
+            @test !file_exists("/" * upload_file_name)
             @test file_exists("/" * new_file)
+            @test get_file_contents("/" * new_file) == upload_file_contents
             no_unexpected_changes(ftp)
             @test ftp.ctxt.url == "ftp://" * host * "/"
             remove("/" * new_file)
@@ -222,7 +227,7 @@
 
         @testset "rm" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            set_file("/" * new_file, file_contents)
+            set_file("/" * new_file, upload_file_contents)
             @test file_exists("/" * new_file)
             rm(ftp, new_file)
             @test !file_exists("/" * new_file)
@@ -258,21 +263,39 @@
         @testset "upload" begin
             @testset "uploading a file with only the local file name" begin
                 ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                resp = upload(ftp, upload_file)
-                @test resp.code == 226
+                resp = upload(ftp, upload_file_name)
+                @test file_exists("/" * upload_file_name)
+                @test get_file_contents("/" * upload_file_name) == upload_file_contents
+                no_unexpected_changes(ftp)
+                @test ftp.ctxt.url == "ftp://" * host * "/"
+                remove("/" * upload_file_name)
+                @test !file_exists("/" * upload_file_name)
+                close(ftp)
             end
             @testset "uploading a file with remote local file name" begin
                 ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                resp = upload(ftp, upload_file, "some name")
-                @test resp.code == 226
+                resp = upload(ftp, upload_file_name, "some name")
+                @test file_exists("/" * "some name")
+                @test get_file_contents("/" * "some name") == upload_file_contents
+                no_unexpected_changes(ftp)
+                @test ftp.ctxt.url == "ftp://" * host * "/"
+                remove("/" * "some name")
+                @test !file_exists("/" * "some name")
+                close(ftp)
             end
             @testset "uploading a file with remote local file name" begin
                 ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
                 resp = nothing
-                open(upload_file) do local_file
+                open(upload_file_name) do local_file
                     resp = upload(ftp, local_file, "some other name")
                 end
-                @test resp.code == 226
+                @test file_exists("/" * "some other name")
+                @test get_file_contents("/" * "some other name") == upload_file_contents
+                no_unexpected_changes(ftp)
+                @test ftp.ctxt.url == "ftp://" * host * "/"
+                remove("/" * "some other name")
+                @test !file_exists("/" * "some other name")
+                close(ftp)
             end
         end
 
@@ -284,6 +307,7 @@
                 println(buff, ftp)
                 seekstart(buff)
                 @test readstring(buff) == expected
+                close(ftp)
             end
             @testset "passive" begin
                 expected = "Host:      ftp://" * string(host) * "/\nUser:      $(user)\nTransfer:  passive mode\nSecurity:  None\n\n"
@@ -292,6 +316,7 @@
                 println(buff, ftp)
                 seekstart(buff)
                 @test readstring(buff) == expected
+                close(ftp)
             end
         end
 
