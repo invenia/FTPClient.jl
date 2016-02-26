@@ -288,13 +288,14 @@
 
     @testset "binary file download using options" begin
         @testset "it is not the same file when downloading in ascii mode" begin
-            ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host, binary_mode=false)
-            resp = ftp_get(byte_file_name, ftp_options)
+            ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
+            resp = ftp_get(byte_file_name, ftp_options; mode=ascii_mode)
             bytes = read(resp.body)
             @unix_only @test bytes != hex2bytes(byte_file_contents)
+            @unix_only @test bytes == hex2bytes(byte_file_contents_ascii_transfer)
         end
         @testset "it is the same file when downloading in binary mode" begin
-            ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host, binary_mode=true)
+            ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
             resp = ftp_get(byte_file_name, ftp_options)
             bytes = read(resp.body)
             @test bytes == hex2bytes(byte_file_contents)
@@ -302,14 +303,15 @@
     end
     @testset "binary file download using ctxt" begin
         @testset "it is not the same file when downloading in ascii mode" begin
-            ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host, binary_mode=false)
+            ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
             ctxt, resp = ftp_connect(ftp_options)
-            resp = ftp_get(ctxt, byte_file_name)
+            resp = ftp_get(ctxt, byte_file_name, mode=ascii_mode)
             bytes = read(resp.body)
             @unix_only @test bytes != hex2bytes(byte_file_contents)
+            @unix_only @test bytes == hex2bytes(byte_file_contents_ascii_transfer)
         end
         @testset "it is the same file when downloading in binary mode" begin
-            ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host, binary_mode=true)
+            ftp_options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
             ctxt, resp = ftp_connect(ftp_options)
             resp = ftp_get(ctxt, byte_file_name)
             bytes = read(resp.body)
@@ -318,31 +320,32 @@
     end
     @testset "binary file download using ftp object" begin
         @testset "it is not the same file when downloading in ascii mode" begin
-            ftp = FTP(user=user, pswd=pswd, host=host, binary_mode=false)
-            buff = download(ftp, byte_file_name)
+            ftp = FTP(user=user, pswd=pswd, host=host)
+            buff = download(ftp, byte_file_name, mode=ascii_mode)
             bytes = read(buff)
             @unix_only @test bytes != hex2bytes(byte_file_contents)
+            @unix_only @test bytes == hex2bytes(byte_file_contents_ascii_transfer)
         end
         @testset "it is the same file when downloading in binary mode" begin
-            ftp = FTP(user=user, pswd=pswd, host=host, binary_mode=true)
+            ftp = FTP(user=user, pswd=pswd, host=host)
             buff = download(ftp, byte_file_name)
             bytes = read(buff)
             @test bytes == hex2bytes(byte_file_contents)
         end
     end
     @testset "binary file download using ftp object, start in ascii, and switch to binary, then back" begin
-        ftp = FTP(user=user, pswd=pswd, host=host, binary_mode=false)
-        buff = download(ftp, byte_file_name)
+        ftp = FTP(user=user, pswd=pswd, host=host)
+        buff = download(ftp, byte_file_name, mode=ascii_mode)
         bytes = read(buff)
         @unix_only @test bytes != hex2bytes(byte_file_contents)
-        binary(ftp)
+        @unix_only @test bytes == hex2bytes(byte_file_contents_ascii_transfer)
         buff = download(ftp, byte_file_name)
         bytes = read(buff)
         @test bytes == hex2bytes(byte_file_contents)
-        ascii(ftp)
-        buff = download(ftp, byte_file_name)
+        buff = download(ftp, byte_file_name, mode=ascii_mode)
         bytes = read(buff)
         @unix_only @test bytes != hex2bytes(byte_file_contents)
+        @unix_only @test bytes == hex2bytes(byte_file_contents_ascii_transfer)
     end
 
     ftp_cleanup()

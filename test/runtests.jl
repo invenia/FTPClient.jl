@@ -115,6 +115,7 @@ directory_name = "test_directory"
 file_size = rand(1:100)
 file_contents = randstring(file_size)
 @unix_only byte_file_contents = string("466F6F426172", "0D0A", "466F6F426172")
+@unix_only byte_file_contents_ascii_transfer = string("466F6F426172", "0A", "466F6F426172")
 @windows_only byte_file_contents = string("466F6F426172", "0A", "466F6F426172", "1A1A1A")
 byte_file_name = randstring(20)
 upload_file_name = "test_upload.txt"

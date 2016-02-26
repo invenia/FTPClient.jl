@@ -1,10 +1,10 @@
 type FTP
     ctxt::ConnContext
 
-    function FTP(;host="", implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=true)
+    function FTP(;host="", implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="")
         options = RequestOptions(implicit=implt, ssl=ssl,
                     verify_peer=ver_peer, active_mode=act_mode,
-                    username=user, passwd=pswd, hostname=host, binary_mode=binary_mode)
+                    username=user, passwd=pswd, hostname=host)
 
         ctxt = nothing
         try
@@ -46,10 +46,10 @@ end
 Download the file "file_name" from FTP server and return IOStream.
 If "save_path" is not specified, contents are written to and returned as IOBuffer.
 """ ->
-function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString="")
+function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODES=binary_mode)
     resp = nothing
     try
-        resp = ftp_get(ftp.ctxt, file_name, save_path)
+        resp = ftp_get(ftp.ctxt, file_name, save_path; mode=mode)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to download $file_name."
@@ -218,7 +218,6 @@ Set the transfer mode to binary.
 """ ->
 function binary(ftp::FTP)
 
-    ftp.ctxt.options.binary_mode = true
     resp = ftp_command(ftp.ctxt, "TYPE I")
 
     if(resp.code != 200)
@@ -233,7 +232,6 @@ Set the transfer mode to ASCII.
 """ ->
 function ascii(ftp::FTP)
 
-    ftp.ctxt.options.binary_mode = false
     resp = ftp_command(ftp.ctxt, "TYPE A")
 
     if(resp.code != 200)

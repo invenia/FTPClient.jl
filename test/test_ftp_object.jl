@@ -17,7 +17,6 @@
             @test ftp.ctxt.options.implicit == false
             @test ftp.ctxt.options.verify_peer == true
             @test ftp.ctxt.options.active_mode == false
-            @test ftp.ctxt.options.binary_mode == true
         end
 
         @testset "connection" begin
@@ -186,16 +185,16 @@
         end
 
         @testset "binary" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host, binary_mode=false)
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             binary(ftp)
-            @test ftp.ctxt.options.binary_mode == true
+            no_unexpected_changes(ftp)
             close(ftp)
         end
 
         @testset "ascii" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host, binary_mode=true)
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             ascii(ftp)
-            @test ftp.ctxt.options.binary_mode == false
+            no_unexpected_changes(ftp)
             close(ftp)
         end
 
