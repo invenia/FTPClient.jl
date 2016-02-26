@@ -405,8 +405,6 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO)
         catch
             cleanup_easy_context(ctxt)
             rethrow()
-        finally
-            close(file)
         end
     else
         ctxt.options.blocking = true

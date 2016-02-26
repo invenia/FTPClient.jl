@@ -25,9 +25,9 @@ end
 
 context("ftp_put error") do
     options = RequestOptions(blocking=true, ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
-    file = open(upload_file)
-    @fact_throws FTPClientError ftp_put(upload_file, file, options)
-    close(file)
+    open(upload_file) do file
+        @fact_throws FTPClientError ftp_put(upload_file, file, options)
+    end
 end
 
 context("ftp_get error") do
@@ -69,8 +69,10 @@ end
 
 context("FTP object error when uploading, non-blocking") do
     ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-    ref = non_block_upload(ftp, upload_file)
-    @fact_throws RemoteException get_upload_resp(ref)
+    open(upload_file) do file
+        ref = non_block_upload(ftp, upload_file, file)
+        @fact_throws RemoteException get_upload_resp(ref)
+    end
     close(ftp)
 end
 

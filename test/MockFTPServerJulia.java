@@ -118,7 +118,6 @@ public class MockFTPServerJulia
         }
 
         FileEntry file = new FileEntry(fileName);
-        System.out.println(hex);
         file.setContents(hexStringToByteArray(hex));
         fakeFtpServer.getFileSystem().add(file);
 
