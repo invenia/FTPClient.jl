@@ -17,24 +17,24 @@
     @testset "Testing for client failure in FTPC.jl" begin
 
         @testset "ftp_connect error" begin
-            options = RequestOptions(blocking=true, ssl=false, active_mode=false, username=user, passwd=pswd, hostname="not a host")
+            options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname="not a host")
             @test_throws FTPClientError ftp_connect(options)
         end
 
         @testset "ftp_put error" begin
-            options = RequestOptions(blocking=true, ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
+            options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
             open(upload_file_name) do file
                 @test_throws FTPClientError ftp_put(upload_file_name, file, options)
             end
         end
 
         @testset "ftp_get error" begin
-            options = RequestOptions(blocking=true, ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
+            options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
             @test_throws FTPClientError ftp_get(file_name, options)
         end
 
         @testset "ftp_command error" begin
-            options = RequestOptions(blocking=true, ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
+            options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
             @test_throws FTPClientError ftp_command("NLST", options)
         end
 
