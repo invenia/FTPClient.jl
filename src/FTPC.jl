@@ -274,8 +274,8 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
         @ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(1)
-        full_url = ctxt.url * file_name
 
+        full_url = ctxt.url * file_name
         if mode == binary_mode
             @ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=i"
         elseif mode == ascii_mode
@@ -324,12 +324,12 @@ Upload file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions())
+function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions(); mode::FTP_MODES=binary_mode)
     ctxt = false
     try
 
         ctxt = setup_easy_handle(options)
-        resp = ftp_put(ctxt, file_name, file)
+        resp = ftp_put(ctxt, file_name, file, mode=mode)
 
         return resp
 
@@ -347,7 +347,7 @@ Upload file with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO)
+function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODES=binary_mode)
     try
         resp = Response()
         rd = ReadData()
@@ -360,9 +360,9 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO)
         p_rd = pointer_from_objref(rd)
         p_resp = pointer_from_objref(resp)
 
-        command = "STOR " * file_name
-        @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
-        @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
+        #command = "STOR " * file_name
+        #command = "TYPE A"
+        #@ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
 
         @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
         @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
@@ -371,12 +371,31 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO)
         @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
         @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
+        #@ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(1)
+
+        full_url = ctxt.url * file_name
+        @ce_curl curl_easy_setopt CURLOPT_URL full_url
+        if mode == binary_mode
+            #@ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=i"
+            @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
+            #@ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
+        elseif mode == ascii_mode
+            println("giong to ascii mode")
+            #@ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=a"
+            @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(1)
+            @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
+            @ce_curl curl_easy_setopt CURLOPT_INFILESIZE Int64(rd.sz)
+        end
+
         @ce_curl curl_easy_perform
         process_response(ctxt, resp)
 
         # resest handle defaults
         @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
         @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(0)
+        @ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(0)
+        @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
+        @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(0)
 
         return resp
 

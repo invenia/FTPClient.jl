@@ -63,27 +63,26 @@ end
 @doc """
 Upload the file "local_name" to the FTP server and save as "local_name".
 """ ->
-function upload(ftp::FTP, local_name::AbstractString)
-    return upload(ftp, local_name, local_name)
+function upload(ftp::FTP, local_name::AbstractString; mode::FTP_MODES=binary_mode)
+    return upload(ftp, local_name, local_name; mode=mode)
 end
-
 
 @doc """
 Upload the file "local_name" to the FTP server and save as "remote_name".
 """ ->
-function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString)
+function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString; mode::FTP_MODES=binary_mode)
     open(local_name) do local_file
-        return upload(ftp, local_file, remote_name)
+        return upload(ftp, local_file, remote_name; mode=mode)
     end
 end
 
 @doc """
 Upload IO object "local_file" to the FTP server and save as "remote_name".
 """ ->
-function upload(ftp::FTP, local_file::IO, remote_name::AbstractString)
+function upload(ftp::FTP, local_file::IO, remote_name::AbstractString; mode::FTP_MODES=binary_mode)
     resp = nothing
     try
-        resp = ftp_put(ftp.ctxt, remote_name, local_file)
+        resp = ftp_put(ftp.ctxt, remote_name, local_file; mode=mode)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to upload $remote_name."
