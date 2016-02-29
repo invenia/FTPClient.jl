@@ -35,7 +35,7 @@ end
 
 type Response
     body::IO
-    headers::Vector{AbstractString}
+    headers::Array{AbstractString}
     code::UInt
     total_time::Float64
     bytes_recd::Int

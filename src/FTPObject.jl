@@ -1,16 +1,16 @@
 type FTP
     ctxt::ConnContext
 
-    function FTP(;host="", implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=true)
-        options = RequestOptions(blocking=true, implicit=implt, ssl=ssl,
-                    verify_peer=ver_peer, active_mode=act_mode,
+    function FTP(;host="", implicit=false, ssl=false, verify=true, active=false, user="", pswd="", binary_mode=true)
+        options = RequestOptions(blocking=true, implicit=implicit, ssl=ssl,
+                    verify_peer=verify, active_mode=active,
                     username=user, passwd=pswd, hostname=host, binary_mode=binary_mode)
 
         ctxt = nothing
         try
             ctxt, resp = ftp_connect(options)
         catch err
-            if(isa(err, FTPClientError))
+            if isa(err, FTPClientError)
                 err.msg = "Failed to connect."
             end
             rethrow()
