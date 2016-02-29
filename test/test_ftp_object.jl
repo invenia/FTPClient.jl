@@ -13,7 +13,7 @@
             @test ftp.ctxt.options.username == user
             @test ftp.ctxt.options.passwd == pswd
             @test ftp.ctxt.options.hostname == host
-            @test ftp.ctxt.options.url == "ftp://"* host * "/"
+            @test ftp.ctxt.options.url == "ftp://$host/"
             @test ftp.ctxt.options.implicit == false
             @test ftp.ctxt.options.verify_peer == true
             @test ftp.ctxt.options.active_mode == false
@@ -23,16 +23,16 @@
         @testset "connection" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             close(ftp)
         end
 
         @testset "readdir" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             dir = readdir(ftp)
-            @test setdiff(dir, ["test_directory",byte_file_name,"test_upload.txt","test_download.txt"]) == Array{ASCIIString,1}()
+            @test setdiff(dir, ["test_directory",byte_file_name,"test_upload.txt","test_download.txt"]) == ASCIIString[]
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             close(ftp)
         end
 
@@ -42,7 +42,7 @@
             actual_buff = readstring(buff)
             @test actual_buff == file_contents
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             close(ftp)
         end
 
@@ -53,7 +53,7 @@
             @test file_exists("/" * upload_file_name)
             @test get_file_contents("/" * upload_file_name) == upload_file_contents
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             remove("/" * upload_file_name)
             @test !file_exists("/" * upload_file_name)
             close(ftp)
@@ -65,7 +65,7 @@
             resp = mkdir(ftp, testdir)
             @test directory_exists("/" * testdir)
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             remove("/" * testdir)
             @test !directory_exists("/" * testdir)
             close(ftp)
@@ -79,7 +79,7 @@
             @test_throws FTPClientError mkdir(ftp, testdir)
             @test directory_exists("/" * testdir)
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             remove("/" * testdir)
             @test !directory_exists("/" * testdir)
             close(ftp)
@@ -90,7 +90,7 @@
             set_directory("/" * testdir)
             cd(ftp, testdir)
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/" * testdir * "/"
+            @test ftp.ctxt.url == "ftp://$host/" * testdir * "/"
             remove("/" * testdir)
             @test !directory_exists("/" * testdir)
             close(ftp)
@@ -101,7 +101,7 @@
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             @test_throws FTPClientError cd(ftp, "not_a_directory")
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             @test !directory_exists("/" * testdir)
             close(ftp)
         end
@@ -113,7 +113,7 @@
             cd(ftp, testdir)
             cd(ftp, "..")
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/" * testdir * "/../"
+            @test ftp.ctxt.url == "ftp://$host/" * testdir * "/../"
             remove("/" * testdir)
             @test !directory_exists("/" * testdir)
             close(ftp)
@@ -126,7 +126,7 @@
             rmdir(ftp, testdir)
             @test !directory_exists("/" * testdir)
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             close(ftp)
         end
 
@@ -136,7 +136,7 @@
             @test_throws FTPClientError rmdir(ftp, testdir)
             @test !directory_exists("/" * testdir)
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             close(ftp)
         end
 
@@ -145,7 +145,7 @@
             path = pwd(ftp)
             @test path == "/"
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             close(ftp)
         end
 
@@ -158,7 +158,7 @@
             @test file_exists("/" * new_file)
             @test get_file_contents("/" * new_file) == upload_file_contents
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             remove("/" * new_file)
             @test !file_exists("/" * new_file)
             close(ftp)
@@ -171,7 +171,7 @@
             rm(ftp, new_file)
             @test !file_exists("/" * new_file)
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             close(ftp)
         end
 
@@ -181,7 +181,7 @@
             @test_throws FTPClientError rm(ftp, new_file)
             @test !file_exists("/" * new_file)
             no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://" * host * "/"
+            @test ftp.ctxt.url == "ftp://$host/"
             close(ftp)
         end
 
@@ -206,7 +206,7 @@
                 @test file_exists("/" * upload_file_name)
                 @test get_file_contents("/" * upload_file_name) == upload_file_contents
                 no_unexpected_changes(ftp)
-                @test ftp.ctxt.url == "ftp://" * host * "/"
+                @test ftp.ctxt.url == "ftp://$host/"
                 remove("/" * upload_file_name)
                 @test !file_exists("/" * upload_file_name)
                 close(ftp)
@@ -217,7 +217,7 @@
                 @test file_exists("/" * "some name")
                 @test get_file_contents("/" * "some name") == upload_file_contents
                 no_unexpected_changes(ftp)
-                @test ftp.ctxt.url == "ftp://" * host * "/"
+                @test ftp.ctxt.url == "ftp://$host/"
                 remove("/" * "some name")
                 @test !file_exists("/" * "some name")
                 close(ftp)
@@ -231,7 +231,7 @@
                 @test file_exists("/" * "some other name")
                 @test get_file_contents("/" * "some other name") == upload_file_contents
                 no_unexpected_changes(ftp)
-                @test ftp.ctxt.url == "ftp://" * host * "/"
+                @test ftp.ctxt.url == "ftp://$host/"
                 remove("/" * "some other name")
                 @test !file_exists("/" * "some other name")
                 close(ftp)
@@ -242,7 +242,7 @@
             @testset "active" begin
                 expected = "Host:      ftp://" * string(host) * "/\nUser:      $(user)\nTransfer:  active mode\nSecurity:  None\n\n"
                 buff = IOBuffer()
-                ftp = FTP(ssl=false, act_mode=true, user=user, pswd=pswd, host=host)
+                ftp = FTP(ssl=false, active=true, user=user, pswd=pswd, host=host)
                 println(buff, ftp)
                 seekstart(buff)
                 @test readstring(buff) == expected
@@ -251,7 +251,7 @@
             @testset "passive" begin
                 expected = "Host:      ftp://" * string(host) * "/\nUser:      $(user)\nTransfer:  passive mode\nSecurity:  None\n\n"
                 buff = IOBuffer()
-                ftp = FTP(ssl=false, act_mode=false, user=user, pswd=pswd, host=host)
+                ftp = FTP(ssl=false, active=false, user=user, pswd=pswd, host=host)
                 println(buff, ftp)
                 seekstart(buff)
                 @test readstring(buff) == expected
