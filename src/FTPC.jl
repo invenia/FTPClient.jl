@@ -35,7 +35,7 @@ end
 
 type Response
     body::IO
-    headers::Vector{AbstractString}
+    headers::Array{AbstractString}
     code::UInt
     total_time::Float64
     bytes_recd::Int
@@ -69,9 +69,8 @@ type ConnContext
     curl::Ptr{CURL}
     url::AbstractString
     options::RequestOptions
-    close_ostream::Bool
 
-    ConnContext(options::RequestOptions) = new(C_NULL, options.url, options, false)
+    ConnContext(options::RequestOptions) = new(C_NULL, options.url, options)
 end
 
 
@@ -100,6 +99,7 @@ function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Pt
     hdrlines = split(bytestring(buff, convert(Int, nbytes)), "\r\n")
 
     hdrlines = filter(line -> ~isempty(line), hdrlines)
+    @assert typeof(resp) == Response
     append!(resp.headers, hdrlines)
 
     nbytes::Csize_t
@@ -186,12 +186,18 @@ function setup_easy_handle(options::RequestOptions)
     return ctxt
 end
 
-function cleanup_easy_context(ctxt::Union{ConnContext,Bool})
-    if isa(ctxt, ConnContext)
-        if (ctxt.curl != C_NULL)
-            curl_easy_cleanup(ctxt.curl)
-            ctxt.curl = C_NULL
-        end
+function cleanup_easy_context(ctxt::ConnContext)
+    if (ctxt.curl != C_NULL)
+
+        # cleaning up should not write any data
+        @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION C_NULL
+        @ce_curl curl_easy_setopt CURLOPT_WRITEDATA C_NULL
+
+        @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION C_NULL
+        @ce_curl curl_easy_setopt CURLOPT_HEADERDATA C_NULL
+
+        curl_easy_cleanup(ctxt.curl)
+        ctxt.curl = C_NULL
     end
 end
 

@@ -1,171 +1,325 @@
-using FTPClient
+@testset "FTPObject" begin
 
-###############################################################################
-# FTPObject
-###############################################################################
+    expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
+    dir_with_space = "Dir name with space"
+    file_with_space = "file with space.txt"
+    space_file_contents = "test file with space.\n"
+    ftp_init()
 
-dir_with_space = "Dir name with space"
-file_with_space = "file with space.txt"
-space_file_contents = "test file with space.\n"
-ftp_init()
+    @testset "with persistent connection" begin
 
-println("\nTest FTPObject with persistent connection:\n")
-
-# test 17, establish connection
-ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-println("\nTest 17 passed.\n$(ftp)")
-
-# test 18, get a list of directory's contents
-dir = readdir(ftp)
-# Check if there are any differences
-@test setdiff(dir, ["test_directory",byte_file_name,"test_upload.txt","test_download.txt"]) == Array{ASCIIString,1}()
-println("\nTest 18 passed.\n$(ftp)")
-
-# test 19, download file from server
-buff = download(ftp, file_name)
-@compat @test readstring(buff) == file_contents
-println("\nTest 19 passed.\n$(ftp)")
-
-# test 20, upload a file
-upload(ftp, upload_file)
-println("\nTest 20 passed.\n$(ftp)")
-
-# test 21, make a diretory
-mkdir(ftp, testdir)
-println("\nTest 21 passed.\n$(ftp)")
-
-# test 22, try making a directory that already exists
-@test_throws FTPClientError mkdir(ftp, testdir)
-println("\nTest 22 passed.\n$(ftp)")
-
-# test 23, change directory
-cd(ftp, testdir)
-println("\nTest 23 passed.\n$(ftp)")
-
-# test 24, try changing to a directory that doesn't exsit
-@test_throws FTPClientError cd(ftp, "not_a_directory")
-println("\nTest 24 passed.\n$(ftp)")
-
-# test 25, go to parent directory
-cd(ftp, "..")
-readdir(ftp)
-println("\nTest 25 passed.\n$(ftp)")
-
-# test 26, remove the test directory
-rmdir(ftp, testdir)
-println("\nTest 26 passed.\n$(ftp)")
-
-# test 27, try removing a directory that doesn't exists
-@test_throws FTPClientError rmdir(ftp, testdir)
-println("\nTest 27 passed.\n$(ftp)")
-
-# test 28, get current directory path
-path = pwd(ftp)
-@test path == "/"
-println("\nTest 28 passed.\n$(ftp)")
-
-# test 29, rename uploaded file
-mv(ftp, upload_file, new_file)
-println("\nTest 29 passed.\n$(ftp)")
-
-# test 30, remove the uploaded file
-rm(ftp, new_file)
-println("\nTest 30 passed.\n$(ftp)")
-
-# test 31, try removing a file that doesn't exists
-@test_throws FTPClientError rm(ftp, new_file)
-println("\nTest 31 passed.\n$(ftp)")
-
-binary(ftp)
-println("\nTest 32 passed.\n$(ftp)")
-
-ascii(ftp)
-println("\nTest 33 passed.\n$(ftp)")
-
-println("\nTest FTPObject with non-blocking upload/download:\n")
-
-# test connect with non-blocking call
-ftp = FTP(block=false, ssl=false, user=user, pswd=pswd, host=host)
-println("\nTest 34 passed.\n$(ftp)")
-
-# test 35, download file from server using blocking function
-buff = download(ftp, file_name)
-@compat @test readstring(buff) == file_contents
-println("\nTest 35 passed.\n$(ftp)")
-
-# test 36, upload a file using blocking function
-upload(ftp, upload_file)
-println("\nTest 36 passed.\n$(ftp)")
-
-# test 37, download file from server using non-blocking function
-ref = non_block_download(ftp, file_name)
-buff = get_download_resp(ref)
-@compat @test readstring(buff) == file_contents
-println("\nTest 37 passed.\n$(ftp)")
-
-# test 38, upload a file using blocking function
-open(upload_file) do file
-    ref = non_block_upload(ftp, upload_file, file)
-    get_upload_resp(ref)
-end
-println("\nTest 38 passed.\n$(ftp)")
-
-# test 39, make a directory with spaces in name
-mkdir(ftp, dir_with_space)
-println("\nTest 39 passed.\n$(ftp)")
-
-# test 40, get directory list with space in name
-dir = readdir(ftp)
-# Check if there are any differences
-@test setdiff(dir, [dir_with_space, directory_name, byte_file_name, upload_file, file_name]) == Array{ASCIIString,1}()
-println("\nTest 40 passed.\n$(ftp)")
-
-# test 41, change to directory with spaces in name
-cd(ftp, dir_with_space)
-println("\nTest 41 passed.\n$(ftp)")
-
-# test 42, upload file with space in name
-upload(ftp, IOBuffer(space_file_contents), file_with_space)
-println("\nTest 42 passed.\n$(ftp)")
-dir = readdir(ftp)
-@test dir == [file_with_space]
-
-# test 43, download file with space in name
-buff = download(ftp, file_with_space)
-@compat @test readstring(buff) == space_file_contents
-println("\nTest 43 passed.\n$(ftp)")
-
-# test 44, remove file with space in name
-rm(ftp, file_with_space)
-println("\nTest 44 passed.\n$(ftp)")
-
-# test 45, remove directory with space in name
-cd(ftp, "..")
-rmdir(ftp, dir_with_space)
-println("\nTest 45 passed.\n$(ftp)")
-
-@testset "FTPClient FTPObject tests" begin
-    @testset "uploading a file with only the local file name" begin
-        ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-        resp = upload(ftp, upload_file)
-        @test resp.code == 226
-    end
-    @testset "uploading a file with remote local file name" begin
-        ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-        resp = upload(ftp, upload_file, "some name")
-        @test resp.code == 226
-    end
-    @testset "uploading a file with remote local file name" begin
-        ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-        open(upload_file) do local_file
-            resp = upload(ftp, local_file, "some other name")
+        function no_unexpected_changes(ftp::FTP)
+            @test ftp.ctxt.options.ssl == false
+            @test ftp.ctxt.options.username == user
+            @test ftp.ctxt.options.passwd == pswd
+            @test ftp.ctxt.options.hostname == host
+            @test ftp.ctxt.options.url == "ftp://$host/"
+            @test ftp.ctxt.options.blocking == true
+            @test ftp.ctxt.options.implicit == false
+            @test ftp.ctxt.options.verify_peer == true
+            @test ftp.ctxt.options.active_mode == false
+            @test ftp.ctxt.options.binary_mode == true
         end
-        @test resp.code == 226
+
+        @testset "connection" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            close(ftp)
+        end
+
+        @testset "readdir" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            dir = readdir(ftp)
+            @test setdiff(dir, ["test_directory",byte_file_name,"test_upload.txt","test_download.txt"]) == ASCIIString[]
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            close(ftp)
+        end
+
+        @testset "download" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            buff = download(ftp, file_name)
+            actual_buff = readstring(buff)
+            @test actual_buff == file_contents
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            close(ftp)
+        end
+
+        @testset "download non blocking" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            future = download(ftp, file_name; block=false)
+            @test typeof(future) <: Future
+            buff = fetch(future)
+            actual_buff = readstring(buff)
+            @test actual_buff == file_contents
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            close(ftp)
+        end
+
+        @testset "upload" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !file_exists("/" * upload_file_name)
+            resp = upload(ftp, upload_file_name)
+            @test file_exists("/" * upload_file_name)
+            @test get_file_contents("/" * upload_file_name) == upload_file_contents
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            remove("/" * upload_file_name)
+            @test !file_exists("/" * upload_file_name)
+            close(ftp)
+        end
+
+        @testset "upload non blocking" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !file_exists("/" * upload_file_name)
+            future = upload(ftp, upload_file_name; block=false)
+            @test typeof(future) <: Future
+            resp = fetch(future)
+            @test file_exists("/" * upload_file_name)
+            @test get_file_contents("/" * upload_file_name) == upload_file_contents
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            remove("/" * upload_file_name)
+            @test !file_exists("/" * upload_file_name)
+            close(ftp)
+        end
+
+        @testset "upload non blocking, give a name" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !file_exists("/" * upload_file_name)
+            future = upload(ftp, upload_file_name, new_file; block=false)
+            @test typeof(future) <: Future
+            resp = fetch(future)
+            @test file_exists("/" * new_file)
+            @test get_file_contents("/" * new_file) == upload_file_contents
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            remove("/" * new_file)
+            @test !file_exists("/" * new_file)
+            close(ftp)
+        end
+
+        @testset "upload non blocking, give a file" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !file_exists("/" * upload_file_name)
+            resp = nothing
+            open(upload_file_name) do file
+                future = upload(ftp, file, new_file; block=false)
+                @test typeof(future) <: Future
+                resp = fetch(future)
+            end
+            @test file_exists("/" * new_file)
+            @test get_file_contents("/" * new_file) == upload_file_contents
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            remove("/" * new_file)
+            @test !file_exists("/" * new_file)
+            close(ftp)
+        end
+
+        @testset "mkdir" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !directory_exists("/" * testdir)
+            resp = mkdir(ftp, testdir)
+            @test directory_exists("/" * testdir)
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            remove("/" * testdir)
+            @test !directory_exists("/" * testdir)
+            close(ftp)
+        end
+
+        @testset "mkdir a directory that already exists" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !directory_exists("/" * testdir)
+            set_directory("/" * testdir)
+            @test directory_exists("/" * testdir)
+            @test_throws FTPClientError mkdir(ftp, testdir)
+            @test directory_exists("/" * testdir)
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            remove("/" * testdir)
+            @test !directory_exists("/" * testdir)
+            close(ftp)
+        end
+
+        @testset "cd" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_directory("/" * testdir)
+            cd(ftp, testdir)
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/" * testdir * "/"
+            remove("/" * testdir)
+            @test !directory_exists("/" * testdir)
+            close(ftp)
+        end
+
+        @testset "cd into a directory that doesn't exists" begin
+            @test !directory_exists("/" * testdir)
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test_throws FTPClientError cd(ftp, "not_a_directory")
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            @test !directory_exists("/" * testdir)
+            close(ftp)
+        end
+
+        @testset "cd into parent directory" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_directory("/" * testdir)
+            @test directory_exists("/" * testdir)
+            cd(ftp, testdir)
+            cd(ftp, "..")
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/" * testdir * "/../"
+            remove("/" * testdir)
+            @test !directory_exists("/" * testdir)
+            close(ftp)
+        end
+
+        @testset "rmdir" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_directory("/" * testdir)
+            @test directory_exists("/" * testdir)
+            rmdir(ftp, testdir)
+            @test !directory_exists("/" * testdir)
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            close(ftp)
+        end
+
+        @testset "rmdir a directory that doesn't exists" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !directory_exists("/" * testdir)
+            @test_throws FTPClientError rmdir(ftp, testdir)
+            @test !directory_exists("/" * testdir)
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            close(ftp)
+        end
+
+        @testset "pwd" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            path = pwd(ftp)
+            @test path == "/"
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            close(ftp)
+        end
+
+        @testset "mv" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_file("/" * upload_file_name, upload_file_contents)
+            @test file_exists("/" * upload_file_name)
+            mv(ftp, upload_file_name, new_file)
+            @test !file_exists("/" * upload_file_name)
+            @test file_exists("/" * new_file)
+            @test get_file_contents("/" * new_file) == upload_file_contents
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            remove("/" * new_file)
+            @test !file_exists("/" * new_file)
+            close(ftp)
+        end
+
+        @testset "rm" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_file("/" * new_file, upload_file_contents)
+            @test file_exists("/" * new_file)
+            rm(ftp, new_file)
+            @test !file_exists("/" * new_file)
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            close(ftp)
+        end
+
+        @testset "rm a file that doesn't exists" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !file_exists("/" * new_file)
+            @test_throws FTPClientError rm(ftp, new_file)
+            @test !file_exists("/" * new_file)
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+            close(ftp)
+        end
+
+        @testset "binary" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host, binary_mode=false)
+            binary(ftp)
+            @test ftp.ctxt.options.binary_mode == true
+            close(ftp)
+        end
+
+        @testset "ascii" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host, binary_mode=true)
+            ascii(ftp)
+            @test ftp.ctxt.options.binary_mode == false
+            close(ftp)
+        end
+
+        @testset "upload" begin
+            @testset "uploading a file with only the local file name" begin
+                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+                resp = upload(ftp, upload_file_name)
+                @test file_exists("/" * upload_file_name)
+                @test get_file_contents("/" * upload_file_name) == upload_file_contents
+                no_unexpected_changes(ftp)
+                @test ftp.ctxt.url == "ftp://$host/"
+                remove("/" * upload_file_name)
+                @test !file_exists("/" * upload_file_name)
+                close(ftp)
+            end
+            @testset "uploading a file with remote local file name" begin
+                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+                resp = upload(ftp, upload_file_name, "some name")
+                @test file_exists("/" * "some name")
+                @test get_file_contents("/" * "some name") == upload_file_contents
+                no_unexpected_changes(ftp)
+                @test ftp.ctxt.url == "ftp://$host/"
+                remove("/" * "some name")
+                @test !file_exists("/" * "some name")
+                close(ftp)
+            end
+            @testset "uploading a file with remote local file name" begin
+                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+                resp = nothing
+                open(upload_file_name) do local_file
+                    resp = upload(ftp, local_file, "some other name")
+                end
+                @test file_exists("/" * "some other name")
+                @test get_file_contents("/" * "some other name") == upload_file_contents
+                no_unexpected_changes(ftp)
+                @test ftp.ctxt.url == "ftp://$host/"
+                remove("/" * "some other name")
+                @test !file_exists("/" * "some other name")
+                close(ftp)
+            end
+        end
+
+        @testset "show" begin
+            @testset "active" begin
+                expected = "Host:      ftp://" * string(host) * "/\nUser:      $(user)\nTransfer:  active mode\nSecurity:  None\n\n"
+                buff = IOBuffer()
+                ftp = FTP(ssl=false, active=true, user=user, pswd=pswd, host=host)
+                println(buff, ftp)
+                seekstart(buff)
+                @test readstring(buff) == expected
+                close(ftp)
+            end
+            @testset "passive" begin
+                expected = "Host:      ftp://" * string(host) * "/\nUser:      $(user)\nTransfer:  passive mode\nSecurity:  None\n\n"
+                buff = IOBuffer()
+                ftp = FTP(ssl=false, active=false, user=user, pswd=pswd, host=host)
+                println(buff, ftp)
+                seekstart(buff)
+                @test readstring(buff) == expected
+                close(ftp)
+            end
+        end
+
     end
+    ftp_cleanup()
 end
-
-close(ftp)
-ftp_cleanup()
-
-println("FTPObject tests passed.\n\n")
-

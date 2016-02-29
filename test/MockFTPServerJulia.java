@@ -1,6 +1,7 @@
 import org.mockftpserver.core.command.StaticReplyCommandHandler;
 import org.mockftpserver.core.command.CommandNames;
 import org.mockftpserver.fake.filesystem.FileEntry;
+import org.mockftpserver.fake.filesystem.DirectoryEntry;
 import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 import org.mockftpserver.fake.FakeFtpServer;
@@ -108,6 +109,21 @@ public class MockFTPServerJulia
         return true;
     }
 
+    public static boolean setDirectory(String directoryName)
+    {
+
+        if(fakeFtpServer.getFileSystem() == null)
+        {
+            FileSystem fileSystem = new UnixFakeFileSystem();
+            fakeFtpServer.setFileSystem(fileSystem);
+        }
+
+        DirectoryEntry directory = new DirectoryEntry(directoryName);
+        fakeFtpServer.getFileSystem().add(directory);
+
+        return true;
+    }
+
     public static boolean setByteFile(String fileName, String hex)
     {
 
@@ -141,6 +157,26 @@ public class MockFTPServerJulia
         return true;
     }
 
+    public static boolean remove(String path)
+    {
+        return fakeFtpServer.getFileSystem().delete(path);
+    }
+
+    public static boolean fileExists(String path)
+    {
+        return fakeFtpServer.getFileSystem().isFile(path);
+    }
+
+    public static boolean directoryExists(String path)
+    {
+        return fakeFtpServer.getFileSystem().isDirectory(path);
+    }
+
+    public static String getFileContents(String path)
+    {
+        return convertStreamToString(((FileEntry)fakeFtpServer.getFileSystem().getEntry(path)).createInputStream());
+    }
+
     private static byte[] hexStringToByteArray(String s)
     {
         int len = s.length();
@@ -151,5 +187,12 @@ public class MockFTPServerJulia
                                  + Character.digit(s.charAt(i+1), 16));
         }
         return data;
+    }
+
+    // http://stackoverflow.com/questions/309424/read-convert-an-inputstream-to-a-string/5445161#5445161
+    private static String convertStreamToString(java.io.InputStream is)
+    {
+        java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+        return s.hasNext() ? s.next() : "";
     }
 }

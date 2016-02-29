@@ -30,12 +30,9 @@ export RequestOptions,
        ftp_command,
        FTP,
        upload,
+       download,
        binary,
        rmdir,
-       non_block_download,
-       get_download_resp,
-       non_block_upload,
-       get_upload_resp,
        FTPClientError
 
 include("FTPC.jl")

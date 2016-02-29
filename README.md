@@ -14,16 +14,16 @@ Tested with julia `Version 0.4.0-dev+6673`
 
 Functions for non-persistent connection:
 ```julia
-ftp_get(file_name::String, options::RequestOptions, save_path::String)
-ftp_put(file_name::String, file::IO, options::RequestOptions)
-ftp_command(cmd::String, options::RequestOptions)
+ftp_get(file_name::AbstractString, options::RequestOptions, save_path::AbstractString)
+ftp_put(file_name::AbstractString, file::IO, options::RequestOptions)
+ftp_command(cmd::AbstractString, options::RequestOptions)
 ```
 - These functions all establish a connection, perform the desired operation then close the connection and return a `Response` object. Any data retrieved from server is in `Response.body`.
 
     ```julia
     type Response
         body::IO
-        headers::Vector{String}
+        headers::Vector{AbstractString}
         code::Int
         total_time::FloatingPoint
         bytes_recd::Int
@@ -33,9 +33,9 @@ ftp_command(cmd::String, options::RequestOptions)
 Functions for persistent connection:
 ```julia
 ftp_connect(options::RequestOptions)
-ftp_get(ctxt::ConnContext, file_name::String, save_path::String)
-ftp_put(ctxt::ConnContext, file_name::String, file::IO)
-ftp_command(ctxt::ConnContext, cmd::String)
+ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString)
+ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO)
+ftp_command(ctxt::ConnContext, cmd::AbstractString)
 ftp_close_connection(ctxt::ConnContext)
 ```
 - These functions all return a `Response` object, except `ftp_close_connection`, which does not return anything. Any data retrieved from server is in `Response.body`.
@@ -43,12 +43,8 @@ ftp_close_connection(ctxt::ConnContext)
     ```julia
     type ConnContext
         curl::Ptr{CURL}
-        url::String
-        rd::ReadData
-        wd::WriteData
-        resp::Response
+        url::AbstractString
         options::RequestOptions
-        close_ostream::Bool
     end
     ```
 
@@ -65,9 +61,9 @@ ftp_close_connection(ctxt::ConnContext)
         verify_peer::Bool
         active_mode::Bool
         headers::Vector{Tuple}
-        username::String
-        passwd::String
-        url::String
+        username::AbstractString
+        passwd::AbstractString
+        url::AbstractString
         binary_mode::Bool
     end
     ```
@@ -83,17 +79,17 @@ ftp_close_connection(ctxt::ConnContext)
 ```julia
 FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=true)
 close(ftp::FTP)
-download(ftp::FTP, file_name::String, save_path::String="")
+download(ftp::FTP, file_name::AbstractString, save_path::AbstractString="")
 upload(ftp::FTP, local_name::AbstractString)
 upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString)
 upload(ftp::FTP, local_file::IO, remote_name::AbstractString)
 readdir(ftp::FTP)
-cd(ftp::FTP, dir::String)
+cd(ftp::FTP, dir::AbstractString)
 pwd(ftp::FTP)
-rm(ftp::FTP, file_name::String)
-rmdir(ftp::FTP, dir_name::String)
-mkdir(ftp::FTP, dir::String)
-mv(ftp::FTP, file_name::String, new_name::String)
+rm(ftp::FTP, file_name::AbstractString)
+rmdir(ftp::FTP, dir_name::AbstractString)
+mkdir(ftp::FTP, dir::AbstractString)
+mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
 binary(ftp::FTP)
 ascii(ftp::FTP)
 ```

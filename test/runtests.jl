@@ -1,14 +1,15 @@
 push!(LOAD_PATH, "./src")
 
 using FTPClient
-using FactCheck
 if VERSION >= v"0.5-"
     using Base.Test
 else
     using BaseTestNext
     const Test = BaseTestNext
+    typealias Future RemoteRef
 end
 using JavaCall
+using LibCURL
 using Compat
 
 function start_server()
@@ -37,6 +38,11 @@ function set_byte_file(name::AbstractString, content::AbstractString)
     @assert result == 1 "set_byte_file failed"
 end
 
+function set_directory(name::AbstractString)
+    result = jcall(MockFTPServerJulia, "setDirectory", jboolean, (JString,), name)
+    @assert result == 1 "set_directory failed"
+end
+
 function set_command_response(request::AbstractString, code::Integer, reponse::AbstractString)
     result = jcall(MockFTPServerJulia, "setCommandResponse", jboolean, (JString, jint, JString,), request, code, reponse)
     @assert result == 1 "set_command_response failed"
@@ -62,6 +68,40 @@ function undo_errors()
     @assert result == 1 "undo_errors failed"
 end
 
+function remove(path::AbstractString)
+    result = jcall(MockFTPServerJulia, "remove", jboolean, (JString,), path)
+    @assert result == 1 "remove failed"
+end
+
+function file_exists(path::AbstractString)
+    return jcall(MockFTPServerJulia, "fileExists", jboolean, (JString,), path) == 1
+end
+
+function directory_exists(path::AbstractString)
+    return jcall(MockFTPServerJulia, "directoryExists", jboolean, (JString,), path) == 1
+end
+
+function get_file_contents(path::AbstractString)
+    return bytestring(jcall(MockFTPServerJulia, "getFileContents", JString, (JString,), path))
+end
+
+function set_files()
+    set_file("/" * file_name, file_contents)
+    set_file("/" * directory_name * "/" * file_name2, file_contents)
+    set_byte_file("/" * byte_file_name, byte_file_contents)
+
+    @assert file_exists("/" * file_name)
+    @assert directory_exists("/" * directory_name)
+    @assert file_exists("/" * directory_name * "/" * file_name2)
+    @assert file_exists("/" * byte_file_name)
+
+    # Making it's not always true
+    @assert !directory_exists("this directory does not exist")
+    @assert !file_exists("this file does not exists")
+    @assert !directory_exists("/" * file_name)
+    @assert !file_exists("/" * directory_name)
+end
+
 new_file = "new_name.txt"
 testdir = "testdir"
 host = "localhost"
@@ -72,14 +112,16 @@ home_dir = "/"
 file_name = "test_download.txt"
 file_name2 = "test_download2.txt"
 directory_name = "test_directory"
-file_contents = "hello, world"
+file_size = rand(1:100)
+file_contents = randstring(file_size)
 @unix_only byte_file_contents = string("466F6F426172", "0D0A", "466F6F426172")
 @windows_only byte_file_contents = string("466F6F426172", "0A", "466F6F426172", "1A1A1A")
 byte_file_name = randstring(20)
-upload_file = "test_upload.txt"
-f =  open(upload_file, "w")
-write(f, "Test file to upload.\n")
-close(f)
+upload_file_name = "test_upload.txt"
+upload_file_contents = randstring(100)
+open(upload_file_name, "w") do f
+    write(f, upload_file_contents)
+end
 
 
 if (length(ARGS) >= 1 && ARGS[1] == "true")
@@ -119,9 +161,7 @@ else
     MockFTPServerJulia = @jimport MockFTPServerJulia
 
     set_user(user, pswd, home_dir)
-    set_file("/" * file_name, file_contents)
-    set_file("/" * directory_name * "/" * file_name2, file_contents)
-    set_byte_file("/" * byte_file_name, byte_file_contents)
+    set_files()
     set_command_response("AUTH", 230, "Login successful.")
     port = start_server()
     host = "$original_host:$port"
@@ -129,21 +169,17 @@ else
     # Note: If LibCURL complains that the server doesn't listen it probably means that
     # the MockFtpServer isn't ready to accept connections yet.
 
-    test_files = ["test_non_ssl.jl", "test_ftp_object.jl", "test_non_blocking.jl"]
+    @testset "FTPCLient" begin
 
-    for file in test_files
-        fp = joinpath(dirname(@__FILE__), file)
-        println("$fp ...\n")
-        include(fp)
+        include("test_non_ssl.jl")
+        include("test_ftp_object.jl")
+
+        # Basic commands will now error
+        set_errors()
+
+        include("test_client_errors.jl")
+
     end
-
-    # Basic commands will now error
-    set_errors()
-
-    test_file = "test_client_errors.jl"
-    fp = joinpath(dirname(@__FILE__), test_file)
-    println("$fp ...\n")
-    include(fp)
 
     stop_server()
     JavaCall.destroy()
@@ -151,7 +187,4 @@ else
 end
 
 # Done testing
-rm(upload_file)
-
-# Throws errors when a @fact failed a test.
-exitstatus()
+rm(upload_file_name)
