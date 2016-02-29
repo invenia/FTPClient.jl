@@ -31,7 +31,7 @@
         @testset "readdir" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             dir = readdir(ftp)
-            @test setdiff(dir, ["test_directory",byte_file_name,"test_upload.txt","test_download.txt"]) == Array{ASCIIString,1}()
+            @test setdiff(dir, ["test_directory",byte_file_name,"test_upload.txt","test_download.txt"]) == ASCIIString[]
             no_unexpected_changes(ftp)
             @test ftp.ctxt.url == "ftp://$host/"
             close(ftp)

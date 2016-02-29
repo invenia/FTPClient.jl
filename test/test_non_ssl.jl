@@ -1,13 +1,13 @@
 @testset "FTPC.jl non ssl" begin
     ftp_init()
 
+    expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
     non_ssl_test_upload = "test_upload.txt"
 
     @testset "Non-persistent connection tests, passive mode" begin
 
         options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
         expected_header_first_part = ["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory."]
-        expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
 
         # The CI builds add this string to the end of the headers to non
         # persistent connections.
@@ -117,7 +117,7 @@
         options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
         @test options.url == "ftp://$host/"
 
-        expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
+
 
         @testset "ftp_connect" begin
             ctxt, resp = ftp_connect(options)
@@ -353,7 +353,6 @@
 
         @testset "Non-persistent connection tests, passive mode" begin
             expected_header_first_part = ["220 Service ready for new user. (MockFtpServer 2.6; see http://mockftpserver.sourceforge.net)","331 User name okay, need password.","230 User logged in, proceed.","257 \"/\" is current directory."]
-            expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
 
             options = RequestOptions(blocking=false, ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
 
@@ -468,7 +467,6 @@
     @testset "Changed directory and get file" begin
 
         options = RequestOptions(blocking=false, ssl=false, username=user, passwd=pswd, hostname=host)
-        expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
 
         rcall = ftp_connect(options)
         @test typeof(rcall) <: Future
