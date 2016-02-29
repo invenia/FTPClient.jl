@@ -89,8 +89,6 @@ function get_byte_file_contents(path::AbstractString)
     return bytestring(jcall(MockFTPServerJulia, "getByteFileContents", JString, (JString,), path))
 end
 
-
-
 function set_files()
     set_file("/" * file_name, file_contents)
     set_file("/" * directory_name * "/" * file_name2, file_contents)

@@ -360,10 +360,6 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
         p_rd = pointer_from_objref(rd)
         p_resp = pointer_from_objref(resp)
 
-        #command = "STOR " * file_name
-        #command = "TYPE A"
-        #@ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
-
         @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
         @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
         @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
@@ -371,19 +367,14 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
         @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
         @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
-        #@ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(1)
+        @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url * file_name
 
-        full_url = ctxt.url * file_name
-        @ce_curl curl_easy_setopt CURLOPT_URL full_url
         if mode == binary_mode
-            #@ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=i"
             @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
-            #@ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
         elseif mode == ascii_mode
-            println("giong to ascii mode")
-            #@ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=a"
             @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(1)
-            @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
+
+            # libcurl thinks the file transfer sizes are 0 and will throw an error without this.
             @ce_curl curl_easy_setopt CURLOPT_INFILESIZE Int64(rd.sz)
         end
 
@@ -393,9 +384,7 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
         # resest handle defaults
         @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
         @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(0)
-        @ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(0)
         @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
-        @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(0)
 
         return resp
 
