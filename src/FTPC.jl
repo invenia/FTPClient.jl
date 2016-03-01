@@ -21,9 +21,9 @@ type RequestOptions
 
         if url == nothing
             if implicit
-                url = "ftps://" * string(hostname) * "/"
+                url = "ftps://$hostname/"
             else
-                url = "ftp://"* string(hostname) * "/"
+                url = "ftp://$hostname/"
             end
         end
 
@@ -256,13 +256,14 @@ Download file with persistent connection.
 returns resp::Response
 """ ->
 function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString="")
-    try
-        resp = Response()
-        wd = WriteData()
+    resp = Response()
+    wd = WriteData()
 
-        if ~isempty(save_path)
-            wd.buffer = open(save_path, "w")
-        end
+    if ~isempty(save_path)
+        wd.buffer = open(save_path, "w")
+    end
+
+    try
 
         p_wd = pointer_from_objref(wd)
         p_resp = pointer_from_objref(resp)
@@ -287,10 +288,6 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         @ce_curl curl_easy_perform
         process_response(ctxt, resp)
 
-        if ~isempty(save_path)
-            close(wd.buffer)
-        end
-
         if isopen(wd.buffer)
             seekstart(wd.buffer)
         end
@@ -308,6 +305,10 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
     catch
         cleanup_easy_context(ctxt)
         rethrow()
+    finally
+        if ~isempty(save_path)
+            close(wd.buffer)
+        end
     end
 end
 
@@ -472,15 +473,12 @@ Establish connection to FTP server.
 returns ctxt::ConnContext
 """ ->
 function ftp_connect(options::RequestOptions=RequestOptions())
-    ctxt = nothing
+    ctxt = setup_easy_handle(options)
     try
-        ctxt = setup_easy_handle(options)
-
         # ping the server
         resp = ftp_command(ctxt, "LIST")
 
         return ctxt, resp
-
     catch
         cleanup_easy_context(ctxt)
         rethrow()
