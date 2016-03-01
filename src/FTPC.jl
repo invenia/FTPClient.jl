@@ -235,12 +235,9 @@ Download file with non-persistent connection.
 returns resp::Response
 """ ->
 function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptions(), save_path::AbstractString="")
-    ctxt = false
+    ctxt = setup_easy_handle(options)
     try
-        ctxt = setup_easy_handle(options)
-        resp = ftp_get(ctxt, file_name, save_path)
-
-        return resp
+        return ftp_get(ctxt, file_name, save_path)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -302,9 +299,6 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
 
         return resp
 
-    catch
-        cleanup_easy_context(ctxt)
-        rethrow()
     finally
         if ~isempty(save_path)
             close(wd.buffer)
@@ -328,14 +322,9 @@ Upload file with non-persistent connection.
 returns resp::Response
 """ ->
 function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions())
-    ctxt = false
+    ctxt = setup_easy_handle(options)
     try
-
-        ctxt = setup_easy_handle(options)
-        resp = ftp_put(ctxt, file_name, file)
-
-        return resp
-
+        return ftp_put(ctxt, file_name, file)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -351,42 +340,36 @@ Upload file with persistent connection.
 returns resp::Response
 """ ->
 function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO)
-    try
-        resp = Response()
-        rd = ReadData()
+    resp = Response()
+    rd = ReadData()
 
-        rd.src = file
-        seekend(file)
-        rd.sz = position(file)
-        seekstart(file)
+    rd.src = file
+    seekend(file)
+    rd.sz = position(file)
+    seekstart(file)
 
-        p_rd = pointer_from_objref(rd)
-        p_resp = pointer_from_objref(resp)
+    p_rd = pointer_from_objref(rd)
+    p_resp = pointer_from_objref(resp)
 
-        command = "STOR " * file_name
-        @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
-        @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
+    command = "STOR " * file_name
+    @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
+    @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
 
-        @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
-        @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
-        @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
+    @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
+    @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
+    @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
 
-        @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
-        @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
+    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
+    @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
-        @ce_curl curl_easy_perform
-        process_response(ctxt, resp)
+    @ce_curl curl_easy_perform
+    process_response(ctxt, resp)
 
-        # resest handle defaults
-        @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
-        @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(0)
+    # resest handle defaults
+    @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
+    @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(0)
 
-        return resp
-
-    catch
-        cleanup_easy_context(ctxt)
-        rethrow()
-    end
+    return resp
 end
 
 
@@ -404,12 +387,9 @@ Pass FTP command with non-persistent connection.
 returns resp::Response
 """ ->
 function ftp_command(cmd::AbstractString, options::RequestOptions=RequestOptions())
-    ctxt = false
+    ctxt = setup_easy_handle(options)
     try
-        ctxt = setup_easy_handle(options)
-        resp = ftp_command(ctxt, cmd)
-
-        return resp
+        return ftp_command(ctxt, cmd)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -424,39 +404,33 @@ Pass FTP command with persistent connection.
 returns resp::Response
 """ ->
 function ftp_command(ctxt::ConnContext, cmd::AbstractString)
-    try
-        resp = Response()
-        wd = WriteData()
-        p_wd = pointer_from_objref(wd)
+    resp = Response()
+    wd = WriteData()
+    p_wd = pointer_from_objref(wd)
 
-        resp = Response()
-        p_resp = pointer_from_objref(resp)
+    resp = Response()
+    p_resp = pointer_from_objref(resp)
 
-        @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
-        @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
+    @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
+    @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
-        @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
-        @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
+    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
+    @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
-        @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
+    @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
 
-        @ce_curl curl_easy_perform
-        process_response(ctxt, resp)
+    @ce_curl curl_easy_perform
+    process_response(ctxt, resp)
 
-        resp.body = seekstart(wd.buffer)
-        resp.bytes_recd = wd.bytes_recd
+    resp.body = seekstart(wd.buffer)
+    resp.bytes_recd = wd.bytes_recd
 
-        cmd = split(cmd)
-        if (resp.code == 250 && cmd[1] == "CWD")
-            ctxt.url *= join(cmd[2:end], ' ')
-        end
-
-        return resp
-
-    catch
-        cleanup_easy_context(ctxt)
-        rethrow()
+    cmd = split(cmd)
+    if (resp.code == 250 && cmd[1] == "CWD")
+        ctxt.url *= join(cmd[2:end], ' ')
     end
+
+    return resp
 end
 
 

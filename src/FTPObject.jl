@@ -81,16 +81,14 @@ end
 Upload IO object "local_file" to the FTP server and save as "remote_name".
 """ ->
 function upload(ftp::FTP, local_file::IO, remote_name::AbstractString)
-    resp = nothing
     try
-        resp = ftp_put(ftp.ctxt, remote_name, local_file)
+        return ftp_put(ftp.ctxt, remote_name, local_file)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to upload $remote_name."
         end
         rethrow()
     end
-    return resp
 end
 
 
