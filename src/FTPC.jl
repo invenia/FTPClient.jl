@@ -234,10 +234,10 @@ Download file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptions(), save_path::AbstractString="")
+function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptions(), save_path::AbstractString=""; verbose::Bool=false)
     ctxt = setup_easy_handle(options)
     try
-        return ftp_get(ctxt, file_name, save_path)
+        return ftp_get(ctxt, file_name, save_path; verbose=verbose)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -252,7 +252,8 @@ Download file with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString="")
+function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; verbose::Bool=false)
+    ftp_set_verboes!(ctxt, verbose)
     resp = Response()
     wd = WriteData()
 
@@ -321,10 +322,10 @@ Upload file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions())
+function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions(); verbose::Bool=false)
     ctxt = setup_easy_handle(options)
     try
-        return ftp_put(ctxt, file_name, file)
+        return ftp_put(ctxt, file_name, file; verbose=verbose)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -339,7 +340,8 @@ Upload file with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO)
+function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; verbose::Bool=false)
+    ftp_set_verboes!(ctxt, verbose)
     resp = Response()
     rd = ReadData()
 
@@ -386,10 +388,10 @@ Pass FTP command with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_command(cmd::AbstractString, options::RequestOptions=RequestOptions())
+function ftp_command(cmd::AbstractString, options::RequestOptions=RequestOptions(); verbose::Bool=false)
     ctxt = setup_easy_handle(options)
     try
-        return ftp_command(ctxt, cmd)
+        return ftp_command(ctxt, cmd; verbose=verbose)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -403,7 +405,8 @@ Pass FTP command with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_command(ctxt::ConnContext, cmd::AbstractString)
+function ftp_command(ctxt::ConnContext, cmd::AbstractString; verbose::Bool=false)
+    ftp_set_verboes!(ctxt, verbose)
     resp = Response()
     wd = WriteData()
     p_wd = pointer_from_objref(wd)
@@ -446,11 +449,11 @@ Establish connection to FTP server.
 
 returns ctxt::ConnContext
 """ ->
-function ftp_connect(options::RequestOptions=RequestOptions())
+function ftp_connect(options::RequestOptions=RequestOptions(); verbose::Bool=false)
     ctxt = setup_easy_handle(options)
     try
         # ping the server
-        resp = ftp_command(ctxt, "LIST")
+        resp = ftp_command(ctxt, "LIST"; verbose=verbose)
 
         return ctxt, resp
     catch
@@ -471,4 +474,17 @@ Close connection FTP server.
 """ ->
 function ftp_close_connection(ctxt::ConnContext)
     cleanup_easy_context(ctxt)
+end
+
+
+##############################
+# VERBOSE
+##############################
+
+function ftp_set_verboes!(ctxt::ConnContext, verbose::Bool)
+    if verbose
+        @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
+    else
+        @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(0)
+    end
 end

@@ -344,5 +344,277 @@
         bytes = read(buff)
         @unix_only @test bytes != hex2bytes(byte_file_contents)
     end
+
+    @testset "verbose" begin
+
+        function test_captured_ouput(test::Function, expected::Regex)
+            original_stderr = STDOUT
+            out_read, out_write = redirect_stderr()
+
+            test()
+
+            close(out_write)
+            data = readavailable(out_read)
+            close(out_read)
+            redirect_stdout(original_stderr)
+
+            @test ismatch(expected, ASCIIString(data))
+        end
+
+        options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname=host)
+
+        @testset "ftp_get" begin
+
+            @testset "no ctxt" begin
+
+                expected = r"\*   Trying ::1...
+\* Connected to localhost \(::1\) port \d* \(#0\)
+< 220 Service ready for new user. \(MockFtpServer 2.6; see http://mockftpserver.sourceforge.net\)\r
+> USER test\r
+< 331 User name okay, need password.\r
+> PASS test\r
+< 230 User logged in, proceed.\r
+> PWD\r
+< 257 \"/\" is current directory.\r
+\* Entry path is '/'
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> TYPE I\r
+< 200 TYPE completed.\r
+> SIZE test_download.txt\r
+< 502 Command not implemented: SIZE.\r
+> RETR test_download.txt\r
+< 150 File status okay; about to open data connection.\r
+\* Maxdownload = -1
+\* Getting file with size: -1
+\* Remembering we are in dir \"\"
+< 226 Closing data connection. Requested file action successful.\r
+\* Connection #0 to host localhost left intact
+"
+                test_captured_ouput(expected) do
+                    resp = ftp_get(file_name, options, verbose=true)
+                end
+            end
+            @testset "with ctxt" begin
+
+                expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> TYPE I\r
+< 200 TYPE completed.\r
+> SIZE test_download.txt\r
+< 502 Command not implemented: SIZE.\r
+> RETR test_download.txt\r
+< 150 File status okay; about to open data connection.\r
+\* Maxdownload = -1
+\* Getting file with size: -1
+\* Remembering we are in dir \"\"
+< 226 Closing data connection. Requested file action successful.\r
+\* Connection #0 to host localhost left intact
+"
+
+                ctxt, resp = ftp_connect(options)
+                test_captured_ouput(expected) do
+                    resp = ftp_get(ctxt, file_name, verbose=true)
+                end
+                ftp_close_connection(ctxt)
+            end
+        end
+
+        @testset "ftp_put" begin
+
+            @testset "no ctxt" begin
+
+                expected = r"\*   Trying ::1...
+\* Connected to localhost \(::1\) port \d* \(#0\)
+< 220 Service ready for new user. \(MockFtpServer 2.6; see http://mockftpserver.sourceforge.net\)\r
+> USER test\r
+< 331 User name okay, need password.\r
+> PASS test\r
+< 230 User logged in, proceed.\r
+> PWD\r
+< 257 \"/\" is current directory.\r
+\* Entry path is '/'
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> TYPE I\r
+< 200 TYPE completed.\r
+> STOR test_upload.txt\r
+< 150 File status okay; about to open data connection.\r
+\* Remembering we are in dir \"\"
+< 226 Created file test_upload.txt.\r
+\* Connection #0 to host localhost left intact
+"
+
+                @test !file_exists("/" * non_ssl_test_upload)
+                open(upload_file_name) do file
+                    test_captured_ouput(expected) do
+                        ftp_put(non_ssl_test_upload, file, options; verbose=true)
+                    end
+                end
+                @test file_exists("/" * non_ssl_test_upload)
+                @test get_file_contents("/" * non_ssl_test_upload) == upload_file_contents
+                remove("/" * non_ssl_test_upload)
+                @test !file_exists("/" * non_ssl_test_upload)
+
+            end
+
+            @testset "with ctxt" begin
+
+                expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> TYPE I\r
+< 200 TYPE completed.\r
+> STOR test_upload.txt\r
+< 150 File status okay; about to open data connection.\r
+\* Remembering we are in dir \"\"
+< 226 Created file test_upload.txt.\r
+\* Connection #0 to host localhost left intact
+"
+
+                @test !file_exists("/" * non_ssl_test_upload)
+                ctxt, resp = ftp_connect(options)
+                open(upload_file_name) do file
+                    test_captured_ouput(expected) do
+                        ftp_put(ctxt, non_ssl_test_upload, file; verbose=true)
+                    end
+                end
+                @test file_exists("/" * non_ssl_test_upload)
+                @test get_file_contents("/" * non_ssl_test_upload) == upload_file_contents
+                ftp_close_connection(ctxt)
+                remove("/" * non_ssl_test_upload)
+                @test !file_exists("/" * non_ssl_test_upload)
+
+            end
+
+        end
+
+        @testset "ftp_command" begin
+
+                expected = r"\*   Trying ::1...
+\* Connected to localhost \(::1\) port \d* \(#0\)
+< 220 Service ready for new user. \(MockFtpServer 2.6; see http://mockftpserver.sourceforge.net\)\r
+> USER test\r
+< 331 User name okay, need password.\r
+> PASS test\r
+< 230 User logged in, proceed.\r
+> PWD\r
+< 257 \"/\" is current directory.\r
+\* Entry path is '/'
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> TYPE A\r
+< 200 TYPE completed.\r
+> PWD\r
+< 257 \"/\" is current directory.\r
+\* RETR response: 257
+\* Remembering we are in dir \"\"
+\* Connection #0 to host localhost left intact
+"
+
+            @testset "no ctxt" begin
+                test_captured_ouput(expected) do
+                    resp = ftp_command("PWD", options; verbose=true)
+                end
+            end
+
+            @testset "with ctxt" begin
+
+                expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> PWD\r
+< 257 \"/\" is current directory.\r
+\* RETR response: 257
+\* Remembering we are in dir \"\"
+\* Connection #0 to host localhost left intact
+"
+
+                ctxt, resp = ftp_connect(options)
+                test_captured_ouput(expected) do
+                    resp = ftp_command(ctxt, "PWD"; verbose=true)
+                end
+                ftp_close_connection(ctxt)
+            end
+
+        end
+
+        @testset "ftp_connect" begin
+
+                expected = r"\*   Trying ::1...
+\* Connected to localhost \(::1\) port \d* \(#0\)
+< 220 Service ready for new user. \(MockFtpServer 2.6; see http://mockftpserver.sourceforge.net\)\r
+> USER test\r
+< 331 User name okay, need password.\r
+> PASS test\r
+< 230 User logged in, proceed.\r
+> PWD\r
+< 257 \"/\" is current directory.\r
+\* Entry path is '/'
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> TYPE A\r
+< 200 TYPE completed.\r
+> LIST\r
+< 150 File status okay; about to open data connection.\r
+\* Maxdownload = -1
+\* Remembering we are in dir \"\"
+< 226 Closing data connection. Requested file action successful.\r
+\* Connection #0 to host localhost left intact
+"
+            ctxt = nothing
+            test_captured_ouput(expected) do
+                ctxt, resp = ftp_connect(options; verbose=true)
+            end
+            ftp_close_connection(ctxt)
+        end
+
+    end
+
     ftp_cleanup()
 end
