@@ -233,7 +233,7 @@ Download file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptions(), save_path::AbstractString=""; mode::FTP_MODES=binary_mode)
+function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptions(), save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
     ctxt = setup_easy_handle(options)
     try
         return ftp_get(ctxt, file_name, save_path; mode=mode)
@@ -251,7 +251,7 @@ Download file with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODES=binary_mode)
+function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
     resp = Response()
     wd = WriteData()
 
@@ -319,7 +319,7 @@ Upload file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions(); mode::FTP_MODES=binary_mode)
+function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions(); mode::FTP_MODE=binary_mode)
     ctxt = setup_easy_handle(options)
     try
         return ftp_put(ctxt, file_name, file; mode=mode)
@@ -337,7 +337,7 @@ Upload file with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODES=binary_mode)
+function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
     resp = Response()
     rd = ReadData()
 

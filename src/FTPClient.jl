@@ -16,7 +16,7 @@ type FTPClientError <: Exception
        lib_curl_error::UInt32
 end
 
-@enum FTP_MODES ascii_mode binary_mode
+@enum FTP_MODE ascii_mode binary_mode
 Base.showerror(io::IO, err::FTPClientError) = print(io, err.msg, " :: LibCURL error #", err.lib_curl_error)
 
 export RequestOptions,
@@ -34,7 +34,7 @@ export RequestOptions,
        download,
        rmdir,
        FTPClientError,
-       FTP_MODES,
+       FTP_MODE,
        ascii,
        binary,
        ascii_mode,
