@@ -362,10 +362,9 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
         @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
     elseif mode == ascii_mode
         @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(1)
-
-        # libcurl thinks the file transfer sizes are 0 and will throw an error without this.
-        @ce_curl curl_easy_setopt CURLOPT_INFILESIZE Int64(rd.sz)
     end
+
+    @ce_curl curl_easy_setopt CURLOPT_INFILESIZE Int64(rd.sz)
 
     @ce_curl curl_easy_perform
     process_response(ctxt, resp)

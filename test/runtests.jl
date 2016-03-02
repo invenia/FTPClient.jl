@@ -131,6 +131,8 @@ end
 
 @unix_only upload_local_byte_file_contents = string("466F6F426172", "0A", "466F6F426172")
 @unix_only upload_local_byte_file_contents_ascii_transfer = string("466F6F426172", "0D0A", "466F6F426172")
+@windows_only upload_local_byte_file_contents = string("466F6F426172", "0D0A", "466F6F426172")
+@windows_only upload_local_byte_file_contents_ascii_transfer = string("466F6F426172", "0A", "466F6F426172")
 
 if (length(ARGS) >= 1 && ARGS[1] == "true")
     test_ssl = true
