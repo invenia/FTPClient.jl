@@ -14,7 +14,6 @@
             @test ftp.ctxt.options.passwd == pswd
             @test ftp.ctxt.options.hostname == host
             @test ftp.ctxt.options.url == "ftp://$host/"
-            @test ftp.ctxt.options.blocking == true
             @test ftp.ctxt.options.implicit == false
             @test ftp.ctxt.options.verify_peer == true
             @test ftp.ctxt.options.active_mode == false
@@ -47,18 +46,6 @@
             close(ftp)
         end
 
-        @testset "download non blocking" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            future = download(ftp, file_name; block=false)
-            @test typeof(future) <: Future
-            buff = fetch(future)
-            actual_buff = readstring(buff)
-            @test actual_buff == file_contents
-            no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://$host/"
-            close(ftp)
-        end
-
         @testset "upload" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             @test !file_exists("/" * upload_file_name)
@@ -69,54 +56,6 @@
             @test ftp.ctxt.url == "ftp://$host/"
             remove("/" * upload_file_name)
             @test !file_exists("/" * upload_file_name)
-            close(ftp)
-        end
-
-        @testset "upload non blocking" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            @test !file_exists("/" * upload_file_name)
-            future = upload(ftp, upload_file_name; block=false)
-            @test typeof(future) <: Future
-            resp = fetch(future)
-            @test file_exists("/" * upload_file_name)
-            @test get_file_contents("/" * upload_file_name) == upload_file_contents
-            no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://$host/"
-            remove("/" * upload_file_name)
-            @test !file_exists("/" * upload_file_name)
-            close(ftp)
-        end
-
-        @testset "upload non blocking, give a name" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            @test !file_exists("/" * upload_file_name)
-            future = upload(ftp, upload_file_name, new_file; block=false)
-            @test typeof(future) <: Future
-            resp = fetch(future)
-            @test file_exists("/" * new_file)
-            @test get_file_contents("/" * new_file) == upload_file_contents
-            no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://$host/"
-            remove("/" * new_file)
-            @test !file_exists("/" * new_file)
-            close(ftp)
-        end
-
-        @testset "upload non blocking, give a file" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            @test !file_exists("/" * upload_file_name)
-            resp = nothing
-            open(upload_file_name) do file
-                future = upload(ftp, file, new_file; block=false)
-                @test typeof(future) <: Future
-                resp = fetch(future)
-            end
-            @test file_exists("/" * new_file)
-            @test get_file_contents("/" * new_file) == upload_file_contents
-            no_unexpected_changes(ftp)
-            @test ftp.ctxt.url == "ftp://$host/"
-            remove("/" * new_file)
-            @test !file_exists("/" * new_file)
             close(ftp)
         end
 

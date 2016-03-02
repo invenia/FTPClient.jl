@@ -2,7 +2,7 @@ type FTP
     ctxt::ConnContext
 
     function FTP(;host="", implicit=false, ssl=false, verify=true, active=false, user="", pswd="", binary_mode=true)
-        options = RequestOptions(blocking=true, implicit=implicit, ssl=ssl,
+        options = RequestOptions(implicit=implicit, ssl=ssl,
                     verify_peer=verify, active_mode=active,
                     username=user, passwd=pswd, hostname=host, binary_mode=binary_mode)
 
@@ -45,20 +45,11 @@ end
 @doc """
 Download the file "file_name" from FTP server and return IOStream.
 If "save_path" is not specified, contents are written to and returned as IOBuffer.
-"block" indicates if you want a blocking call, default is true
 """ ->
-function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString=""; block::Bool=true)
-    if block
-        return download_internal(ftp.ctxt, file_name, save_path)
-    else
-        return remotecall(download_internal, myid(), ftp.ctxt, file_name, save_path)
-    end
-end
-
-function download_internal(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString)
+function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString="")
     resp = nothing
     try
-        resp = ftp_get(ctxt, file_name, save_path)
+        resp = ftp_get(ftp.ctxt, file_name, save_path)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to download $file_name."
@@ -72,51 +63,33 @@ end
 @doc """
 Upload the file "local_name" to the FTP server and save as "local_name".
 """ ->
-function upload(ftp::FTP, local_name::AbstractString; block::Bool=true)
-    if block
-        return upload(ftp, local_name, local_name)
-    else
-        return remotecall(upload, myid(), ftp, local_name, local_name)
-    end
+function upload(ftp::FTP, local_name::AbstractString)
+    return upload(ftp, local_name, local_name)
 end
 
 
 @doc """
 Upload the file "local_name" to the FTP server and save as "remote_name".
 """ ->
-function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString; block::Bool=true)
-    if block
-        open(local_name) do local_file
-            return upload(ftp, local_file, remote_name; block=block)
-        end
-    else
-        return remotecall(upload, myid(), ftp, local_name, remote_name)
+function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString)
+    open(local_name) do local_file
+        return upload(ftp, local_file, remote_name)
     end
 end
-
 
 @doc """
 Upload IO object "local_file" to the FTP server and save as "remote_name".
 """ ->
-function upload(ftp::FTP, local_file::IO, remote_name::AbstractString; block::Bool=true)
-    if block
-        return upload_internal(ftp.ctxt, local_file, remote_name)
-    else
-        return remotecall(upload_internal, myid(), ftp.ctxt, local_file, remote_name)
-    end
-end
-
-function upload_internal(ctxt::ConnContext, local_file::IO, remote_name::AbstractString)
-    resp = nothing
+function upload(ftp::FTP, local_file::IO, remote_name::AbstractString)
     try
-        resp = ftp_put(ctxt, remote_name, local_file)
+        ftp_put(ftp.ctxt, remote_name, local_file)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to upload $remote_name."
         end
         rethrow()
     end
-    return resp
+    return nothing
 end
 
 
