@@ -124,10 +124,10 @@ file_contents = randstring(file_size)
 byte_file_name = randstring(20)
 byte_upload_file_name = randstring(21)
 upload_file_name = "test_upload.txt"
-f =  open(upload_file_name, "w")
 upload_file_contents = randstring(100)
-write(f, upload_file_contents)
-close(f)
+open(upload_file_name, "w") do f
+    write(f, upload_file_contents)
+end
 
 @unix_only upload_local_byte_file_contents = string("466F6F426172", "0A", "466F6F426172")
 @unix_only upload_local_byte_file_contents_ascii_transfer = string("466F6F426172", "0D0A", "466F6F426172")
@@ -179,19 +179,13 @@ else
 
     @testset "FTPCLient" begin
 
-        test_files = ["test_non_ssl.jl", "test_ftp_object.jl"]
-
-        for file in test_files
-            fp = joinpath(dirname(@__FILE__), file)
-            include(fp)
-        end
+        include("test_non_ssl.jl")
+        include("test_ftp_object.jl")
 
         # Basic commands will now error
         set_errors()
 
-        test_file = "test_client_errors.jl"
-        fp = joinpath(dirname(@__FILE__), test_file)
-        include(fp)
+        include("test_client_errors.jl")
 
     end
 

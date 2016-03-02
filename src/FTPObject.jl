@@ -1,16 +1,16 @@
 type FTP
     ctxt::ConnContext
 
-    function FTP(;host="", implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="")
-        options = RequestOptions(implicit=implt, ssl=ssl,
-                    verify_peer=ver_peer, active_mode=act_mode,
+    function FTP(;host="", implicit=false, ssl=false, verify=true, active=false, user="", pswd="")
+        options = RequestOptions(implicit=implicit, ssl=ssl,
+                    verify_peer=verify, active_mode=active,
                     username=user, passwd=pswd, hostname=host)
 
         ctxt = nothing
         try
             ctxt, resp = ftp_connect(options)
         catch err
-            if(isa(err, FTPClientError))
+            if isa(err, FTPClientError)
                 err.msg = "Failed to connect."
             end
             rethrow()
@@ -80,16 +80,15 @@ end
 Upload IO object "local_file" to the FTP server and save as "remote_name".
 """ ->
 function upload(ftp::FTP, local_file::IO, remote_name::AbstractString; mode::FTP_MODES=binary_mode)
-    resp = nothing
     try
-        resp = ftp_put(ftp.ctxt, remote_name, local_file; mode=mode)
+        ftp_put(ftp.ctxt, remote_name, local_file; mode=mode)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to upload $remote_name."
         end
         rethrow()
     end
-    return resp
+    return nothing
 end
 
 
