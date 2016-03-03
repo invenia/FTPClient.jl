@@ -6,19 +6,19 @@
     space_file_contents = "test file with space.\n"
     ftp_init()
 
-    @testset "with persistent connection" begin
+    function no_unexpected_changes(ftp::FTP)
+        @test ftp.ctxt.options.ssl == false
+        @test ftp.ctxt.options.username == user
+        @test ftp.ctxt.options.passwd == pswd
+        @test ftp.ctxt.options.hostname == host
+        @test ftp.ctxt.options.url == "ftp://$host/"
+        @test ftp.ctxt.options.implicit == false
+        @test ftp.ctxt.options.verify_peer == true
+        @test ftp.ctxt.options.active_mode == false
+        @test ftp.ctxt.options.binary_mode == true
+    end
 
-        function no_unexpected_changes(ftp::FTP)
-            @test ftp.ctxt.options.ssl == false
-            @test ftp.ctxt.options.username == user
-            @test ftp.ctxt.options.passwd == pswd
-            @test ftp.ctxt.options.hostname == host
-            @test ftp.ctxt.options.url == "ftp://$host/"
-            @test ftp.ctxt.options.implicit == false
-            @test ftp.ctxt.options.verify_peer == true
-            @test ftp.ctxt.options.active_mode == false
-            @test ftp.ctxt.options.binary_mode == true
-        end
+    @testset "with persistent connection" begin
 
         @testset "connection" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
