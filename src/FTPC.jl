@@ -252,7 +252,7 @@ Download file with persistent connection.
 returns resp::Response
 """ ->
 function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Bool=false)
-    ftp_set_verboes!(ctxt, verbose)
+    ftp_set_verbose!(ctxt, verbose)
 
     resp = Response()
     wd = WriteData()
@@ -340,7 +340,7 @@ Upload file with persistent connection.
 returns resp::Response
 """ ->
 function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode, verbose::Bool=false)
-    ftp_set_verboes!(ctxt, verbose)
+    ftp_set_verbose!(ctxt, verbose)
 
     resp = Response()
     rd = ReadData()
@@ -413,7 +413,7 @@ Pass FTP command with persistent connection.
 returns resp::Response
 """ ->
 function ftp_command(ctxt::ConnContext, cmd::AbstractString; verbose::Bool=false)
-    ftp_set_verboes!(ctxt, verbose)
+    ftp_set_verbose!(ctxt, verbose)
     resp = Response()
     wd = WriteData()
     p_wd = pointer_from_objref(wd)
@@ -488,7 +488,7 @@ end
 # VERBOSE
 ##############################
 
-function ftp_set_verboes!(ctxt::ConnContext, verbose::Bool)
+function ftp_set_verbose!(ctxt::ConnContext, verbose::Bool)
     if verbose
         @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
     else
