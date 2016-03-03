@@ -1,10 +1,10 @@
 type FTP
     ctxt::ConnContext
 
-    function FTP(;host="", implicit=false, ssl=false, verify=true, active=false, user="", pswd="", binary_mode=true)
+    function FTP(;host="", implicit=false, ssl=false, verify=true, active=false, user="", pswd="")
         options = RequestOptions(implicit=implicit, ssl=ssl,
                     verify_peer=verify, active_mode=active,
-                    username=user, passwd=pswd, hostname=host, binary_mode=binary_mode)
+                    username=user, passwd=pswd, hostname=host)
 
         ctxt = nothing
         try
@@ -46,10 +46,10 @@ end
 Download the file "file_name" from FTP server and return IOStream.
 If "save_path" is not specified, contents are written to and returned as IOBuffer.
 """ ->
-function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString="")
+function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
     resp = nothing
     try
-        resp = ftp_get(ftp.ctxt, file_name, save_path)
+        resp = ftp_get(ftp.ctxt, file_name, save_path; mode=mode)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to download $file_name."
@@ -63,26 +63,25 @@ end
 @doc """
 Upload the file "local_name" to the FTP server and save as "local_name".
 """ ->
-function upload(ftp::FTP, local_name::AbstractString)
-    return upload(ftp, local_name, local_name)
+function upload(ftp::FTP, local_name::AbstractString; mode::FTP_MODE=binary_mode)
+    return upload(ftp, local_name, local_name; mode=mode)
 end
-
 
 @doc """
 Upload the file "local_name" to the FTP server and save as "remote_name".
 """ ->
-function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString)
+function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString; mode::FTP_MODE=binary_mode)
     open(local_name) do local_file
-        return upload(ftp, local_file, remote_name)
+        return upload(ftp, local_file, remote_name; mode=mode)
     end
 end
 
 @doc """
 Upload IO object "local_file" to the FTP server and save as "remote_name".
 """ ->
-function upload(ftp::FTP, local_file::IO, remote_name::AbstractString)
+function upload(ftp::FTP, local_file::IO, remote_name::AbstractString; mode::FTP_MODE=binary_mode)
     try
-        ftp_put(ftp.ctxt, remote_name, local_file)
+        ftp_put(ftp.ctxt, remote_name, local_file; mode=mode)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to upload $remote_name."
@@ -207,36 +206,6 @@ function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
 
     if(resp.code != 250)
         throw(FTPClientError("Failed to move $file_name. $resp.code", 0))
-    end
-
-end
-
-
-@doc """
-Set the transfer mode to binary.
-""" ->
-function binary(ftp::FTP)
-
-    ftp.ctxt.options.binary_mode = true
-    resp = ftp_command(ftp.ctxt, "TYPE I")
-
-    if(resp.code != 200)
-        throw(FTPClientError("Failed to switch to binary mode. $resp.code", 0))
-    end
-
-end
-
-
-@doc """
-Set the transfer mode to ASCII.
-""" ->
-function ascii(ftp::FTP)
-
-    ftp.ctxt.options.binary_mode = false
-    resp = ftp_command(ftp.ctxt, "TYPE A")
-
-    if(resp.code != 200)
-        throw(FTPClientError("Failed to switch to ascii mode. $resp.code", 0))
     end
 
 end

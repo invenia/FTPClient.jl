@@ -13,11 +13,10 @@ type RequestOptions
     passwd::AbstractString
     url::AbstractString
     hostname::AbstractString
-    binary_mode::Bool
 
     function RequestOptions(;implicit=false, ssl=false,
             verify_peer=true, active_mode=false, username="",
-            passwd="", url=nothing, hostname="localhost", binary_mode=true)
+            passwd="", url=nothing, hostname="localhost")
 
         if url == nothing
             if implicit
@@ -27,7 +26,7 @@ type RequestOptions
             end
         end
 
-        new(implicit, ssl, verify_peer, active_mode, username, passwd, url, hostname, binary_mode)
+        new(implicit, ssl, verify_peer, active_mode, username, passwd, url, hostname)
     end
 end
 
@@ -234,10 +233,10 @@ Download file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptions(), save_path::AbstractString=""; verbose::Bool=false)
+function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptions(), save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Bool=false)
     ctxt = setup_easy_handle(options)
     try
-        return ftp_get(ctxt, file_name, save_path; verbose=verbose)
+        return ftp_get(ctxt, file_name, save_path; mode=mode, verbose=verbose)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -252,8 +251,9 @@ Download file with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; verbose::Bool=false)
+function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Bool=false)
     ftp_set_verboes!(ctxt, verbose)
+
     resp = Response()
     wd = WriteData()
 
@@ -266,22 +266,21 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         p_wd = pointer_from_objref(wd)
         p_resp = pointer_from_objref(resp)
 
-        if ctxt.options.binary_mode
-            # We need to switch the url to point to the file directly
-            # There's no need for a command
-            p = ctxt.url * file_name
-            @ce_curl curl_easy_setopt CURLOPT_URL p
-        else
-            # RETR is stuck in ascii mode https://curl.haxx.se/mail/lib-2004-12/0219.html
-            command = "RETR " * file_name
-            @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
-        end
 
         @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
         @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
         @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
         @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
+
+        @ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(1)
+
+        full_url = ctxt.url * file_name
+        if mode == binary_mode
+            @ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=i"
+        elseif mode == ascii_mode
+            @ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=a"
+        end
 
         @ce_curl curl_easy_perform
         process_response(ctxt, resp)
@@ -290,10 +289,10 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
             seekstart(wd.buffer)
         end
 
-        if ctxt.options.binary_mode
-            # We need to switch it back to the original url
-            @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
-        end
+        @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
+
+        # Set it back to default
+        @ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(0)
 
         resp.bytes_recd = wd.bytes_recd
         resp.body = wd.buffer
@@ -322,10 +321,10 @@ Upload file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions(); verbose::Bool=false)
+function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions(); mode::FTP_MODE=binary_mode, verbose::Bool=false)
     ctxt = setup_easy_handle(options)
     try
-        return ftp_put(ctxt, file_name, file; verbose=verbose)
+        return ftp_put(ctxt, file_name, file; mode=mode, verbose=verbose)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -340,8 +339,9 @@ Upload file with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; verbose::Bool=false)
+function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode, verbose::Bool=false)
     ftp_set_verboes!(ctxt, verbose)
+
     resp = Response()
     rd = ReadData()
 
@@ -353,10 +353,6 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; verbose
     p_rd = pointer_from_objref(rd)
     p_resp = pointer_from_objref(resp)
 
-    command = "STOR " * file_name
-    @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url*file_name
-    @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST command
-
     @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
     @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
     @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
@@ -364,12 +360,23 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; verbose
     @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
     @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
+    @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url * file_name
+
+    if mode == binary_mode
+        @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
+    elseif mode == ascii_mode
+        @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(1)
+    end
+
+    @ce_curl curl_easy_setopt CURLOPT_INFILESIZE Int64(rd.sz)
+
     @ce_curl curl_easy_perform
     process_response(ctxt, resp)
 
     # resest handle defaults
     @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
     @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(0)
+    @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
 
     return resp
 end
