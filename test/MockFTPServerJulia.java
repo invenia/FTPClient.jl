@@ -177,6 +177,19 @@ public class MockFTPServerJulia
         return convertStreamToString(((FileEntry)fakeFtpServer.getFileSystem().getEntry(path)).createInputStream());
     }
 
+    public static String getByteFileContents(String path) throws java.io.IOException
+    {
+        FileSystem fileSystem = fakeFtpServer.getFileSystem();
+        FileEntry fileEntry = ((FileEntry)fileSystem.getEntry(path));
+        java.io.InputStream is = fileEntry.createInputStream();
+        byte[] bytes = new byte[is.available()];
+
+        is.read(bytes, 0, is.available());
+        is.close();
+
+        return javax.xml.bind.DatatypeConverter.printHexBinary(bytes);
+    }
+
     private static byte[] hexStringToByteArray(String s)
     {
         int len = s.length();

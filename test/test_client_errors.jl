@@ -100,22 +100,6 @@
             close(ftp)
         end
 
-        @testset "FTP object error when switching to binary" begin
-            undo_errors()
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            set_type_error()
-            @test_throws FTPClientError binary(ftp)
-            close(ftp)
-        end
-
-        @testset "FTP object error when switching to ascii" begin
-            undo_errors()
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            set_type_error()
-            @test_throws FTPClientError ascii(ftp)
-            close(ftp)
-        end
-
         @testset "FTP object error with LIST command" begin
             undo_errors()
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)

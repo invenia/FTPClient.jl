@@ -17,7 +17,6 @@
             @test ftp.ctxt.options.implicit == false
             @test ftp.ctxt.options.verify_peer == true
             @test ftp.ctxt.options.active_mode == false
-            @test ftp.ctxt.options.binary_mode == true
         end
 
         @testset "connection" begin
@@ -182,20 +181,6 @@
             @test !file_exists("/" * new_file)
             no_unexpected_changes(ftp)
             @test ftp.ctxt.url == "ftp://$host/"
-            close(ftp)
-        end
-
-        @testset "binary" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host, binary_mode=false)
-            binary(ftp)
-            @test ftp.ctxt.options.binary_mode == true
-            close(ftp)
-        end
-
-        @testset "ascii" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host, binary_mode=true)
-            ascii(ftp)
-            @test ftp.ctxt.options.binary_mode == false
             close(ftp)
         end
 
