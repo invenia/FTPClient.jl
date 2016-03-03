@@ -185,20 +185,6 @@
             close(ftp)
         end
 
-        @testset "binary" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host, binary_mode=false)
-            binary(ftp)
-            @test ftp.ctxt.options.binary_mode == true
-            close(ftp)
-        end
-
-        @testset "ascii" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host, binary_mode=true)
-            ascii(ftp)
-            @test ftp.ctxt.options.binary_mode == false
-            close(ftp)
-        end
-
         @testset "upload" begin
             @testset "uploading a file with only the local file name" begin
                 ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
