@@ -209,31 +209,3 @@ function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
     end
 
 end
-
-
-@doc """
-Set the transfer mode to binary.
-""" ->
-function binary(ftp::FTP)
-
-    resp = ftp_command(ftp.ctxt, "TYPE I")
-
-    if(resp.code != 200)
-        throw(FTPClientError("Failed to switch to binary mode. $resp.code", 0))
-    end
-
-end
-
-
-@doc """
-Set the transfer mode to ASCII.
-""" ->
-function ascii(ftp::FTP)
-
-    resp = ftp_command(ftp.ctxt, "TYPE A")
-
-    if(resp.code != 200)
-        throw(FTPClientError("Failed to switch to ascii mode. $resp.code", 0))
-    end
-
-end

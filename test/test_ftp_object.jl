@@ -184,20 +184,6 @@
             close(ftp)
         end
 
-        @testset "binary" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            binary(ftp)
-            no_unexpected_changes(ftp)
-            close(ftp)
-        end
-
-        @testset "ascii" begin
-            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-            ascii(ftp)
-            no_unexpected_changes(ftp)
-            close(ftp)
-        end
-
         @testset "upload" begin
             @testset "uploading a file with only the local file name" begin
                 ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
