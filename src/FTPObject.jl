@@ -1,14 +1,14 @@
 type FTP
     ctxt::ConnContext
 
-    function FTP(;host="", implicit=false, ssl=false, verify=true, active=false, user="", pswd="")
+    function FTP(;host="", implicit=false, ssl=false, verify=true, active=false, user="", pswd="", verbose::Bool=false)
         options = RequestOptions(implicit=implicit, ssl=ssl,
                     verify_peer=verify, active_mode=active,
                     username=user, passwd=pswd, hostname=host)
 
         ctxt = nothing
         try
-            ctxt, resp = ftp_connect(options)
+            ctxt, resp = ftp_connect(options; verbose=verbose)
         catch err
             if isa(err, FTPClientError)
                 err.msg = "Failed to connect."
@@ -46,10 +46,10 @@ end
 Download the file "file_name" from FTP server and return IOStream.
 If "save_path" is not specified, contents are written to and returned as IOBuffer.
 """ ->
-function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
+function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Bool=false)
     resp = nothing
     try
-        resp = ftp_get(ftp.ctxt, file_name, save_path; mode=mode)
+        resp = ftp_get(ftp.ctxt, file_name, save_path; mode=mode, verbose=verbose)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to download $file_name."
@@ -63,25 +63,25 @@ end
 @doc """
 Upload the file "local_name" to the FTP server and save as "local_name".
 """ ->
-function upload(ftp::FTP, local_name::AbstractString; mode::FTP_MODE=binary_mode)
-    return upload(ftp, local_name, local_name; mode=mode)
+function upload(ftp::FTP, local_name::AbstractString; mode::FTP_MODE=binary_mode, verbose::Bool=false)
+    return upload(ftp, local_name, local_name; mode=mode, verbose=verbose)
 end
 
 @doc """
 Upload the file "local_name" to the FTP server and save as "remote_name".
 """ ->
-function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString; mode::FTP_MODE=binary_mode)
+function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString; mode::FTP_MODE=binary_mode, verbose::Bool=false)
     open(local_name) do local_file
-        return upload(ftp, local_file, remote_name; mode=mode)
+        return upload(ftp, local_file, remote_name; mode=mode, verbose=verbose)
     end
 end
 
 @doc """
 Upload IO object "local_file" to the FTP server and save as "remote_name".
 """ ->
-function upload(ftp::FTP, local_file::IO, remote_name::AbstractString; mode::FTP_MODE=binary_mode)
+function upload(ftp::FTP, local_file::IO, remote_name::AbstractString; mode::FTP_MODE=binary_mode, verbose::Bool=false)
     try
-        ftp_put(ftp.ctxt, remote_name, local_file; mode=mode)
+        ftp_put(ftp.ctxt, remote_name, local_file; mode=mode, verbose=verbose)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to upload $remote_name."
@@ -95,12 +95,12 @@ end
 @doc """
 Returns the contents of the current working directory of the FTP server.
 """ ->
-function readdir(ftp::FTP)
+function readdir(ftp::FTP; verbose::Bool=false)
 
     resp = nothing
 
     try
-        resp = ftp_command(ftp.ctxt, "LIST")
+        resp = ftp_command(ftp.ctxt, "LIST"; verbose=verbose)
     catch err
         if(isa(err, FTPClientError))
             err.msg = "Failed to list directories."
@@ -118,13 +118,13 @@ end
 @doc """
 Sets the current working directory of the FTP server to "dir".
 """ ->
-function cd(ftp::FTP, dir::AbstractString)
+function cd(ftp::FTP, dir::AbstractString; verbose::Bool=false)
 
     if (~endswith(dir, "/"))
         dir *= "/"
     end
 
-    resp = ftp_command(ftp.ctxt, "CWD $dir")
+    resp = ftp_command(ftp.ctxt, "CWD $dir"; verbose=verbose)
 
     if(resp.code != 250)
         throw(FTPClientError("Failed to change to directory $dir. $resp.code", 0))
@@ -136,9 +136,9 @@ end
 @doc """
 Get the current working directory of the FTP server
 """ ->
-function pwd(ftp::FTP)
+function pwd(ftp::FTP; verbose::Bool=false)
 
-    resp = ftp_command(ftp.ctxt, "PWD")
+    resp = ftp_command(ftp.ctxt, "PWD"; verbose=verbose)
 
     if(resp.code != 257)
         throw(FTPClientError("Failed to get the current working directory. $resp.code", 0))
@@ -152,9 +152,9 @@ end
 @doc """
 Delete file "file_name" from FTP server.
 """ ->
-function rm(ftp::FTP, file_name::AbstractString)
+function rm(ftp::FTP, file_name::AbstractString; verbose::Bool=false)
 
-    resp = ftp_command(ftp.ctxt, "DELE $file_name")
+    resp = ftp_command(ftp.ctxt, "DELE $file_name"; verbose=verbose)
 
     if(resp.code != 250)
         throw(FTPClientError("Failed to remove $file_name. $resp.code", 0))
@@ -166,9 +166,9 @@ end
 @doc """
 Delete directory "dir_name" from FTP server.
 """ ->
-function rmdir(ftp::FTP, dir_name::AbstractString)
+function rmdir(ftp::FTP, dir_name::AbstractString; verbose::Bool=false)
 
-    resp = ftp_command(ftp.ctxt, "RMD $dir_name")
+    resp = ftp_command(ftp.ctxt, "RMD $dir_name"; verbose=verbose)
 
     if(resp.code != 250)
         throw(FTPClientError("Failed to remove $dir_name. $resp.code", 0))
@@ -180,9 +180,9 @@ end
 @doc """
 Make directory "dir" on FTP server.
 """ ->
-function mkdir(ftp::FTP, dir::AbstractString)
+function mkdir(ftp::FTP, dir::AbstractString; verbose::Bool=false)
 
-    resp = ftp_command(ftp.ctxt, "MKD $dir")
+    resp = ftp_command(ftp.ctxt, "MKD $dir"; verbose=verbose)
 
     if(resp.code != 257)
         throw(FTPClientError("Failed to make $dir. $resp.code", 0))
@@ -194,15 +194,15 @@ end
 @doc """
 Move (rename) file "file_name" to "new_name" on FTP server.
 """ ->
-function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
+function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString; verbose::Bool=false)
 
-    resp = ftp_command(ftp.ctxt, "RNFR $file_name")
+    resp = ftp_command(ftp.ctxt, "RNFR $file_name"; verbose=verbose)
 
     if(resp.code != 350)
         throw(FTPClientError("Failed to move $file_name. $resp.code", 0))
     end
 
-    resp = ftp_command(ftp.ctxt, "RNTO $new_name")
+    resp = ftp_command(ftp.ctxt, "RNTO $new_name"; verbose=verbose)
 
     if(resp.code != 250)
         throw(FTPClientError("Failed to move $file_name. $resp.code", 0))

@@ -245,5 +245,419 @@
         end
 
     end
+
+    @testset "verbose" begin
+
+        function test_captured_ouput(test::Function, expected::Regex)
+            original_stderr = STDOUT
+            out_read, out_write = redirect_stderr()
+
+            test()
+
+            close(out_write)
+            data = readavailable(out_read)
+            close(out_read)
+            redirect_stdout(original_stderr)
+
+            @test ismatch(expected, ASCIIString(data))
+        end
+
+        expected = r""
+
+        @testset "FTP" begin
+
+            expected = r"\*   Trying ::1...
+\* Connected to localhost \(::1\) port \d* \(#0\)
+< 220 Service ready for new user. \(MockFtpServer 2.6; see http://mockftpserver.sourceforge.net\)\r
+> USER test\r
+< 331 User name okay, need password.\r
+> PASS test\r
+< 230 User logged in, proceed.\r
+> PWD\r
+< 257 \"/\" is current directory.\r
+\* Entry path is '/'
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> TYPE A\r
+< 200 TYPE completed.\r
+> LIST\r
+< 150 File status okay; about to open data connection.\r
+\* Maxdownload = -1
+\* Remembering we are in dir \"\"
+< 226 Closing data connection. Requested file action successful.\r
+\* Connection #0 to host localhost left intact
+"
+            test_captured_ouput(expected) do
+                FTP(ssl=false, user=user, pswd=pswd, host=host; verbose=true)
+            end
+        end
+
+        @testset "readdir" begin
+
+            expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> LIST\r
+< 150 File status okay; about to open data connection.\r
+\* Maxdownload = -1
+\* Remembering we are in dir \"\"
+< 226 Closing data connection. Requested file action successful.\r
+\* Connection #0 to host localhost left intact
+"
+
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            test_captured_ouput(expected) do
+                readdir(ftp; verbose=true)
+            end
+            close(ftp)
+        end
+
+        @testset "download" begin
+
+            expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> TYPE I\r
+< 200 TYPE completed.\r
+> SIZE test_download.txt\r
+< 502 Command not implemented: SIZE.\r
+> RETR test_download.txt\r
+< 150 File status okay; about to open data connection.\r
+\* Maxdownload = -1
+\* Getting file with size: -1
+\* Remembering we are in dir \"\"
+< 226 Closing data connection. Requested file action successful.\r
+\* Connection #0 to host localhost left intact
+"
+
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            buff = nothing
+            test_captured_ouput(expected) do
+                buff = download(ftp, file_name; verbose=true)
+            end
+            actual_buff = readstring(buff)
+            @test actual_buff == file_contents
+            close(ftp)
+        end
+
+        @testset "upload" begin
+
+            expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> TYPE I\r
+< 200 TYPE completed.\r
+> STOR test_upload.txt\r
+< 150 File status okay; about to open data connection.\r
+\* We are completely uploaded and fine
+\* Remembering we are in dir \"\"
+< 226 Created file test_upload.txt.\r
+\* Connection #0 to host localhost left intact
+"
+
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !file_exists("/" * upload_file_name)
+            test_captured_ouput(expected) do
+                upload(ftp, upload_file_name; verbose=true)
+            end
+            @test file_exists("/" * upload_file_name)
+            @test get_file_contents("/" * upload_file_name) == upload_file_contents
+            remove("/" * upload_file_name)
+            @test !file_exists("/" * upload_file_name)
+            close(ftp)
+        end
+
+        @testset "mkdir" begin
+
+            expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> MKD testdir\r
+< 257 \"/testdir\" created.\r
+\* RETR response: 257
+\* Remembering we are in dir \"\"
+\* Connection #0 to host localhost left intact
+"
+
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !directory_exists("/" * testdir)
+            test_captured_ouput(expected) do
+                mkdir(ftp, testdir; verbose=true)
+            end
+            @test directory_exists("/" * testdir)
+            remove("/" * testdir)
+            @test !directory_exists("/" * testdir)
+            close(ftp)
+        end
+
+        @testset "cd" begin
+
+            expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> CWD testdir/\r
+< 250 CWD completed. New directory is /testdir.\r
+\* RETR response: 250
+\* Remembering we are in dir \"\"
+\* Connection #0 to host localhost left intact
+"
+
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_directory("/" * testdir)
+            test_captured_ouput(expected) do
+                cd(ftp, testdir; verbose=true)
+            end
+            remove("/" * testdir)
+            @test !directory_exists("/" * testdir)
+            close(ftp)
+        end
+
+        @testset "rmdir" begin
+
+            expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> RMD testdir\r
+< 250 \"/testdir\" removed.\r
+\* RETR response: 250
+\* Remembering we are in dir \"\"
+\* Connection #0 to host localhost left intact
+"
+
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_directory("/" * testdir)
+            @test directory_exists("/" * testdir)
+            test_captured_ouput(expected) do
+                rmdir(ftp, testdir; verbose=true)
+            end
+            @test !directory_exists("/" * testdir)
+            close(ftp)
+        end
+
+        @testset "pwd" begin
+
+            expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> PWD\r
+< 257 \"/\" is current directory.\r
+\* RETR response: 257
+\* Remembering we are in dir \"\"
+\* Connection #0 to host localhost left intact
+"
+
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            path = nothing
+            test_captured_ouput(expected) do
+                path = pwd(ftp; verbose=true)
+            end
+            @test path == "/"
+            close(ftp)
+        end
+
+        @testset "mv" begin
+
+            expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> RNFR test_upload.txt\r
+< 350 Requested file action pending further information.\r
+\* RETR response: 350
+\* Remembering we are in dir \"\"
+\* Connection #0 to host localhost left intact
+\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> RNTO new_name.txt\r
+< 250 Rename from /test_upload.txt to /new_name.txt completed.\r
+\* RETR response: 250
+\* Remembering we are in dir \"\"
+\* Connection #0 to host localhost left intact
+"
+
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_file("/" * upload_file_name, upload_file_contents)
+            @test file_exists("/" * upload_file_name)
+            test_captured_ouput(expected) do
+                mv(ftp, upload_file_name, new_file; verbose=true)
+            end
+            @test !file_exists("/" * upload_file_name)
+            @test file_exists("/" * new_file)
+            @test get_file_contents("/" * new_file) == upload_file_contents
+            remove("/" * new_file)
+            @test !file_exists("/" * new_file)
+            close(ftp)
+        end
+
+        @testset "rm" begin
+
+            expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> DELE new_name.txt\r
+< 250 \"/new_name.txt\" deleted.\r
+\* RETR response: 250
+\* Remembering we are in dir \"\"
+\* Connection #0 to host localhost left intact
+"
+
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_file("/" * new_file, upload_file_contents)
+            @test file_exists("/" * new_file)
+            test_captured_ouput(expected) do
+                rm(ftp, new_file; verbose=true)
+            end
+            @test !file_exists("/" * new_file)
+            close(ftp)
+        end
+
+        @testset "upload" begin
+            @testset "uploading a file with only the local file name" begin
+
+                expected = r"\* Found bundle for host localhost: 0x[0-9a-f]{12}
+\* Re-using existing connection! \(#0\) with host localhost
+\* Connected to localhost \(::1\) port \d* \(#0\)
+\* Request has same path as previous transfer
+> EPSV\r
+\* Connect data stream passively
+\* ftp_perform ends with SECONDARY: 0
+< 229 Entering Extended Passive Mode \(\|\|\|\d*\|\)\r
+\*   Trying ::1...
+\* Connecting to ::1 \(::1\) port \d*
+\* Connected to localhost \(::1\) port \d* \(#0\)
+> TYPE I\r
+< 200 TYPE completed.\r
+> STOR test_upload.txt\r
+< 150 File status okay; about to open data connection.\r
+\* We are completely uploaded and fine
+\* Remembering we are in dir \"\"
+< 226 Created file test_upload.txt.\r
+\* Connection #0 to host localhost left intact
+"
+
+                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+                test_captured_ouput(expected) do
+                    upload(ftp, upload_file_name; verbose=true)
+                end
+                @test file_exists("/" * upload_file_name)
+                @test get_file_contents("/" * upload_file_name) == upload_file_contents
+                remove("/" * upload_file_name)
+                @test !file_exists("/" * upload_file_name)
+                close(ftp)
+            end
+            @testset "uploading a file with remote local file name" begin
+                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+                test_captured_ouput(expected) do
+                    upload(ftp, upload_file_name, upload_file_name; verbose=true)
+                end
+                @test file_exists("/" * upload_file_name)
+                @test get_file_contents("/" * upload_file_name) == upload_file_contents
+                remove("/" * upload_file_name)
+                @test !file_exists("/" * upload_file_name)
+                close(ftp)
+            end
+            @testset "uploading a file with remote local file name" begin
+                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+                resp = nothing
+                open(upload_file_name) do local_file
+                    test_captured_ouput(expected) do
+                        upload(ftp, local_file, upload_file_name; verbose=true)
+                    end
+                end
+                @test file_exists("/" * upload_file_name)
+                @test get_file_contents("/" * upload_file_name) == upload_file_contents
+                remove("/" * upload_file_name)
+                @test !file_exists("/" * upload_file_name)
+                close(ftp)
+            end
+        end
+
+    end
+
     ftp_cleanup()
 end
