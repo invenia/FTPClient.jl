@@ -15,7 +15,6 @@
         @test ftp.ctxt.options.implicit == false
         @test ftp.ctxt.options.verify_peer == true
         @test ftp.ctxt.options.active_mode == false
-        @test ftp.ctxt.options.binary_mode == true
     end
 
     @testset "with persistent connection" begin
