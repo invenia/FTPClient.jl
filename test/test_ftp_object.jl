@@ -261,4 +261,14 @@
 
     end
     ftp_cleanup()
+
+    @testset "ftp() do ftp_client end" begin
+        ftp(ssl=false, user=user, pswd=pswd, host=host) do ftp
+            buff = download(ftp, file_name)
+            actual_buff = readstring(buff)
+            @test actual_buff == file_contents
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+        end
+    end
 end
