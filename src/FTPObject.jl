@@ -247,8 +247,10 @@ function ftp(code::Function;
     ftp_init()
     ftp_client = FTP(;host=host, implicit=implicit, ssl=ssl, verify=verify, active=active, user=user, pswd=pswd)
 
-    code(ftp_client)
-
-    close(ftp_client)
-    ftp_cleanup()
+    try
+        code(ftp_client)
+    finally
+        close(ftp_client)
+        ftp_cleanup()
+    end
 end
