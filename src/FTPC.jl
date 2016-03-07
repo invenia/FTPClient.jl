@@ -477,3 +477,19 @@ Close connection FTP server.
 function ftp_close_connection(ctxt::ConnContext)
     cleanup_easy_context(ctxt)
 end
+
+
+##############################
+# ISEQUAL
+##############################
+
+function ==(this::RequestOptions, other::RequestOptions)
+    return this.implicit == other.implicit &&
+        this.ssl == other.ssl &&
+        this.verify_peer == other.verify_peer &&
+        this.active_mode == other.active_mode &&
+        this.username == other.username &&
+        this. passwd == other.passwd &&
+        this.url == other.url &&
+        this.hostname == other.hostname
+end
