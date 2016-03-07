@@ -453,14 +453,14 @@
 
             test()
 
+            rand_str_length = 1
+            print(out_write, randstring(rand_str_length))
             close(out_write)
-            task = @async readavailable(out_read)
-            sleep(1)
+            data = readavailable(out_read)
             close(out_read)
             redirect_stderr(original_stderr)
 
-            @test task.state == :done
-            @test !isempty(ASCIIString(task.result))
+            @test length(data) > rand_str_length
         end
 
         function test_captured_ouput_verbose_off(test::Function)
@@ -469,13 +469,14 @@
 
             test()
 
+            rand_str_length = 1
+            print(out_write, randstring(rand_str_length))
             close(out_write)
-            task = @async readavailable(out_read)
-            sleep(1)
+            data = readavailable(out_read)
             close(out_read)
             redirect_stderr(original_stderr)
 
-            @test task.state == :runnable
+            @test length(data) == rand_str_length
         end
 
         function test_verbose(verbose::Bool, test_captured_ouput::Function)
