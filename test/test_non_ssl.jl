@@ -444,39 +444,36 @@
             end
         end
     end
+    ftp_cleanup()
 
     @testset "verbose" begin
 
-        function test_captured_ouput_verbose_on(test::Function, i::Int=0)
-            original_stderr = STDERR
-            out_read, out_write = redirect_stderr()
+        function test_captured_ouput(test::Function)
+            file_name = tempname()
+            ftp_init()
+            try
+                open(file_name, "w") do verbose_file
+                    test(verbose_file)
+                    flush(verbose_file)
 
-            test()
+                    # Since the file is in libcurl, we need to flush using a c call.
+                    ccall((:fflush, "libc"), Int, (Ptr{Void},), C_NULL)
+                end
+                ftp_cleanup()
+                return read(file_name)
+            finally
+                rm(file_name)
+            end
+        end
 
-            rand_str_length = 1
-            print(out_write, randstring(rand_str_length))
-            close(out_write)
-            data = readavailable(out_read)
-            close(out_read)
-            redirect_stderr(original_stderr)
-
-            @test length(data) > rand_str_length
+        function test_captured_ouput_verbose_on(test::Function)
+            data = test_captured_ouput(test)
+            @test length(data) > 0
         end
 
         function test_captured_ouput_verbose_off(test::Function)
-            original_stderr = STDERR
-            out_read, out_write = redirect_stderr()
-
-            test()
-
-            rand_str_length = 1
-            print(out_write, randstring(rand_str_length))
-            close(out_write)
-            data = readavailable(out_read)
-            close(out_read)
-            redirect_stderr(original_stderr)
-
-            @test length(data) == rand_str_length
+            data = test_captured_ouput(test)
+            @test length(data) == 0
         end
 
         function test_verbose(verbose::Bool, test_captured_ouput::Function)
@@ -485,15 +482,15 @@
 
             @testset "ftp_get" begin
                 @testset "no ctxt" begin
-                    test_captured_ouput() do
-                        resp = ftp_get(file_name, options, verbose=verbose)
+                    test_captured_ouput() do verbose_file
+                        resp = ftp_get(file_name, options, verbose=verbose, verbose_file=verbose_file)
                     end
                 end
 
                 @testset "with ctxt" begin
                     ctxt, resp = ftp_connect(options)
-                    test_captured_ouput() do
-                        resp = ftp_get(ctxt, file_name, verbose=verbose)
+                    test_captured_ouput() do verbose_file
+                        resp = ftp_get(ctxt, file_name, verbose=verbose, verbose_file=verbose_file)
                     end
                     ftp_close_connection(ctxt)
                 end
@@ -504,8 +501,8 @@
                 @testset "no ctxt" begin
                     @test !file_exists("/" * non_ssl_test_upload)
                     open(upload_file_name) do file
-                        test_captured_ouput() do
-                            ftp_put(non_ssl_test_upload, file, options; verbose=verbose)
+                        test_captured_ouput() do verbose_file
+                            ftp_put(non_ssl_test_upload, file, options; verbose=verbose, verbose_file=verbose_file)
                         end
                     end
                     @test file_exists("/" * non_ssl_test_upload)
@@ -518,8 +515,8 @@
                     @test !file_exists("/" * non_ssl_test_upload)
                     ctxt, resp = ftp_connect(options)
                     open(upload_file_name) do file
-                        test_captured_ouput() do
-                            ftp_put(ctxt, non_ssl_test_upload, file; verbose=verbose)
+                        test_captured_ouput() do verbose_file
+                            ftp_put(ctxt, non_ssl_test_upload, file; verbose=verbose, verbose_file=verbose_file)
                         end
                     end
                     @test file_exists("/" * non_ssl_test_upload)
@@ -535,16 +532,16 @@
             @testset "ftp_command" begin
 
                 @testset "no ctxt" begin
-                    test_captured_ouput() do
-                        resp = ftp_command("PWD", options; verbose=verbose)
+                    test_captured_ouput() do verbose_file
+                        resp = ftp_command("PWD", options; verbose=verbose, verbose_file=verbose_file)
                     end
                 end
 
                 @testset "with ctxt" begin
 
                     ctxt, resp = ftp_connect(options)
-                    test_captured_ouput() do
-                        resp = ftp_command(ctxt, "PWD"; verbose=verbose)
+                    test_captured_ouput() do verbose_file
+                        resp = ftp_command(ctxt, "PWD"; verbose=verbose, verbose_file=verbose_file)
                     end
                     ftp_close_connection(ctxt)
                 end
@@ -553,8 +550,8 @@
 
             @testset "ftp_connect" begin
                 ctxt = nothing
-                test_captured_ouput() do
-                    ctxt, resp = ftp_connect(options; verbose=verbose)
+                test_captured_ouput() do verbose_file
+                    ctxt, resp = ftp_connect(options; verbose=verbose, verbose_file=verbose_file)
                 end
                 ftp_close_connection(ctxt)
             end
@@ -566,5 +563,4 @@
 
     end
 
-    ftp_cleanup()
 end
