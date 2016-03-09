@@ -257,7 +257,7 @@
                     flush(verbose_file)
 
                     # Since the file is in libcurl, we need to flush using a c call.
-                    ccall((:fflush, "libc"), Int, (Ptr{Void},), C_NULL)
+                    ccall(:fflush, Int, (Ptr{Void},), C_NULL)
                 end
                 ftp_cleanup()
                 return read(file_name)
