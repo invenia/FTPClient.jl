@@ -14,11 +14,11 @@ type RequestOptions
     url::AbstractString
     hostname::AbstractString
 
-    function RequestOptions(;implicit=false, ssl=false,
-            verify_peer=true, active_mode=false, username="",
-            passwd="", url=nothing, hostname="localhost")
+    function RequestOptions(;implicit::Bool=false, ssl::Bool=false,
+            verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
+            passwd::AbstractString="", url::AbstractString="", hostname::AbstractString="localhost")
 
-        if url == nothing
+        if isempty(url)
             if implicit
                 url = "ftps://$hostname/"
             else
@@ -192,7 +192,7 @@ function cleanup_easy_context(ctxt::ConnContext)
     end
 end
 
-function process_response(ctxt, resp)
+function process_response(ctxt::ConnContext, resp::Response)
     resp_code = Array(Int,1)
     @ce_curl curl_easy_getinfo CURLINFO_RESPONSE_CODE resp_code
 
