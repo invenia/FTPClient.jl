@@ -250,12 +250,10 @@
 
         function test_captured_ouput(test::Function)
             file_name = tempname()
-            ftp_init()
             try
                 open(file_name, "w") do verbose_file
                     test(verbose_file)
                 end
-                ftp_cleanup()
                 return read(file_name)
             finally
                 rm(file_name)
