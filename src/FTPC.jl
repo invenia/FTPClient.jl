@@ -489,7 +489,7 @@ function ==(this::RequestOptions, other::RequestOptions)
         this.verify_peer == other.verify_peer &&
         this.active_mode == other.active_mode &&
         this.username == other.username &&
-        this. passwd == other.passwd &&
+        this.passwd == other.passwd &&
         this.url == other.url &&
         this.hostname == other.hostname
 end
