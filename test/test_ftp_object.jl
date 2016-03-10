@@ -6,18 +6,12 @@
     space_file_contents = "test file with space.\n"
     ftp_init()
 
-    @testset "with persistent connection" begin
+    function no_unexpected_changes(ftp::FTP)
+        other = FTP(ssl=false, user=user, pswd=pswd, host=host)
+        @test ftp.ctxt.options == other.ctxt.options
+    end
 
-        function no_unexpected_changes(ftp::FTP)
-            @test ftp.ctxt.options.ssl == false
-            @test ftp.ctxt.options.username == user
-            @test ftp.ctxt.options.passwd == pswd
-            @test ftp.ctxt.options.hostname == host
-            @test ftp.ctxt.options.url == "ftp://$host/"
-            @test ftp.ctxt.options.implicit == false
-            @test ftp.ctxt.options.verify_peer == true
-            @test ftp.ctxt.options.active_mode == false
-        end
+    @testset "with persistent connection" begin
 
         @testset "connection" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
@@ -418,6 +412,14 @@
                     close(ftp)
                 end
             end
+
+            @testset "ftp open do end" begin
+                test_captured_ouput() do verbose_file
+                    ftp(;ssl=false, user=user, pswd=pswd, host=host,  verbose=verbose,
+                            verbose_file=verbose_file) do ftp
+                    end
+                end
+            end
         end
 
         test_verbose(true, test_captured_ouput_verbose_on)
@@ -426,4 +428,13 @@
     end
 
     ftp_cleanup()
+
+    @testset "ftp() do ftp_client end" begin
+        ftp(;ssl=false, user=user, pswd=pswd, host=host) do ftp
+            buff = download(ftp, file_name)
+            @test readstring(buff) == file_contents
+            no_unexpected_changes(ftp)
+            @test ftp.ctxt.url == "ftp://$host/"
+        end
+    end
 end

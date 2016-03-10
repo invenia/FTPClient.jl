@@ -211,3 +211,19 @@ function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString; verbo
     end
 
 end
+
+function ftp(code::Function;
+        host::AbstractString="", implicit::Bool=false, ssl::Bool=false,
+        verify::Bool=true, active::Bool=false, user::AbstractString="", pswd::AbstractString="",
+        verbose::Bool=false, verbose_file=nothing )
+    ftp_init()
+    ftp_client = FTP(;host=host, implicit=implicit, ssl=ssl, verify=verify, active=active,
+        user=user, pswd=pswd, verbose=verbose, verbose_file=verbose_file)
+
+    try
+        code(ftp_client)
+    finally
+        close(ftp_client)
+        ftp_cleanup()
+    end
+end

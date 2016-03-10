@@ -491,3 +491,18 @@ function ftp_perform(ctxt::ConnContext, verbose::Bool, verbose_file)
 
     return resp
 end
+
+##############################
+# ISEQUAL
+##############################
+
+function ==(this::RequestOptions, other::RequestOptions)
+    return this.implicit == other.implicit &&
+        this.ssl == other.ssl &&
+        this.verify_peer == other.verify_peer &&
+        this.active_mode == other.active_mode &&
+        this.username == other.username &&
+        this.passwd == other.passwd &&
+        this.url == other.url &&
+        this.hostname == other.hostname
+end

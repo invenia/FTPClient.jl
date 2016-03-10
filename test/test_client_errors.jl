@@ -1,5 +1,12 @@
 @testset "FTPClientError" begin
 
+    @testset "ftp() do ftp_client end" begin
+        ftp(ssl=false, user=user, pswd=pswd, host=host) do ftp
+            @test_throws FTPClientError download(ftp, file_name)
+        end
+
+    end
+
     ftp_init()
 
     @testset "ftp_connect error" begin
