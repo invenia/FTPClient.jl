@@ -254,10 +254,6 @@
             try
                 open(file_name, "w") do verbose_file
                     test(verbose_file)
-                    flush(verbose_file)
-
-                    # Since the file is in libcurl, we need to flush using a c call.
-                    ccall(:fflush, Int, (Ptr{Void},), C_NULL)
                 end
                 ftp_cleanup()
                 return read(file_name)
