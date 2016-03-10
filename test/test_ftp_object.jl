@@ -240,10 +240,13 @@
 
     end
 
+    ftp_cleanup()
+
     @testset "verbose" begin
 
         function test_captured_ouput(test::Function)
             file_name = tempname()
+            ftp_init()
             try
                 open(file_name, "w") do verbose_file
                     test(verbose_file)
@@ -251,6 +254,7 @@
                 return read(file_name)
             finally
                 rm(file_name)
+                ftp_cleanup()
             end
         end
 
@@ -427,7 +431,6 @@
 
     end
 
-    ftp_cleanup()
 
     @testset "ftp() do ftp_client end" begin
         ftp(;ssl=false, user=user, pswd=pswd, host=host) do ftp
