@@ -1,4 +1,23 @@
 @testset "FTPC.jl non ssl" begin
+
+    @testset "==" begin
+        implicit = rand(Bool)
+        ssl = rand(Bool)
+        verify_peer = rand(Bool)
+        active_mode = rand(Bool)
+        username = randstring(rand(1:100))
+        passwd = randstring(rand(1:100))
+        url = randstring(rand(1:100))
+        hostname = randstring(rand(1:100))
+        this = RequestOptions(implicit=implicit, ssl=ssl, verify_peer=verify_peer,
+            active_mode=active_mode, username=username, passwd=passwd, url=url,
+            hostname=hostname)
+        other = RequestOptions(implicit=implicit, ssl=ssl, verify_peer=verify_peer,
+            active_mode=active_mode, username=username, passwd=passwd, url=url,
+            hostname=hostname)
+        @test this == other
+    end
+
     ftp_init()
 
     expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
