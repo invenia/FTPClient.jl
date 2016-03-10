@@ -252,7 +252,6 @@ Download file with persistent connection.
 returns resp::Response
 """ ->
 function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Bool=false, verbose_file=nothing)
-    resp = Response()
     wd = WriteData()
 
     if ~isempty(save_path)
@@ -262,14 +261,9 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
     try
 
         p_wd = pointer_from_objref(wd)
-        p_resp = pointer_from_objref(resp)
-
 
         @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
         @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
-
-        @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
-        @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
         @ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(1)
 
@@ -280,7 +274,7 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
             @ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=a"
         end
 
-        ftp_perform(ctxt, resp, verbose, verbose_file)
+        resp = ftp_perform(ctxt, verbose, verbose_file)
 
         if isopen(wd.buffer)
             seekstart(wd.buffer)
@@ -337,8 +331,6 @@ Upload file with persistent connection.
 returns resp::Response
 """ ->
 function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode, verbose::Bool=false, verbose_file=nothing)
-
-    resp = Response()
     rd = ReadData()
 
     rd.src = file
@@ -347,14 +339,10 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
     seekstart(file)
 
     p_rd = pointer_from_objref(rd)
-    p_resp = pointer_from_objref(resp)
 
     @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
     @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
     @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
-
-    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
-    @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
     @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url * file_name
 
@@ -366,7 +354,7 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
 
     @ce_curl curl_easy_setopt CURLOPT_INFILESIZE Int64(rd.sz)
 
-    ftp_perform(ctxt, resp, verbose, verbose_file)
+    resp = ftp_perform(ctxt, verbose, verbose_file)
 
     # resest handle defaults
     @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
@@ -408,22 +396,15 @@ Pass FTP command with persistent connection.
 returns resp::Response
 """ ->
 function ftp_command(ctxt::ConnContext, cmd::AbstractString; verbose::Bool=false, verbose_file=nothing)
-    resp = Response()
     wd = WriteData()
     p_wd = pointer_from_objref(wd)
 
-    resp = Response()
-    p_resp = pointer_from_objref(resp)
+    @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
 
     @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
     @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
-    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
-    @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
-
-    @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
-
-    ftp_perform(ctxt, resp, verbose, verbose_file)
+    resp = ftp_perform(ctxt, verbose, verbose_file)
 
     resp.body = seekstart(wd.buffer)
     resp.bytes_recd = wd.bytes_recd
@@ -481,7 +462,13 @@ end
 # PERFORM
 ##############################
 
-function ftp_perform(ctxt::ConnContext, resp::Response, verbose::Bool, verbose_file)
+function ftp_perform(ctxt::ConnContext, verbose::Bool, verbose_file)
+    resp = Response()
+    p_resp = pointer_from_objref(resp)
+
+    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
+    @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
+
     libc_file = nothing
     if verbose
         @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
@@ -501,4 +488,6 @@ function ftp_perform(ctxt::ConnContext, resp::Response, verbose::Bool, verbose_f
             close(libc_file)
         end
     end
+
+    return resp
 end
