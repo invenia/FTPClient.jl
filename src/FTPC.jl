@@ -225,6 +225,9 @@ function cleanup_easy_context(ctxt::ConnContext)
         @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION C_NULL
         @ce_curl curl_easy_setopt CURLOPT_HEADERDATA C_NULL
 
+        @ce_curl curl_easy_setopt CURLOPT_READDATA C_NULL
+        @ce_curl curl_easy_setopt CURLOPT_READFUNCTION C_NULL
+
         curl_easy_cleanup(ctxt.curl)
         ctxt.curl = C_NULL
     end
