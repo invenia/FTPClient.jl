@@ -3,10 +3,10 @@ type FTP
 
     function FTP(;host::AbstractString="", implicit::Bool=false, ssl::Bool=false,
             verify::Bool=true, active::Bool=false, user::AbstractString="",
-            pswd::AbstractString="")
+            pswd::AbstractString="", url::AbstractString="")
         options = RequestOptions(implicit=implicit, ssl=ssl,
                     verify_peer=verify, active_mode=active,
-                    username=user, passwd=pswd, hostname=host)
+                    username=user, passwd=pswd, hostname=host, url=url)
 
         ctxt = nothing
         try

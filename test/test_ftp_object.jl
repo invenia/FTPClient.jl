@@ -20,6 +20,12 @@
             close(ftp)
         end
 
+        @testset "connection with url" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, url="ftp://$host/")
+            @test ftp.ctxt.url == "ftp://$host/"
+            close(ftp)
+        end
+
         @testset "readdir" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             dir = readdir(ftp)
