@@ -489,7 +489,7 @@ function ftp_perform(ctxt::ConnContext, verbose::Bool, verbose_file)
     finally
         if isa(libc_file, Libc.FILE)
             close(libc_file)
-            @ce_curl curl_easy_setopt CURLOPT_STDERR Libc.FILE(2).ptr
+            @ce_curl curl_easy_setopt CURLOPT_STDERR Libc.FILE(RawFD(2), "w").ptr
         end
     end
 
