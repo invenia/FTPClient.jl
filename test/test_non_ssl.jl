@@ -571,7 +571,6 @@
         end
 
         test_verbose(true, test_captured_ouput_verbose_on)
-        test_verbose(false, test_captured_ouput_verbose_off)
 
     end
 

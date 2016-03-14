@@ -263,11 +263,6 @@
             @test length(data) > 0
         end
 
-        function test_captured_ouput_verbose_off(test::Function)
-            data = test_captured_ouput(test)
-            @test length(data) == 0
-        end
-
         function test_verbose(verbose::Bool, test_captured_ouput::Function)
 
             @testset "FTP" begin
@@ -427,7 +422,6 @@
         end
 
         test_verbose(true, test_captured_ouput_verbose_on)
-        test_verbose(false, test_captured_ouput_verbose_off)
 
     end
 
