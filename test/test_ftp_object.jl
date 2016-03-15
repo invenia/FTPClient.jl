@@ -251,50 +251,126 @@
                 open(file_name, "w") do verbose_file
                     test(verbose_file)
                 end
-                return read(file_name)
+                @test length(read(file_name)) > 0
             finally
                 rm(file_name)
                 ftp_cleanup()
             end
         end
 
-        function test_captured_ouput_verbose_on(test::Function)
-            data = test_captured_ouput(test)
-            @test length(data) > 0
+        @testset "FTP" begin
+            test_captured_ouput() do verbose_file
+                FTP(ssl=false, user=user, pswd=pswd, host=host; verbose=true, verbose_file=verbose_file)
+            end
         end
 
-        function test_verbose(verbose::Bool, test_captured_ouput::Function)
-
-            @testset "FTP" begin
-                test_captured_ouput() do verbose_file
-                    FTP(ssl=false, user=user, pswd=pswd, host=host; verbose=verbose, verbose_file=verbose_file)
-                end
+        @testset "readdir" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            test_captured_ouput() do verbose_file
+                readdir(ftp; verbose=true, verbose_file=verbose_file)
             end
+            close(ftp)
+        end
 
-            @testset "readdir" begin
+        @testset "download" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            buff = nothing
+            test_captured_ouput() do verbose_file
+                buff = download(ftp, file_name; verbose=true, verbose_file=verbose_file)
+            end
+            actual_buff = readstring(buff)
+            @test actual_buff == file_contents
+            close(ftp)
+        end
+
+        @testset "upload" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !file_exists("/" * upload_file_name)
+            test_captured_ouput() do verbose_file
+                upload(ftp, upload_file_name; verbose=true, verbose_file=verbose_file)
+            end
+            @test file_exists("/" * upload_file_name)
+            @test get_file_contents("/" * upload_file_name) == upload_file_contents
+            remove("/" * upload_file_name)
+            @test !file_exists("/" * upload_file_name)
+            close(ftp)
+        end
+
+        @testset "mkdir" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            @test !directory_exists("/" * testdir)
+            test_captured_ouput() do verbose_file
+                mkdir(ftp, testdir; verbose=true, verbose_file=verbose_file)
+            end
+            @test directory_exists("/" * testdir)
+            remove("/" * testdir)
+            @test !directory_exists("/" * testdir)
+            close(ftp)
+        end
+
+        @testset "cd" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_directory("/" * testdir)
+            test_captured_ouput() do verbose_file
+                cd(ftp, testdir; verbose=true, verbose_file=verbose_file)
+            end
+            remove("/" * testdir)
+            @test !directory_exists("/" * testdir)
+            close(ftp)
+        end
+
+        @testset "rmdir" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_directory("/" * testdir)
+            @test directory_exists("/" * testdir)
+            test_captured_ouput() do verbose_file
+                rmdir(ftp, testdir; verbose=true, verbose_file=verbose_file)
+            end
+            @test !directory_exists("/" * testdir)
+            close(ftp)
+        end
+
+        @testset "pwd" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            path = nothing
+            test_captured_ouput() do verbose_file
+                path = pwd(ftp; verbose=true, verbose_file=verbose_file)
+            end
+            @test path == "/"
+            close(ftp)
+        end
+
+        @testset "mv" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_file("/" * upload_file_name, upload_file_contents)
+            @test file_exists("/" * upload_file_name)
+            test_captured_ouput() do verbose_file
+                mv(ftp, upload_file_name, new_file; verbose=true, verbose_file=verbose_file)
+            end
+            @test !file_exists("/" * upload_file_name)
+            @test file_exists("/" * new_file)
+            @test get_file_contents("/" * new_file) == upload_file_contents
+            remove("/" * new_file)
+            @test !file_exists("/" * new_file)
+            close(ftp)
+        end
+
+        @testset "rm" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            set_file("/" * new_file, upload_file_contents)
+            @test file_exists("/" * new_file)
+            test_captured_ouput() do verbose_file
+                rm(ftp, new_file; verbose=true, verbose_file=verbose_file)
+            end
+            @test !file_exists("/" * new_file)
+            close(ftp)
+        end
+
+        @testset "upload" begin
+            @testset "uploading a file with only the local file name" begin
                 ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
                 test_captured_ouput() do verbose_file
-                    readdir(ftp; verbose=verbose, verbose_file=verbose_file)
-                end
-                close(ftp)
-            end
-
-            @testset "download" begin
-                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                buff = nothing
-                test_captured_ouput() do verbose_file
-                    buff = download(ftp, file_name; verbose=verbose, verbose_file=verbose_file)
-                end
-                actual_buff = readstring(buff)
-                @test actual_buff == file_contents
-                close(ftp)
-            end
-
-            @testset "upload" begin
-                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                @test !file_exists("/" * upload_file_name)
-                test_captured_ouput() do verbose_file
-                    upload(ftp, upload_file_name; verbose=verbose, verbose_file=verbose_file)
+                    upload(ftp, upload_file_name; verbose=true, verbose_file=verbose_file)
                 end
                 @test file_exists("/" * upload_file_name)
                 @test get_file_contents("/" * upload_file_name) == upload_file_contents
@@ -302,126 +378,40 @@
                 @test !file_exists("/" * upload_file_name)
                 close(ftp)
             end
-
-            @testset "mkdir" begin
+            @testset "uploading a file with remote local file name" begin
                 ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                @test !directory_exists("/" * testdir)
                 test_captured_ouput() do verbose_file
-                    mkdir(ftp, testdir; verbose=verbose, verbose_file=verbose_file)
+                    upload(ftp, upload_file_name, upload_file_name; verbose=true, verbose_file=verbose_file)
                 end
-                @test directory_exists("/" * testdir)
-                remove("/" * testdir)
-                @test !directory_exists("/" * testdir)
-                close(ftp)
-            end
-
-            @testset "cd" begin
-                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                set_directory("/" * testdir)
-                test_captured_ouput() do verbose_file
-                    cd(ftp, testdir; verbose=verbose, verbose_file=verbose_file)
-                end
-                remove("/" * testdir)
-                @test !directory_exists("/" * testdir)
-                close(ftp)
-            end
-
-            @testset "rmdir" begin
-                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                set_directory("/" * testdir)
-                @test directory_exists("/" * testdir)
-                test_captured_ouput() do verbose_file
-                    rmdir(ftp, testdir; verbose=verbose, verbose_file=verbose_file)
-                end
-                @test !directory_exists("/" * testdir)
-                close(ftp)
-            end
-
-            @testset "pwd" begin
-                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                path = nothing
-                test_captured_ouput() do verbose_file
-                    path = pwd(ftp; verbose=verbose, verbose_file=verbose_file)
-                end
-                @test path == "/"
-                close(ftp)
-            end
-
-            @testset "mv" begin
-                ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                set_file("/" * upload_file_name, upload_file_contents)
                 @test file_exists("/" * upload_file_name)
-                test_captured_ouput() do verbose_file
-                    mv(ftp, upload_file_name, new_file; verbose=verbose, verbose_file=verbose_file)
-                end
+                @test get_file_contents("/" * upload_file_name) == upload_file_contents
+                remove("/" * upload_file_name)
                 @test !file_exists("/" * upload_file_name)
-                @test file_exists("/" * new_file)
-                @test get_file_contents("/" * new_file) == upload_file_contents
-                remove("/" * new_file)
-                @test !file_exists("/" * new_file)
                 close(ftp)
             end
-
-            @testset "rm" begin
+            @testset "uploading a file with remote local file name" begin
                 ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                set_file("/" * new_file, upload_file_contents)
-                @test file_exists("/" * new_file)
-                test_captured_ouput() do verbose_file
-                    rm(ftp, new_file; verbose=verbose, verbose_file=verbose_file)
+                resp = nothing
+                open(upload_file_name) do local_file
+                    test_captured_ouput() do verbose_file
+                        upload(ftp, local_file, upload_file_name; verbose=true, verbose_file=verbose_file)
+                    end
                 end
-                @test !file_exists("/" * new_file)
+                @test file_exists("/" * upload_file_name)
+                @test get_file_contents("/" * upload_file_name) == upload_file_contents
+                remove("/" * upload_file_name)
+                @test !file_exists("/" * upload_file_name)
                 close(ftp)
-            end
-
-            @testset "upload" begin
-                @testset "uploading a file with only the local file name" begin
-                    ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                    test_captured_ouput() do verbose_file
-                        upload(ftp, upload_file_name; verbose=verbose, verbose_file=verbose_file)
-                    end
-                    @test file_exists("/" * upload_file_name)
-                    @test get_file_contents("/" * upload_file_name) == upload_file_contents
-                    remove("/" * upload_file_name)
-                    @test !file_exists("/" * upload_file_name)
-                    close(ftp)
-                end
-                @testset "uploading a file with remote local file name" begin
-                    ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                    test_captured_ouput() do verbose_file
-                        upload(ftp, upload_file_name, upload_file_name; verbose=verbose, verbose_file=verbose_file)
-                    end
-                    @test file_exists("/" * upload_file_name)
-                    @test get_file_contents("/" * upload_file_name) == upload_file_contents
-                    remove("/" * upload_file_name)
-                    @test !file_exists("/" * upload_file_name)
-                    close(ftp)
-                end
-                @testset "uploading a file with remote local file name" begin
-                    ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
-                    resp = nothing
-                    open(upload_file_name) do local_file
-                        test_captured_ouput() do verbose_file
-                            upload(ftp, local_file, upload_file_name; verbose=verbose, verbose_file=verbose_file)
-                        end
-                    end
-                    @test file_exists("/" * upload_file_name)
-                    @test get_file_contents("/" * upload_file_name) == upload_file_contents
-                    remove("/" * upload_file_name)
-                    @test !file_exists("/" * upload_file_name)
-                    close(ftp)
-                end
-            end
-
-            @testset "ftp open do end" begin
-                test_captured_ouput() do verbose_file
-                    ftp(;ssl=false, user=user, pswd=pswd, host=host,  verbose=verbose,
-                            verbose_file=verbose_file) do ftp
-                    end
-                end
             end
         end
 
-        test_verbose(true, test_captured_ouput_verbose_on)
+        @testset "ftp open do end" begin
+            test_captured_ouput() do verbose_file
+                ftp(;ssl=false, user=user, pswd=pswd, host=host,  verbose=true,
+                        verbose_file=verbose_file) do ftp
+                end
+            end
+        end
 
     end
 
