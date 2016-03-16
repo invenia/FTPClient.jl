@@ -575,6 +575,25 @@
             end
         end
 
+        @testset "verbose twice with STDERR on second" begin
+            test_captured_ouput() do verbose_file
+                resp = ftp_get(file_name, options, verbose=true, verbose_file=verbose_file)
+                first_length = length(read(verbose_file.name[7:end-1]))
+                @test first_length > 0
+                resp = ftp_command("PWD", options; verbose=true)
+                second_length = length(read(verbose_file.name[7:end-1]))
+                @test second_length== first_length
+            end
+            test_captured_ouput() do verbose_file
+                resp = ftp_command("PWD", options; verbose=true, verbose_file=verbose_file)
+                first_length = length(read(verbose_file.name[7:end-1]))
+                @test first_length > 0
+                resp = ftp_get(file_name, options, verbose=true)
+                second_length = length(read(verbose_file.name[7:end-1]))
+                @test second_length == first_length
+            end
+        end
+
     end
 
     ftp_cleanup()
