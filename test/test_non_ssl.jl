@@ -483,14 +483,14 @@
         @testset "ftp_get" begin
             @testset "no ctxt" begin
                 test_captured_ouput() do verbose_file
-                    resp = ftp_get(file_name, options, verbose=true, verbose_file=verbose_file)
+                    resp = ftp_get(file_name, options, verbose=verbose_file)
                 end
             end
 
             @testset "with ctxt" begin
                 ctxt, resp = ftp_connect(options)
                 test_captured_ouput() do verbose_file
-                    resp = ftp_get(ctxt, file_name, verbose=true, verbose_file=verbose_file)
+                    resp = ftp_get(ctxt, file_name, verbose=verbose_file)
                 end
                 ftp_close_connection(ctxt)
             end
@@ -502,7 +502,7 @@
                 @test !file_exists("/" * non_ssl_test_upload)
                 open(upload_file_name) do file
                     test_captured_ouput() do verbose_file
-                        ftp_put(non_ssl_test_upload, file, options; verbose=true, verbose_file=verbose_file)
+                        ftp_put(non_ssl_test_upload, file, options; verbose=verbose_file)
                     end
                 end
                 @test file_exists("/" * non_ssl_test_upload)
@@ -516,7 +516,7 @@
                 ctxt, resp = ftp_connect(options)
                 open(upload_file_name) do file
                     test_captured_ouput() do verbose_file
-                        ftp_put(ctxt, non_ssl_test_upload, file; verbose=true, verbose_file=verbose_file)
+                        ftp_put(ctxt, non_ssl_test_upload, file; verbose=verbose_file)
                     end
                 end
                 @test file_exists("/" * non_ssl_test_upload)
@@ -533,7 +533,7 @@
 
             @testset "no ctxt" begin
                 test_captured_ouput() do verbose_file
-                    resp = ftp_command("PWD", options; verbose=true, verbose_file=verbose_file)
+                    resp = ftp_command("PWD", options; verbose=verbose_file)
                 end
             end
 
@@ -541,7 +541,7 @@
 
                 ctxt, resp = ftp_connect(options)
                 test_captured_ouput() do verbose_file
-                    resp = ftp_command(ctxt, "PWD"; verbose=true, verbose_file=verbose_file)
+                    resp = ftp_command(ctxt, "PWD"; verbose=verbose_file)
                 end
                 ftp_close_connection(ctxt)
             end
@@ -551,25 +551,25 @@
         @testset "ftp_connect" begin
             ctxt = nothing
             test_captured_ouput() do verbose_file
-                ctxt, resp = ftp_connect(options; verbose=true, verbose_file=verbose_file)
+                ctxt, resp = ftp_connect(options; verbose=verbose_file)
             end
             ftp_close_connection(ctxt)
         end
 
         @testset "verbose twice" begin
             test_captured_ouput() do verbose_file
-                resp = ftp_get(file_name, options, verbose=true, verbose_file=verbose_file)
+                resp = ftp_get(file_name, options, verbose=verbose_file)
                 first_length = length(read(verbose_file.name[7:end-1]))
                 @test first_length > 0
-                resp = ftp_command("PWD", options; verbose=true, verbose_file=verbose_file)
+                resp = ftp_command("PWD", options; verbose=verbose_file)
                 second_length = length(read(verbose_file.name[7:end-1]))
                 @test second_length > first_length
             end
             test_captured_ouput() do verbose_file
-                resp = ftp_command("PWD", options; verbose=true, verbose_file=verbose_file)
+                resp = ftp_command("PWD", options; verbose=verbose_file)
                 first_length = length(read(verbose_file.name[7:end-1]))
                 @test first_length > 0
-                resp = ftp_get(file_name, options, verbose=true, verbose_file=verbose_file)
+                resp = ftp_get(file_name, options, verbose=verbose_file)
                 second_length = length(read(verbose_file.name[7:end-1]))
                 @test second_length > first_length
             end
@@ -577,7 +577,7 @@
 
         @testset "verbose twice with STDERR on second" begin
             test_captured_ouput() do verbose_file
-                resp = ftp_get(file_name, options, verbose=true, verbose_file=verbose_file)
+                resp = ftp_get(file_name, options, verbose=verbose_file)
                 first_length = length(read(verbose_file.name[7:end-1]))
                 @test first_length > 0
                 resp = ftp_command("PWD", options; verbose=true)
@@ -585,7 +585,7 @@
                 @test second_length== first_length
             end
             test_captured_ouput() do verbose_file
-                resp = ftp_command("PWD", options; verbose=true, verbose_file=verbose_file)
+                resp = ftp_command("PWD", options; verbose=verbose_file)
                 first_length = length(read(verbose_file.name[7:end-1]))
                 @test first_length > 0
                 resp = ftp_get(file_name, options, verbose=true)

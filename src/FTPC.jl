@@ -236,10 +236,10 @@ Download file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptions(), save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Bool=false, verbose_file=nothing)
+function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptions(), save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
     ctxt = setup_easy_handle(options)
     try
-        return ftp_get(ctxt, file_name, save_path; mode=mode, verbose=verbose, verbose_file=verbose_file)
+        return ftp_get(ctxt, file_name, save_path; mode=mode, verbose=verbose)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -254,7 +254,7 @@ Download file with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Bool=false, verbose_file=nothing)
+function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
     wd = WriteData()
 
     if ~isempty(save_path)
@@ -277,7 +277,7 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
             @ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=a"
         end
 
-        resp = ftp_perform(ctxt, verbose, verbose_file)
+        resp = ftp_perform(ctxt, verbose)
 
         if isopen(wd.buffer)
             seekstart(wd.buffer)
@@ -315,10 +315,10 @@ Upload file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions(); mode::FTP_MODE=binary_mode, verbose::Bool=false, verbose_file=nothing)
+function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions(); mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
     ctxt = setup_easy_handle(options)
     try
-        return ftp_put(ctxt, file_name, file; mode=mode, verbose=verbose, verbose_file=verbose_file)
+        return ftp_put(ctxt, file_name, file; mode=mode, verbose=verbose)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -333,7 +333,7 @@ Upload file with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode, verbose::Bool=false, verbose_file=nothing)
+function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
     rd = ReadData()
 
     rd.src = file
@@ -357,7 +357,7 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
 
     @ce_curl curl_easy_setopt CURLOPT_INFILESIZE Int64(rd.sz)
 
-    resp = ftp_perform(ctxt, verbose, verbose_file)
+    resp = ftp_perform(ctxt, verbose)
 
     # resest handle defaults
     @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
@@ -381,10 +381,10 @@ Pass FTP command with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_command(cmd::AbstractString, options::RequestOptions=RequestOptions(); verbose::Bool=false, verbose_file=nothing)
+function ftp_command(cmd::AbstractString, options::RequestOptions=RequestOptions(); verbose::Union{Bool,IOStream}=false)
     ctxt = setup_easy_handle(options)
     try
-        return ftp_command(ctxt, cmd; verbose=verbose, verbose_file=verbose_file)
+        return ftp_command(ctxt, cmd; verbose=verbose)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -398,7 +398,7 @@ Pass FTP command with persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_command(ctxt::ConnContext, cmd::AbstractString; verbose::Bool=false, verbose_file=nothing)
+function ftp_command(ctxt::ConnContext, cmd::AbstractString; verbose::Union{Bool,IOStream}=false)
     wd = WriteData()
     p_wd = pointer_from_objref(wd)
 
@@ -407,7 +407,7 @@ function ftp_command(ctxt::ConnContext, cmd::AbstractString; verbose::Bool=false
     @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
     @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
-    resp = ftp_perform(ctxt, verbose, verbose_file)
+    resp = ftp_perform(ctxt, verbose)
 
     resp.body = seekstart(wd.buffer)
     resp.bytes_recd = wd.bytes_recd
@@ -433,11 +433,11 @@ Establish connection to FTP server.
 
 returns ctxt::ConnContext
 """ ->
-function ftp_connect(options::RequestOptions=RequestOptions(); verbose::Bool=false, verbose_file=nothing)
+function ftp_connect(options::RequestOptions=RequestOptions(); verbose::Union{Bool,IOStream}=false)
     ctxt = setup_easy_handle(options)
     try
         # ping the server
-        resp = ftp_command(ctxt, "LIST"; verbose=verbose, verbose_file=verbose_file)
+        resp = ftp_command(ctxt, "LIST"; verbose=verbose)
 
         return ctxt, resp
     catch
@@ -465,7 +465,7 @@ end
 # PERFORM
 ##############################
 
-function ftp_perform(ctxt::ConnContext, verbose::Bool, verbose_file)
+function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
     resp = Response()
     p_resp = pointer_from_objref(resp)
 
@@ -473,13 +473,13 @@ function ftp_perform(ctxt::ConnContext, verbose::Bool, verbose_file)
     @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
     libc_file = nothing
-    if verbose
+    if verbose != false
         @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
-        if isa(verbose_file, IOStream)
+        if isa(verbose, IOStream)
 
             # This opens the file with a different stream so that when we close it (below)
             # it won't close the original one.
-            libc_file = Libc.FILE(Libc.dup(RawFD(fd(verbose_file))), "a")
+            libc_file = Libc.FILE(Libc.dup(RawFD(fd(verbose))), "a")
 
             @ce_curl curl_easy_setopt CURLOPT_STDERR libc_file.ptr
         end

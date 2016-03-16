@@ -260,14 +260,14 @@
 
         @testset "FTP" begin
             test_captured_ouput() do verbose_file
-                FTP(ssl=false, user=user, pswd=pswd, host=host; verbose=true, verbose_file=verbose_file)
+                FTP(ssl=false, user=user, pswd=pswd, host=host; verbose=verbose_file)
             end
         end
 
         @testset "readdir" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             test_captured_ouput() do verbose_file
-                readdir(ftp; verbose=true, verbose_file=verbose_file)
+                readdir(ftp; verbose=verbose_file)
             end
             close(ftp)
         end
@@ -276,7 +276,7 @@
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             buff = nothing
             test_captured_ouput() do verbose_file
-                buff = download(ftp, file_name; verbose=true, verbose_file=verbose_file)
+                buff = download(ftp, file_name; verbose=verbose_file)
             end
             actual_buff = readstring(buff)
             @test actual_buff == file_contents
@@ -287,7 +287,7 @@
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             @test !file_exists("/" * upload_file_name)
             test_captured_ouput() do verbose_file
-                upload(ftp, upload_file_name; verbose=true, verbose_file=verbose_file)
+                upload(ftp, upload_file_name; verbose=verbose_file)
             end
             @test file_exists("/" * upload_file_name)
             @test get_file_contents("/" * upload_file_name) == upload_file_contents
@@ -300,7 +300,7 @@
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             @test !directory_exists("/" * testdir)
             test_captured_ouput() do verbose_file
-                mkdir(ftp, testdir; verbose=true, verbose_file=verbose_file)
+                mkdir(ftp, testdir; verbose=verbose_file)
             end
             @test directory_exists("/" * testdir)
             remove("/" * testdir)
@@ -312,7 +312,7 @@
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             set_directory("/" * testdir)
             test_captured_ouput() do verbose_file
-                cd(ftp, testdir; verbose=true, verbose_file=verbose_file)
+                cd(ftp, testdir; verbose=verbose_file)
             end
             remove("/" * testdir)
             @test !directory_exists("/" * testdir)
@@ -324,7 +324,7 @@
             set_directory("/" * testdir)
             @test directory_exists("/" * testdir)
             test_captured_ouput() do verbose_file
-                rmdir(ftp, testdir; verbose=true, verbose_file=verbose_file)
+                rmdir(ftp, testdir; verbose=verbose_file)
             end
             @test !directory_exists("/" * testdir)
             close(ftp)
@@ -334,7 +334,7 @@
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             path = nothing
             test_captured_ouput() do verbose_file
-                path = pwd(ftp; verbose=true, verbose_file=verbose_file)
+                path = pwd(ftp; verbose=verbose_file)
             end
             @test path == "/"
             close(ftp)
@@ -345,7 +345,7 @@
             set_file("/" * upload_file_name, upload_file_contents)
             @test file_exists("/" * upload_file_name)
             test_captured_ouput() do verbose_file
-                mv(ftp, upload_file_name, new_file; verbose=true, verbose_file=verbose_file)
+                mv(ftp, upload_file_name, new_file; verbose=verbose_file)
             end
             @test !file_exists("/" * upload_file_name)
             @test file_exists("/" * new_file)
@@ -360,7 +360,7 @@
             set_file("/" * new_file, upload_file_contents)
             @test file_exists("/" * new_file)
             test_captured_ouput() do verbose_file
-                rm(ftp, new_file; verbose=true, verbose_file=verbose_file)
+                rm(ftp, new_file; verbose=verbose_file)
             end
             @test !file_exists("/" * new_file)
             close(ftp)
@@ -370,7 +370,7 @@
             @testset "uploading a file with only the local file name" begin
                 ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
                 test_captured_ouput() do verbose_file
-                    upload(ftp, upload_file_name; verbose=true, verbose_file=verbose_file)
+                    upload(ftp, upload_file_name; verbose=verbose_file)
                 end
                 @test file_exists("/" * upload_file_name)
                 @test get_file_contents("/" * upload_file_name) == upload_file_contents
@@ -381,7 +381,7 @@
             @testset "uploading a file with remote local file name" begin
                 ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
                 test_captured_ouput() do verbose_file
-                    upload(ftp, upload_file_name, upload_file_name; verbose=true, verbose_file=verbose_file)
+                    upload(ftp, upload_file_name, upload_file_name; verbose=verbose_file)
                 end
                 @test file_exists("/" * upload_file_name)
                 @test get_file_contents("/" * upload_file_name) == upload_file_contents
@@ -394,7 +394,7 @@
                 resp = nothing
                 open(upload_file_name) do local_file
                     test_captured_ouput() do verbose_file
-                        upload(ftp, local_file, upload_file_name; verbose=true, verbose_file=verbose_file)
+                        upload(ftp, local_file, upload_file_name; verbose=verbose_file)
                     end
                 end
                 @test file_exists("/" * upload_file_name)
@@ -408,19 +408,19 @@
         @testset "verbose twice" begin
             ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
             test_captured_ouput() do verbose_file
-                buff = download(ftp, file_name; verbose=true, verbose_file=verbose_file)
+                buff = download(ftp, file_name; verbose=verbose_file)
                 first_length = length(read(verbose_file.name[7:end-1]))
                 @test first_length > 0
-                path = pwd(ftp; verbose=true, verbose_file=verbose_file)
+                path = pwd(ftp; verbose=verbose_file)
                 second_length = length(read(verbose_file.name[7:end-1]))
                 @test second_length > first_length
             end
             test_captured_ouput() do verbose_file
-                path = pwd(ftp; verbose=true, verbose_file=verbose_file)
+                path = pwd(ftp; verbose=verbose_file)
                 first_length = length(read(verbose_file.name[7:end-1]))
                 @test first_length > 0
-                buff = download(ftp, file_name; verbose=true, verbose_file=verbose_file)
-                path = pwd(ftp; verbose=true, verbose_file=verbose_file)
+                buff = download(ftp, file_name; verbose=verbose_file)
+                path = pwd(ftp; verbose=verbose_file)
                 second_length = length(read(verbose_file.name[7:end-1]))
                 @test second_length > first_length
             end
@@ -428,8 +428,7 @@
 
         @testset "ftp open do end" begin
             test_captured_ouput() do verbose_file
-                ftp(;ssl=false, user=user, pswd=pswd, host=host,  verbose=true,
-                        verbose_file=verbose_file) do ftp
+                ftp(;ssl=false, user=user, pswd=pswd, host=host, verbose=verbose_file) do ftp
                 end
             end
         end
