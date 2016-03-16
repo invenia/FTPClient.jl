@@ -405,6 +405,27 @@
             end
         end
 
+        @testset "verbose twice" begin
+            ftp = FTP(ssl=false, user=user, pswd=pswd, host=host)
+            test_captured_ouput() do verbose_file
+                buff = download(ftp, file_name; verbose=true, verbose_file=verbose_file)
+                first_length = length(read(verbose_file.name[7:end-1]))
+                @test first_length > 0
+                path = pwd(ftp; verbose=true, verbose_file=verbose_file)
+                second_length = length(read(verbose_file.name[7:end-1]))
+                @test second_length > first_length
+            end
+            test_captured_ouput() do verbose_file
+                path = pwd(ftp; verbose=true, verbose_file=verbose_file)
+                first_length = length(read(verbose_file.name[7:end-1]))
+                @test first_length > 0
+                buff = download(ftp, file_name; verbose=true, verbose_file=verbose_file)
+                path = pwd(ftp; verbose=true, verbose_file=verbose_file)
+                second_length = length(read(verbose_file.name[7:end-1]))
+                @test second_length > first_length
+            end
+        end
+
         @testset "ftp open do end" begin
             test_captured_ouput() do verbose_file
                 ftp(;ssl=false, user=user, pswd=pswd, host=host,  verbose=true,

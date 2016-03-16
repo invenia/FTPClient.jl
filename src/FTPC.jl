@@ -476,7 +476,11 @@ function ftp_perform(ctxt::ConnContext, verbose::Bool, verbose_file)
     if verbose
         @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
         if isa(verbose_file, IOStream)
-            libc_file = Libc.FILE(verbose_file)
+
+            # This opens the file with a different stream so that when we close it (below)
+            # it won't close the original one.
+            libc_file = Libc.FILE(Libc.dup(RawFD(fd(verbose_file))), "a")
+
             @ce_curl curl_easy_setopt CURLOPT_STDERR libc_file.ptr
         end
     else
@@ -489,7 +493,7 @@ function ftp_perform(ctxt::ConnContext, verbose::Bool, verbose_file)
     finally
         if isa(libc_file, Libc.FILE)
             close(libc_file)
-            @ce_curl curl_easy_setopt CURLOPT_STDERR Libc.FILE(RawFD(2), "w").ptr
+            @ce_curl curl_easy_setopt CURLOPT_STDERR Libc.FILE(STDERR.handle).ptr
         end
     end
 
