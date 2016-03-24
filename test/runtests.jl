@@ -146,20 +146,28 @@ else
     test_implicit = false
 end
 
-if (length(ARGS) == 4)
+if (length(ARGS) >= 4)
     user = ARGS[3]
     pswd = ARGS[4]
 end
 
+if (length(ARGS) == 5)
+    host = ARGS[5]
+end
+
 if (test_ssl)
-    if (test_implicit)
-        fp = joinpath(dirname(@__FILE__), "test_implicit_ssl.jl")
-        println("$fp ...\n")
-        include(fp)
-    else
-        fp = joinpath(dirname(@__FILE__), "test_explicit_ssl.jl")
-        println("$fp ...\n")
-        include(fp)
+    # Apparently, we have to define this outside of `testset` so that testsets from
+    # test_manual.jl can use it.
+    test_active_mode = nothing
+    @testset "test ssl=$test_ssl and implicit=$test_implicit" begin
+        @testset "test test_active_mode=false" begin
+            test_active_mode = false
+            include("test_manual.jl")
+        end
+        @testset "test test_active_mode=true" begin
+            test_active_mode = true
+            include("test_manual.jl")
+        end
     end
 else
     # Start Java, and point to the class in this directory
