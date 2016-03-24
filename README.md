@@ -189,19 +189,33 @@ ftp_cleanup()
 
 ### Running Tests
 
-`julia --color=yes test/runtests.jl <use_ssl> <use_implicit> <username> <password>`
+Getting the tests to work involves setting up a mock server, which isn't perfect. We got as close as possible to automate it but there is some set up before you can run the tests.
+
+#### Typical Tests
+
+You need to set up the mock FTP server, which is in Java.
 
 To set up the mock FTP server
-- Add the [JavaCall.jl](https://github.com/aviks/JavaCall.jl) package with `Pkg.add("JavaCall”)`
-- Add the [FactCheck.jl](https://github.com/JuliaLang/FactCheck.jl) package with `Pkg.add("FactCheck")`, may need to update the package to get most recent version (v0.3.1).
+- Add the [JavaCall.jl](https://github.com/aviks/JavaCall.jl) package with `Pkg.add("JavaCall”)` (If you are using 0.5, see 0.5 Issues below)
 - Build dependencies via `Pkg.build("FTPClient")`
 
-The mock FTP server does not work with SSL. To run the non-ssl tests and FTPObject tests:
-    `julia --color=yes test/runtests.jl`
+You do not need to rebuild the mock FTP server for every test. The mock FTP server does not work with SSL. To run the non-ssl tests and FTPObject tests:
+```julia
+Pkg.test("FTPClient")
+```
 
-The ssl tests can be run if you have a local ftp server set up.
-- To run the tests using implicit security: `julia --color=yes test/runtests.jl true true <username> <password>`
-- To run the tests using explicit security: `julia --color=yes test/runtests.jl true false <username> <password>`
+#### Manual Tests
+
+This is really only needed when testing ssl connection. The mock FTP server does not support ssl.
+
+The ssl tests can be run if you have a ftp server set up.
+- To run the tests using implicit security: `julia --color=yes test/runtests.jl true true <username> <password> <hostname>`
+- To run the tests using explicit security: `julia --color=yes test/runtests.jl true false <username> <password> <hostname>`
+
+Here is what I would run when testing with my FTP server. `julia --color=yes test/runtests.jl true true test password 172.16.105.129`
+
+The tests assume that your FTP server contains `test_download.txt` file.
+When you run your tests, your sever will receive a `test_update.txt` file.
 
 #### 0.5 Issues
 
@@ -215,7 +229,7 @@ Pkg.checkout("JavaCall", "pull-request/bf8b4987")
 
 There are parts of the code that are not executed when running the basic test. This is because the Mock Server does not support ssl and we cannot run effective tests for those lines of code.
 
-There are however separate tests for ssl. That requires setting up a local ftp server and following the steps above.
+There are however separate tests for ssl. That requires setting up a local FTP server and following the steps above.
 
 ## Troubleshoot
 
