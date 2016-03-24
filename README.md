@@ -189,26 +189,29 @@ ftp_cleanup()
 
 ### Running Tests
 
-Getting the tests to work involves setting up a mock server, which isn't perfect. We got as close as possible to automate it but there is some set up before you can run the tests.
+Getting the tests to work involves setting up a mock server. Most of our tests use this [mock FTP server](http://mockftpserver.sourceforge.net/). Since the mock FTP sever, does not support ssl, there are manual tests for ssl connections.
 
-#### Typical Tests
+#### Typical Non-SSL Tests
 
-You need to set up the mock FTP server, which is in Java.
-
-To set up the mock FTP server
+You need to set up the mock FTP server. To set it up:
 - Add the [JavaCall.jl](https://github.com/aviks/JavaCall.jl) package with `Pkg.add("JavaCall”)` (If you are using 0.5, see 0.5 Issues below)
 - Build dependencies via `Pkg.build("FTPClient")`
 
-You do not need to rebuild the mock FTP server for every test. The mock FTP server does not work with SSL. To run the non-ssl tests and FTPObject tests:
+You do not need to rebuild the mock FTP server for every test. To run the tests
 ```julia
 Pkg.test("FTPClient")
 ```
 
 #### Manual Tests
 
-This is really only needed when testing ssl connection. The mock FTP server does not support ssl.
+This is only needed when testing ssl connection. You will need to set up your own FTP server and configure it for ssl connections. I used vsftpd on my Mac and a Debian VM.
 
-The ssl tests can be run if you have a ftp server set up.
+The tests follow this patter
+```
+`julia --color=yes test/runtests.jl <test_ssl> <test_implicit> <username> <password> <hostname>
+```
+
+The ssl tests can be run if you have a FTP server set up.
 - To run the tests using implicit security: `julia --color=yes test/runtests.jl true true <username> <password> <hostname>`
 - To run the tests using explicit security: `julia --color=yes test/runtests.jl true false <username> <password> <hostname>`
 
