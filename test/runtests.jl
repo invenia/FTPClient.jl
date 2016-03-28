@@ -134,28 +134,28 @@ end
 @windows_only upload_local_byte_file_contents = string("466F6F426172", "0D0A", "466F6F426172")
 @windows_only upload_local_byte_file_contents_ascii_transfer = string("466F6F426172", "0A", "466F6F426172")
 
-if (length(ARGS) >= 1 && ARGS[1] == "true")
+if length(ARGS) >= 1 && ARGS[1] == "true"
     test_ssl = true
 else
     test_ssl = false
 end
 
-if (length(ARGS) >= 2 && ARGS[2] == "true")
+if length(ARGS) >= 2 && ARGS[2] == "true"
     test_implicit = true
 else
     test_implicit = false
 end
 
-if (length(ARGS) >= 4)
+if length(ARGS) >= 4
     user = ARGS[3]
     pswd = ARGS[4]
 end
 
-if (length(ARGS) == 5)
+if length(ARGS) == 5
     host = ARGS[5]
 end
 
-if (test_ssl)
+if length(ARGS) >= 1
     # Apparently, we have to define this outside of `testset` so that testsets from
     # test_manual.jl can use it.
     test_active_mode = nothing
