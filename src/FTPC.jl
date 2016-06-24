@@ -1,5 +1,7 @@
 using LibCURL
 
+import Base: ==
+
 ##############################
 # Type definitions
 ##############################
