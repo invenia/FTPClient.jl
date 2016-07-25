@@ -266,6 +266,13 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         p_wd = pointer_from_objref(wd)
         p_resp = pointer_from_objref(resp)
 
+        @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
+
+        # Force active mode
+        # @ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPSV 0
+        # @ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPRT 0
+        # @ce_curl curl_easy_setopt CURLOPT_FTPPORT "-"
+
 
         @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
         @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
@@ -303,6 +310,8 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         if ~isempty(save_path)
             close(wd.buffer)
         end
+
+        @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(0)
     end
 end
 
@@ -351,6 +360,8 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
     p_rd = pointer_from_objref(rd)
     p_resp = pointer_from_objref(resp)
 
+    @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
+
     @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
     @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
     @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
@@ -375,6 +386,8 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
     @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
     @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(0)
     @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
+
+    @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(0)
 
     return resp
 end
