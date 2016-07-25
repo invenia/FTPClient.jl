@@ -269,9 +269,9 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
         # Force active mode
-        # @ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPSV 0
-        # @ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPRT 0
-        # @ce_curl curl_easy_setopt CURLOPT_FTPPORT "-"
+        @ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPSV 0
+        @ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPRT 0
+        @ce_curl curl_easy_setopt CURLOPT_FTPPORT "-"
 
 
         @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
