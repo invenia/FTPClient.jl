@@ -12,7 +12,7 @@ type FTPServer
     function FTPServer(root::AbstractString=ROOT)
         # Note: open(::AbstractCmd, ...) won't work here as it doesn't allow us to capture STDERR.
         io = Pipe()
-        process = spawn(pipeline(`python $SCRIPT user:passwd:$root`, stdout=io, stderr=io))
+        process = spawn(pipeline(`python $SCRIPT user:passwd:$root:elradfmwM`, stdout=io, stderr=io))
         m = match(r"starting FTP server on .*:(?<port>\d+)", readline(io))
         port = parse(Int, m[:port])
         new(process, io, port, root)
@@ -46,6 +46,6 @@ end
 
 function setup_server()
     isdir(ROOT) || setup_root(ROOT)
-    generate_self_signed("test", ROOT)
+    generate_self_signed("test", dirname(@__FILE__))
 end
 

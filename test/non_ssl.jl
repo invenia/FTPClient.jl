@@ -4,12 +4,12 @@ using Base.Test
 
 include("server/server.jl")
 include("utils.jl")
-# server = FTPServer()
+server = FTPServer()
 
 setup_server()
 
-# options = RequestOptions(hostname=hostname(server), username="user", passwd="passwd", ssl=false, active_mode=false)
-options = RequestOptions(hostname="127.0.0.1:8000", username="user", passwd="passwd", ssl=false, active_mode=false)
+options = RequestOptions(hostname=hostname(server), username="user", passwd="passwd", ssl=false, active_mode=true)
+# options = RequestOptions(hostname="127.0.0.1:8000", username="user", passwd="passwd", ssl=false, active_mode=true)
 
 headers = [
     "220 pyftpdlib ... ready.",
@@ -38,28 +38,38 @@ body = readstring(server_file)
 # options = RequestOptions(hostname="127.0.0.1:8000", username="user", passwd="passwd", ssl=false, active_mode=false)
 
 local_file = "test_upload.txt"
+tempfile(local_file)
 # server_file = localpath(server, "/$local_file")  # The path to the file on the server
 server_file = joinpath(ROOT, local_file)
 
 @test !isfile(server_file)
-resp = open(local_file) do fp
-    ftp_put(local_file, fp, options)
+try
+    resp = open(local_file) do fp
+        ftp_put(local_file, fp, options)
+    end
+    @test isfile(server_file)
+    # @test readstring(server_file) == upload_file_contents***
+finally
+    rm(server_file)
+    @test !isfile(server_file)
 end
-@test isfile(server_file)
-# @test readstring(server_file) == upload_file_contents***
 
 headers = [
-    "200 TYPE completed.",
-    "150 File status okay; about to open data connection.",
-    "226 Created file test_upload.txt.",
+    "220 pyftpdlib ... ready.",
+    "331 Username ok, send password.",
+    "230 Login successful.",
+    "257 \"/\" is the current directory.",
+    "200 Active data connection established.",
+    "200 Type set to: Binary.",
+    "125 Data connection already open. Transfer starting.",
+    "226 Transfer complete.",
 ]
 
 @test resp.code == 226
 @test resp.bytes_recd == 0
 @test is_headers_equal(resp.headers, headers)
 
-rm(server_file)
-@test !isfile(server_file)
+
 
 
 
