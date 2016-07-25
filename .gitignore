@@ -6,5 +6,9 @@ deps/ext
 test/MockFTPServerJulia.class
 test/test_upload.txt
 
+test/server/root
+test/server/test.crt
+test/server/test.key
+
 # Ignore system files
 .DS_Store
