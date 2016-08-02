@@ -1,5 +1,3 @@
-
-
 mv_file = "test_mv.txt"
 tempfile(mv_file)
 
@@ -155,8 +153,6 @@ mv(ftp, mv_file, new_file)
 @test isfile(server_new_file)
 @test readstring(server_new_file) == readstring(mv_file)
 no_unexpected_changes(ftp)
-
-
 Base.close(ftp)
 
 # check mv error

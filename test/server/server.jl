@@ -61,4 +61,6 @@ end
 
 function teardown_server()
     rm(ROOT, recursive=true)
+    rm(CERT)
+    rm(KEY)
 end
