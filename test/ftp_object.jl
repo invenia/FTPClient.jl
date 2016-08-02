@@ -1,46 +1,32 @@
 
-import Compat: readstring
-using FTPClient
-using Base.Test
 
-
-include("server/server.jl")
-include("utils.jl")
-server = FTPServer()
-
-setup_server()
-ftp_init()
-
-user = "user"
-pswd = "passwd"
-host = hostname(server)
-download_file = "test_download.txt"
-upload_file = "test_upload.txt"
-testdir = "testdir"
 mv_file = "test_mv.txt"
+tempfile(mv_file)
 
 
 function no_unexpected_changes(ftp::FTP, hostname::AbstractString=host)
     other = FTP(ssl=false, user=user, pswd=pswd, host=host)
     @test ftp.ctxt.options == other.ctxt.options
     @test ftp.ctxt.url == "ftp://$hostname/"
+    Base.close(other)
 end
 
-function cleanup_file(filename::AbstractString)
-    if (isfile(filename))
-        rm(filename)
-    end
-    @test !isfile(filename)
-end
+function expected_output(active::Bool)
+    mode = active? "active":"passive"
+    expected = "Host:      ftp://" * string(host) * "/\nUser:      $(user)\nTransfer:  $mode mode\nSecurity:  None\n\n"
 
-function cleanup_dir(dirname::AbstractString, recursive = true)
-    if (isdir(dirname))
-        rm(dirname)
-    end
-    @test !isdir(dirname)
+    buff = IOBuffer()
+    ftp = FTP(ssl=false, active=active, user=user, pswd=pswd, host=host)
+    println(buff, ftp)
+    seekstart(buff)
+    @test readstring(buff) == expected
+    Base.close(ftp)
 end
 
 getFTPObj()= FTP(ssl=false, user=user, pswd=pswd, host=host)
+
+# check connection error
+@test_throws FTPClientError FTP(ssl=false, user=user, pswd=pswd, host="not a host")
 
 # check object
 ftp = getFTPObj()
@@ -52,7 +38,6 @@ ftp = getFTPObj()
 server_dir = readdir(ftp)
 contains(string(server_dir), "test_directory")
 contains(string(server_dir), "test_byte_file")
-contains(string(server_dir), "test_upload.txt")
 contains(string(server_dir), "test_download.txt")
 no_unexpected_changes(ftp)
 Base.close(ftp)
@@ -99,6 +84,11 @@ mkdir(server_dir)
 @test isdir(server_dir)
 no_unexpected_changes(ftp)
 cleanup_dir(server_dir)
+Base.close(ftp)
+
+# check bad directory error
+ftp = getFTPObj()
+@test_throws FTPClientError mkdir(ftp, "")
 Base.close(ftp)
 
 # check cd
@@ -155,11 +145,9 @@ Base.close(ftp)
 ftp = getFTPObj()
 new_file = "test_mv2.txt"
 server_file = joinpath(ROOT, mv_file)
-tempfile(mv_file)
 cp(mv_file, server_file)
 
 server_new_file = joinpath(ROOT, new_file)
-@test !isfile(server_new_file)
 @test isfile(server_file)
 
 mv(ftp, mv_file, new_file)
@@ -167,8 +155,19 @@ mv(ftp, mv_file, new_file)
 @test isfile(server_new_file)
 @test readstring(server_new_file) == readstring(mv_file)
 no_unexpected_changes(ftp)
-cleanup_file(server_new_file)
 
+
+Base.close(ftp)
+
+# check mv error
+ftp = getFTPObj()
+@test_throws FTPClientError mv(ftp, "", "")
+Base.close(ftp)
+
+
+# check mv error 2
+ftp = getFTPObj()
+@test_throws FTPClientError mv(ftp, download_file, "")
 Base.close(ftp)
 
 # check rm
@@ -228,31 +227,18 @@ Base.close(ftp)
 
 
 #check for expected output
-expected = "Host:      ftp://" * string(host) * "/\nUser:      $(user)\nTransfer:  active mode\nSecurity:  None\n\n"
-buff = IOBuffer()
-ftp = FTP(ssl=false, active=true, user=user, pswd=pswd, host=host)
-println(buff, ftp)
-seekstart(buff)
-@test readstring(buff) == expected
-Base.close(ftp)
+expected_output(true)
+
+expected_output(false)
+
+cleanup_file(mv_file)
 
 
-expected = "Host:      ftp://" * string(host) * "/\nUser:      $(user)\nTransfer:  passive mode\nSecurity:  None\n\n"
-buff = IOBuffer()
-ftp = FTP(ssl=false, active=false, user=user, pswd=pswd, host=host)
-println(buff, ftp)
-seekstart(buff)
-@test readstring(buff) == expected
-Base.close(ftp)
+ # check do (doesn't work)
+  # ftp(ssl=false, user=user, pswd=pswd, host=host) do f
+  # buff = download(f, file_name)
+  # @test readstring(buff) == file_contents
+  # no_unexpected_changes(f)
+  # end
 
 
-# ftp_cleanup()
-
-    # check do (doesn't work)
- # ftp(ssl=false, user=user, pswd=pswd, host=host) do f
- # buff = download(f, file_name)
- # @test readstring(buff) == file_contents
- # no_unexpected_changes(f)
- # end
-ftp_cleanup()
-close(server)

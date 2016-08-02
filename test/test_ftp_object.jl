@@ -1,9 +1,6 @@
 @testset "FTPObject" begin
 
-    expected_header_port = r"229 Entering Extended Passive Mode \(\|\|\|\d*\|\)"
-    dir_with_space = "Dir name with space"
-    file_with_space = "file with space.txt"
-    space_file_contents = "test file with space.\n"
+
     ftp_init()
 
     function no_unexpected_changes(ftp::FTP)

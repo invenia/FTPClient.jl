@@ -48,6 +48,7 @@ function tempfile(path::AbstractString)
 end
 
 function setup_root(dir::AbstractString)
+    mkdir(dir)
     tempfile(joinpath(dir, "test_download.txt"))
     tempfile(joinpath(dir, "test_download2.txt"))
     mkdir(joinpath(dir, "test_directory"))
@@ -58,3 +59,6 @@ function setup_server()
     generate_self_signed("test", dirname(@__FILE__))
 end
 
+function teardown_server()
+    rm(ROOT, recursive=true)
+end

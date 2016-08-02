@@ -1,27 +1,14 @@
-# ftp_init()
-import Compat: readstring
-using FTPClient
-using Base.Test
-
-
-include("server/server.jl")
-include("utils.jl")
-ftp_init()
 
 
 function ssl_tests(implicit::Bool = true)
     mode = implicit? "implicit" : "explicit"
 
-    server = FTPServer(ssl = mode)
-
     setup_server()
 
-    user = "user"
-    pswd = "passwd"
+    server = FTPServer(ssl = mode)
+
     host = hostname(server)
-    upload_file = "test_upload.txt"
-    download_file = "test_download.txt"
-    tempfile(upload_file)
+
 
     options = RequestOptions(ssl=true, implicit=implicit, active_mode=false, verify_peer=false, username=user, passwd=pswd, hostname=host)
     test_download(options)
@@ -55,6 +42,7 @@ function ssl_tests(implicit::Bool = true)
     ftp_close_connection(ctxt)
 
     close(server)
+
 
 end
 
@@ -109,6 +97,6 @@ end
 
 ssl_tests(true)
 ssl_tests(false)
-ftp_cleanup()
+
 
 
