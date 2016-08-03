@@ -21,13 +21,17 @@ type FTPServer
 
         # Note: open(::AbstractCmd, ...) won't work here as it doesn't allow us to capture STDERR.
         process = spawn(pipeline(cmd, stdout=io, stderr=io))
-        line = readline(io)
-        println(line)
-        m = match(r"starting FTP.* server on .*:(?<port>\d+)", line)
-        port = parse(Int, m[:port])
-        new(process, io, port, root)
-    end
 
+        line = readline(io)
+        m = match(r"starting FTP.* server on .*:(?<port>\d+)", line)
+        if m != nothing
+            port = parse(Int, m[:port])
+            new(process, io, port, root)
+        else
+            kill(process)
+            error(line, bytestring(readavailable(io)))  # Display traceback
+        end
+    end
 end
 
 port(server::FTPServer) = server.port
