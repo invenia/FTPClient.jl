@@ -1,8 +1,19 @@
 tempfile(upload_file)
 tempfile(joinpath(ROOT,download_file))
 
+opts = (
+    :hostname => hostname(server),
+    :username => username(server),
+    :passwd => password(server),
+)
+ftp_opts = (
+    :host => hostname(server),
+    :user => username(server),
+    :pswd => password(server),
+)
+
 #non-ssl active mode
-options = RequestOptions(hostname=hostname(server), username="user", passwd="passwd", ssl=false, active_mode=true)
+options = RequestOptions(; opts..., ssl=false, active_mode=true)
 # options = RequestOptions(hostname="127.0.0.1:8000", username="user", passwd="passwd", ssl=false, active_mode=true)
 function check_response(resp, body, code, headers)
     @test typeof(resp.total_time) == Float64
@@ -79,7 +90,7 @@ check_response(resp, "", 257, headers)
 
 
 #Persistent connection tests, passive mode
-options = RequestOptions(hostname=hostname(server), username="user", passwd="passwd", ssl=false, active_mode=false)
+options = RequestOptions(; opts..., ssl=false, active_mode=false)
 # ftp connect
 ctxt, resp = ftp_connect(options)
 headers = [
@@ -182,7 +193,7 @@ headers = [
     "125 Data connection already open. Transfer starting.",
     "226 Transfer complete."
     ]
-options = RequestOptions(hostname=hostname(server), username="user", passwd="passwd", ssl=false, active_mode=false)
+options = RequestOptions(; opts..., ssl=false, active_mode=false)
 
 save_path = joinpath(pwd(), "test_path.txt")
 @test !isfile(save_path)
@@ -220,7 +231,7 @@ open(joinpath(ROOT, byte_file), "w") do fp
 end
 
 # @testset "it is not the same file when downloading in ascii mode" begin
-options = RequestOptions(hostname=hostname(server), username="user", passwd="passwd", ssl=false, active_mode=false)
+options = RequestOptions(; opts..., ssl=false, active_mode=false)
 resp = ftp_get(byte_file, options; mode=ascii_mode)
 bytes = read(resp.body)
 @unix_only @test bytes != hex2bytes(download_bytes)
@@ -248,7 +259,7 @@ bytes = read(resp.body)
 ftp_close_connection(ctxt)
 
 #"it is not the same file when downloading in ascii mode" begin OBJ
-ftp = FTP(user="user", pswd="passwd", host=hostname(server))
+ftp = FTP(; ftp_opts...)
 buff = download(ftp, byte_file, mode=ascii_mode)
 bytes = read(buff)
 @unix_only @test bytes != hex2bytes(download_bytes)
@@ -256,14 +267,14 @@ bytes = read(buff)
 Base.close(ftp)
 
 # "it is the same file when downloading in binary mode" begin
-ftp = FTP(user="user", pswd="passwd", host=hostname(server))
+ftp = FTP(; ftp_opts...)
 buff = download(ftp, byte_file)
 bytes = read(buff)
 @test bytes == hex2bytes(download_bytes)
 Base.close(ftp)
 
 # "binary file download using ftp object, start in ascii, and switch to binary, then back" begin
-ftp = FTP(user="user", pswd="passwd", host=hostname(server))
+ftp = FTP(; ftp_opts...)
 buff = download(ftp, byte_file, mode=ascii_mode)
 bytes = read(buff)
 @unix_only @test bytes != hex2bytes(download_bytes)
@@ -316,7 +327,7 @@ cleanup_file(server_byte_file)
 ftp_close_connection(ctxt)
 
 # "it is not the same file when downloading in ascii mode" begin
-ftp = FTP(user=user, pswd=pswd, host=host)
+ftp = FTP(; ftp_opts...)
 bin_file = IOBuffer(hex2bytes(upload_bytes))
 upload(ftp, bin_file, byte_upload_file; mode=ascii_mode)
 @test isfile(server_byte_file)
@@ -325,7 +336,7 @@ cleanup_file(server_byte_file)
 Base.close(ftp)
 
 # "it is the same file when downloading in binary mode" begin
-ftp = FTP(user=user, pswd=pswd, host=host)
+ftp = FTP(; ftp_opts...)
 bin_file = IOBuffer(hex2bytes(upload_bytes))
 upload(ftp, bin_file, byte_upload_file)
 @test isfile(server_byte_file)
@@ -334,7 +345,7 @@ cleanup_file(server_byte_file)
 Base.close(ftp)
 
 #"binary file upload using ftp object, start in ascii, and switch to binary, then back" begin
-ftp = FTP(user=user, pswd=pswd, host=host)
+ftp = FTP(; ftp_opts...)
 bin_file = IOBuffer(hex2bytes(upload_bytes))
 upload(ftp, bin_file, byte_upload_file; mode=ascii_mode)
 @test isfile(server_byte_file)
@@ -361,7 +372,7 @@ showerror(buff, error)
 seekstart(buff)
 @test "$msg :: LibCURL error #$lib_curl_error" == readstring(buff)
 
-options = RequestOptions(ssl=false, active_mode=false, username=user, passwd=pswd, hostname="not a host")
+options = RequestOptions(ssl=false, active_mode=false, hostname="not a host", username=username(server), passwd=password(server))
 @test_throws FTPClientError ftp_connect(options)
 
 

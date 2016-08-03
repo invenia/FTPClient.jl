@@ -7,13 +7,29 @@ const KEY = abspath(dirname(@__FILE__), "test.key")
 
 
 type FTPServer
+    root::AbstractString
+    port::Int
+    username::AbstractString
+    password::AbstractString
+    permissions::AbstractString
+    security::Symbol
     process::Process
     io::IO
-    port::Int
-    root::AbstractString
 
-     function FTPServer(root::AbstractString=ROOT; security::Symbol=:none)
-        cmd = `python $SCRIPT user:passwd:$root:elradfmwM`
+
+
+     function FTPServer(
+        root::AbstractString=ROOT; username="", password="", permissions="elradfmwM",
+        security::Symbol=:none,
+    )
+        if isempty(username)
+            username = string("user", rand(1:9999))
+        end
+        if isempty(password)
+            password = randstring(40)
+        end
+
+        cmd = `python $SCRIPT $username:$password:$root:$permissions`
         if security != :none
             cmd = `$cmd --tls $security --cert-file $CERT --key-file $KEY`
         end
@@ -26,7 +42,7 @@ type FTPServer
         m = match(r"starting FTP.* server on .*:(?<port>\d+)", line)
         if m != nothing
             port = parse(Int, m[:port])
-            new(process, io, port, root)
+            new(root, port, username, password, permissions, security, process, io)
         else
             kill(process)
             error(line, bytestring(readavailable(io)))  # Display traceback
@@ -34,8 +50,10 @@ type FTPServer
     end
 end
 
-port(server::FTPServer) = server.port
 hostname(server::FTPServer) = "127.0.0.1:$(port(server))"
+port(server::FTPServer) = server.port
+username(server::FTPServer) = server.username
+password(server::FTPServer) = server.password
 close(server::FTPServer) = kill(server.process)
 
 localpath(server::FTPServer, path::AbstractString) = joinpath(server.root, split(path, '/')...)

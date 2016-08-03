@@ -6,22 +6,27 @@ function ssl_tests(implicit::Bool = true)
     setup_server()
 
     server = FTPServer(security=mode)
+    opts = (
+        :hostname => hostname(server),
+        :username => username(server),
+        :passwd => password(server),
+        :ssl => true,
+        :implicit => implicit,
+        :verify_peer => false,
+    )
 
-    host = hostname(server)
-
-
-    options = RequestOptions(ssl=true, implicit=implicit, active_mode=false, verify_peer=false, username=user, passwd=pswd, hostname=host)
+    options = RequestOptions(; opts..., active_mode=false)
     test_download(options)
     test_upload(options)
     test_cmd(options)
 
 
-    options = RequestOptions(ssl=true, implicit=implicit, active_mode=true, verify_peer=false, username=user, passwd=pswd, hostname=host)
+    options = RequestOptions(; opts..., active_mode=true)
     test_download(options)
     test_upload(options)
     test_cmd(options)
 
-    options = RequestOptions(ssl=true, implicit=implicit, active_mode=false, verify_peer=false, username=user, passwd=pswd, hostname=host)
+    options = RequestOptions(; opts..., active_mode=false)
     ctxt, resp = ftp_connect(options)
     @test resp.code == 226
 
@@ -31,7 +36,7 @@ function ssl_tests(implicit::Bool = true)
 
     ftp_close_connection(ctxt)
 
-    options = RequestOptions(ssl=true, implicit=implicit, active_mode=true, verify_peer=false, username=user, passwd=pswd, hostname=host)
+    options = RequestOptions(; opts..., active_mode=true)
     ctxt, resp = ftp_connect(options)
     @test resp.code == 226
 
@@ -42,8 +47,6 @@ function ssl_tests(implicit::Bool = true)
     ftp_close_connection(ctxt)
 
     close(server)
-
-
 end
 
 function test_download(options)

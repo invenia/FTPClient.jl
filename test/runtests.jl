@@ -10,11 +10,6 @@ setup_server()
 ftp_init()
 server = FTPServer()
 
-
-user = "user"
-host = hostname(server)
-pswd = "passwd"
-
 testdir = "test_dir"
 upload_file = "test_upload.txt"
 download_file = "test_download.txt"
