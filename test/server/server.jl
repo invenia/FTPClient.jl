@@ -12,10 +12,10 @@ type FTPServer
     port::Int
     root::AbstractString
 
-     function FTPServer(root::AbstractString=ROOT; ssl::AbstractString="nothing")
+     function FTPServer(root::AbstractString=ROOT; security::Symbol=:none)
         cmd = `python $SCRIPT user:passwd:$root:elradfmwM`
-        if !isequal(ssl, "nothing")
-            cmd = `$cmd --tls $ssl --cert-file $CERT --key-file $KEY`
+        if security != :none
+            cmd = `$cmd --tls $security --cert-file $CERT --key-file $KEY`
         end
         io = Pipe()
 

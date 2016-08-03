@@ -1,11 +1,11 @@
 
 
 function ssl_tests(implicit::Bool = true)
-    mode = implicit? "implicit" : "explicit"
+    mode = implicit ? :implicit : :explicit
 
     setup_server()
 
-    server = FTPServer(ssl = mode)
+    server = FTPServer(security=mode)
 
     host = hostname(server)
 
