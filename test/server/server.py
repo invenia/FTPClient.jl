@@ -7,6 +7,7 @@ from pyftpdlib.servers import FTPServer
 # Required packages: pyftpdlib, pyopenssl
 
 
+# https://github.com/giampaolo/pyftpdlib/issues/160
 class TLSImplicit_FTPHandler(TLS_FTPHandler):
     def handle(self):
         self.secure_connection(self.ssl_context)
@@ -49,6 +50,7 @@ if __name__ == '__main__':
         else:
             args.passive_ports = range(passive[0], passive[1] + 1)
 
+    # Adapted from: http://pythonhosted.org/pyftpdlib/tutorial.html#building-a-base-ftp-server  # noqa
     authorizer = DummyAuthorizer()
     authorizer.add_user(
         args.username,
