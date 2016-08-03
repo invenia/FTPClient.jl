@@ -13,12 +13,14 @@ type FTPServer
     root::AbstractString
 
      function FTPServer(root::AbstractString=ROOT; ssl::AbstractString="nothing")
-        # Note: open(::AbstractCmd, ...) won't work here as it doesn't allow us to capture STDERR.
+        cmd = `python $SCRIPT user:passwd:$root:elradfmwM`
+        if !isequal(ssl, "nothing")
+            cmd = `$cmd --tls $ssl --cert-file $CERT --key-file $KEY`
+        end
         io = Pipe()
 
-        process = (isequal(ssl, "nothing"))? spawn(pipeline(`python $SCRIPT user:passwd:$root:elradfmwM`, stdout=io, stderr=io)):
-                spawn(pipeline(`python $SCRIPT --tls $ssl --cert-file $CERT --key-file $KEY user:passwd:$root:elradfmwM`, stdout=io, stderr=io))
-
+        # Note: open(::AbstractCmd, ...) won't work here as it doesn't allow us to capture STDERR.
+        process = spawn(pipeline(cmd, stdout=io, stderr=io))
         line = readline(io)
         println(line)
         m = match(r"starting FTP.* server on .*:(?<port>\d+)", line)
