@@ -5,6 +5,11 @@ const SCRIPT = abspath(dirname(@__FILE__), "server.py")
 const CERT = abspath(dirname(@__FILE__), "test.crt")
 const KEY = abspath(dirname(@__FILE__), "test.key")
 
+if !isfile("PYTHON")
+    include("build.jl")
+end
+
+python = chomp(readstring("PYTHON"))
 
 type FTPServer
     root::AbstractString
@@ -27,7 +32,7 @@ type FTPServer
             password = randstring(40)
         end
 
-        cmd = `python $SCRIPT $username $password $root --permissions $permissions`
+        cmd = `$python $SCRIPT $username $password $root --permissions $permissions`
         if security != :none
             cmd = `$cmd --tls $security --cert-file $CERT --key-file $KEY --gen-certs TRUE`
         end
