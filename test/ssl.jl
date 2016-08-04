@@ -1,5 +1,3 @@
-
-
 function ssl_tests(implicit::Bool = true)
     mode = implicit ? :implicit : :explicit
 
@@ -44,7 +42,8 @@ function ssl_tests(implicit::Bool = true)
     test_persistent_download(ctxt)
     test_persistent_upload(ctxt)
 
-    ftp_close_connection(ctxt)
+    # the connection has to be closed during test_persistent_upload to get the server file to write out
+    # ftp_close_connection(ctxt)
 
     close(server)
 end
@@ -59,9 +58,7 @@ end
 function test_upload(options)
     local_file = "test_upload.txt"
     server_file = joinpath(ROOT, local_file)
-    if (isfile(server_file))
-        rm(server_file)
-    end
+    cleanup_file(server_file)
     resp = open(local_file) do fp
         ftp_put(local_file, fp, options)
     end
@@ -84,12 +81,14 @@ end
 
 function test_persistent_upload(ctxt)
     upload_file = "test_upload.txt"
+    server_file = joinpath(ROOT, upload_file)
     resp = open(upload_file) do file
         ftp_put(ctxt, upload_file, file)
     end
+    ftp_close_connection(ctxt)
     @test resp.code ==226
-    @test readstring(upload_file) == readstring(joinpath(ROOT, upload_file))
-    rm(joinpath(ROOT, upload_file))
+    @test readstring(upload_file) == readstring(server_file)
+    rm(server_file)
 end
 
 function test_persistent_cmd(ctxt)
