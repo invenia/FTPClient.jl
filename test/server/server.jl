@@ -16,8 +16,6 @@ type FTPServer
     process::Process
     io::IO
 
-
-
      function FTPServer(
         root::AbstractString=ROOT; username="", password="", permissions="elradfmwM",
         security::Symbol=:none,
@@ -29,9 +27,9 @@ type FTPServer
             password = randstring(40)
         end
 
-        cmd = `python $SCRIPT $username:$password:$root:$permissions`
+        cmd = `python $SCRIPT $username $password $root --permissions $permissions`
         if security != :none
-            cmd = `$cmd --tls $security --cert-file $CERT --key-file $KEY`
+            cmd = `$cmd --tls $security --cert-file $CERT --key-file $KEY --gen-certs TRUE`
         end
         io = Pipe()
 
@@ -58,11 +56,6 @@ close(server::FTPServer) = kill(server.process)
 
 localpath(server::FTPServer, path::AbstractString) = joinpath(server.root, split(path, '/')...)
 
-function generate_self_signed(name::AbstractString, dir::AbstractString="")
-    path = !isempty(dir) ? joinpath(dir, name) : name
-    run(`openssl req -nodes -new -x509 -newkey rsa:2048 -keyout $path.key -out $path.crt -subj '/'`)
-end
-
 function tempfile(path::AbstractString)
     content = randstring(rand(1:100))
     open(path, "w") do fp
@@ -80,7 +73,6 @@ end
 
 function setup_server()
     isdir(joinpath(ROOT, "test_directory")) || setup_root(ROOT)
-    generate_self_signed("test", dirname(@__FILE__))
 end
 
 function teardown_server()

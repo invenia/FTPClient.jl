@@ -1,3 +1,9 @@
+from OpenSSL import crypto, SSL
+from socket import gethostname
+from pprint import pprint
+from time import gmtime, mktime
+from os.path import exists, join
+
 import logging
 import argparse
 from pyftpdlib.authorizers import DummyAuthorizer
@@ -19,9 +25,38 @@ class TLSImplicit_FTPHandler(TLS_FTPHandler):
         self.respond("550 not supposed to be used with implicit SSL.")
 
 
+def create_self_signed_cert(cert_dir, cert_file, key_file ):
+    # from https://gist.github.com/ril3y/1165038
+    
+    if not exists(join(cert_dir, cert_file)) \
+            or not exists(join(cert_dir, key_file)):
+
+        # create a key pair
+        k = crypto.PKey()
+        k.generate_key(crypto.TYPE_RSA, 1024)
+
+        # create a self-signed cert
+        cert = crypto.X509()
+        cert.set_serial_number(1000)
+        cert.gmtime_adj_notBefore(0)
+        cert.gmtime_adj_notAfter(10*365*24*60*60)
+        cert.set_issuer(cert.get_subject())
+        cert.set_pubkey(k)
+        cert.sign(k, 'sha1')
+
+        open(join(cert_dir, cert_file), "wt").write(
+            crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+        open(join(cert_dir, key_file), "wt").write(
+            crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
+        
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('user', type=str)
+    parser.add_argument('username', type=str)
+    parser.add_argument('password', type=str)
+    parser.add_argument('root', type=str)
+    parser.add_argument('--permissions', type=str, default="elr")
     parser.add_argument('--hostname', type=str, default="127.0.0.1")
     parser.add_argument('--port', type=int, default=0)
     parser.add_argument('--passive-ports', type=str)
@@ -29,16 +64,17 @@ if __name__ == '__main__':
     parser.add_argument('--tls-require', choices=['control', 'data'], nargs='*', default=[])  # noqa
     parser.add_argument('--cert-file', type=str, default='test.crt')
     parser.add_argument('--key-file', type=str, default='test.key')
+    parser.add_argument('--cert-dir', type=str, default='')
     parser.add_argument('--debug', type=bool, default=False)
+    parser.add_argument('--gen-certs', type=bool, default=False)
 
     args = parser.parse_args()
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    user = args.user.split(':')
-    args.username, args.password, args.root = user[0:3]
-    args.permissions = user[3] if len(user) >= 4 else "elr"
+    if args.gen_certs:
+        create_self_signed_cert(args.cert_dir, args.cert_file, args.key_file)
 
     if args.passive_ports:
         passive = tuple(int(p) for p in args.passive_ports.split('-'))
