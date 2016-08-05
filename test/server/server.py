@@ -25,7 +25,7 @@ class TLSImplicit_FTPHandler(TLS_FTPHandler):
         self.respond("550 not supposed to be used with implicit SSL.")
 
 
-def create_self_signed_cert(cert_dir, cert_file, key_file ):
+def create_self_signed_cert(cert_dir, cert_file, key_file, hostname):
     # from https://gist.github.com/ril3y/1165038
     
     if not exists(join(cert_dir, cert_file)) \
@@ -37,6 +37,7 @@ def create_self_signed_cert(cert_dir, cert_file, key_file ):
 
         # create a self-signed cert
         cert = crypto.X509()
+        cert.get_subject().CN = hostname
         cert.set_serial_number(1000)
         cert.gmtime_adj_notBefore(0)
         cert.gmtime_adj_notAfter(10*365*24*60*60)
@@ -57,7 +58,7 @@ if __name__ == '__main__':
     parser.add_argument('password', type=str)
     parser.add_argument('root', type=str)
     parser.add_argument('--permissions', type=str, default="elr")
-    parser.add_argument('--hostname', type=str, default="127.0.0.1")
+    parser.add_argument('--hostname', type=str, default="localhost")
     parser.add_argument('--port', type=int, default=0)
     parser.add_argument('--passive-ports', type=str)
     parser.add_argument('--tls', choices=['implicit', 'explicit'])
@@ -74,7 +75,7 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.DEBUG)
 
     if args.gen_certs:
-        create_self_signed_cert(args.cert_dir, args.cert_file, args.key_file)
+        create_self_signed_cert(args.cert_dir, args.cert_file, args.key_file, args.hostname)
 
     if args.passive_ports:
         passive = tuple(int(p) for p in args.passive_ports.split('-'))

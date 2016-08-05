@@ -53,7 +53,7 @@ type FTPServer
     end
 end
 
-hostname(server::FTPServer) = "127.0.0.1:$(port(server))"
+hostname(server::FTPServer) = "localhost:$(port(server))"
 port(server::FTPServer) = server.port
 username(server::FTPServer) = server.username
 password(server::FTPServer) = server.password
