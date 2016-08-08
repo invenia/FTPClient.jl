@@ -99,6 +99,7 @@ ftp = FTP(; opts...)
 @test_throws FTPClientError mkdir(ftp, "")
 Base.close(ftp)
 
+host = hostname(server)
 # check cd
 ftp = FTP(; opts...)
 mkdir(server_dir)

@@ -99,6 +99,3 @@ end
 
 ssl_tests(true)
 ssl_tests(false)
-
-
-

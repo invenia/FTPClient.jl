@@ -95,7 +95,7 @@ function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Pt
     # println("@header_cb")
     resp = unsafe_pointer_to_objref(p_resp)
     nbytes = sz * n
-    hdrlines = split(bytestring(buff, convert(Int, nbytes)), "\r\n")
+    hdrlines = split(unsafe_string(buff,convert(Int, nbytes)), "\r\n")
 
     hdrlines = filter(line -> ~isempty(line), hdrlines)
     @assert typeof(resp) == Response

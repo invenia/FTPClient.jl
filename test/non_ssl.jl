@@ -214,35 +214,32 @@ rm(save_path)
 
 
 @unix_only upload_bytes = string("466F6F426172", "0A", "466F6F426172")
-@unix_only upload_bytes_ascii = string("466F6F426172", "0D0A", "466F6F426172")
 @windows_only upload_bytes = string("466F6F426172", "0D0A", "466F6F426172")
-@windows_only upload_bytes_ascii = string("466F6F426172", "0A", "466F6F426172")
-byte_upload_file = "test_upload_byte_file"
+
 @unix_only download_bytes = string("466F6F426172", "0D0A", "466F6F426172")
 @unix_only download_bytes_ascii = string("466F6F426172", "0A", "0A", "466f6f426172")
 @windows_only download_bytes = string("466F6F426172", "0A", "466F6F426172", "1A1A1A")
+
+byte_upload_file = "test_upload_byte_file"
 byte_file = "test_byte_file"
-user = "user"
-host = hostname(server)
-pswd = "passwd"
+
 open(joinpath(ROOT, byte_file), "w") do fp
     write(fp, hex2bytes(download_bytes))
 end
 
-# @testset "it is not the same file when downloading in ascii mode" begin
+# it is not the same file when downloading in ascii mode
 options = RequestOptions(; opts..., ssl=false, active_mode=false)
 resp = ftp_get(byte_file, options; mode=ascii_mode)
 bytes = read(resp.body)
 @unix_only @test bytes != hex2bytes(download_bytes)
 @unix_only @test bytes == hex2bytes(download_bytes_ascii)
 
-
-# it is the same file when downloading in binary mode" begin
+# it is the same file when downloading in binary mode
 resp = ftp_get(byte_file, options)
 bytes = read(resp.body)
 @test bytes == hex2bytes(download_bytes)
 
-#"it is not the same file when downloading in ascii mode" begin PERSIST
+# it is not the same file when downloading in ascii mode
 ctxt, resp = ftp_connect(options)
 resp = ftp_get(ctxt, byte_file, mode=ascii_mode)
 bytes = read(resp.body)
@@ -250,14 +247,14 @@ bytes = read(resp.body)
 @unix_only @test bytes == hex2bytes(download_bytes_ascii)
 ftp_close_connection(ctxt)
 
-#"it is the same file when downloading in binary mode" begin
+# it is the same file when downloading in binary mode
 ctxt, resp = ftp_connect(options)
 resp = ftp_get(ctxt, byte_file)
 bytes = read(resp.body)
 @test bytes == hex2bytes(download_bytes)
 ftp_close_connection(ctxt)
 
-#"it is not the same file when downloading in ascii mode" begin OBJ
+# it is not the same file when downloading in ascii mode
 ftp = FTP(; ftp_opts...)
 buff = download(ftp, byte_file, mode=ascii_mode)
 bytes = read(buff)
@@ -265,14 +262,14 @@ bytes = read(buff)
 @unix_only @test bytes == hex2bytes(download_bytes_ascii)
 Base.close(ftp)
 
-# "it is the same file when downloading in binary mode" begin
+# it is the same file when downloading in binary mode
 ftp = FTP(; ftp_opts...)
 buff = download(ftp, byte_file)
 bytes = read(buff)
 @test bytes == hex2bytes(download_bytes)
 Base.close(ftp)
 
-# "binary file download using ftp object, start in ascii, and switch to binary, then back" begin
+# binary file download using ftp object, start in ascii, and switch to binary, then back
 ftp = FTP(; ftp_opts...)
 buff = download(ftp, byte_file, mode=ascii_mode)
 bytes = read(buff)
@@ -287,33 +284,15 @@ bytes = read(buff)
 @unix_only @test bytes == hex2bytes(download_bytes_ascii)
 Base.close(ftp)
 
-#"it is not the same file when downloading in ascii mode" begin
-#UPLOADBUFFER
-bin_file = IOBuffer(hex2bytes(upload_bytes))
-ftp_put(byte_upload_file, bin_file, options; mode=ascii_mode)
+# upload
 server_byte_file = joinpath(ROOT, byte_upload_file)
-@test isfile(server_byte_file)
-# @unix_only @test upload_bytes != readstring(server_byte_file) this should work
-@unix_only @test hex2bytes(upload_bytes) == read(server_byte_file)# should not be equal
-cleanup_file(server_byte_file)
-
-#"it is the same file when downloading in binary mode" begin
 bin_file = IOBuffer(hex2bytes(upload_bytes))
 ftp_put(byte_upload_file, bin_file, options; mode=binary_mode)
 @test isfile(server_byte_file)
 @test hex2bytes(upload_bytes) == read(server_byte_file)
 cleanup_file(server_byte_file)
 
-# "it is not the same file when downloading in ascii mode" begin
-ctxt, resp = ftp_connect(options)
-bin_file = IOBuffer(hex2bytes(upload_bytes))
-ftp_put(ctxt, byte_upload_file, bin_file; mode=ascii_mode)
-@test isfile(server_byte_file)
-@unix_only hex2bytes(upload_bytes) == read(server_byte_file)# should not be equal
-cleanup_file(server_byte_file)
-ftp_close_connection(ctxt)
-
-# "it is the same file when downloading in binary mode" begin
+# upload with ctxt
 ctxt, resp = ftp_connect(options)
 bin_file = IOBuffer(hex2bytes(upload_bytes))
 ftp_put(ctxt, byte_upload_file, bin_file)
@@ -322,16 +301,7 @@ ftp_put(ctxt, byte_upload_file, bin_file)
 cleanup_file(server_byte_file)
 ftp_close_connection(ctxt)
 
-# "it is not the same file when downloading in ascii mode" begin
-ftp = FTP(; ftp_opts...)
-bin_file = IOBuffer(hex2bytes(upload_bytes))
-upload(ftp, bin_file, byte_upload_file; mode=ascii_mode)
-@test isfile(server_byte_file)
-@unix_only hex2bytes(upload_bytes) == read(server_byte_file) #should not be equal
-cleanup_file(server_byte_file)
-Base.close(ftp)
-
-# "it is the same file when downloading in binary mode" begin
+# ftpObject upload
 ftp = FTP(; ftp_opts...)
 bin_file = IOBuffer(hex2bytes(upload_bytes))
 upload(ftp, bin_file, byte_upload_file)
@@ -340,26 +310,7 @@ upload(ftp, bin_file, byte_upload_file)
 cleanup_file(server_byte_file)
 Base.close(ftp)
 
-#"binary file upload using ftp object, start in ascii, and switch to binary, then back" begin
-ftp = FTP(; ftp_opts...)
-bin_file = IOBuffer(hex2bytes(upload_bytes))
-upload(ftp, bin_file, byte_upload_file; mode=ascii_mode)
-@test isfile(server_byte_file)
-@unix_only @test hex2bytes(upload_bytes) == read(server_byte_file)
-cleanup_file(server_byte_file)
-
-bin_file = IOBuffer(hex2bytes(upload_bytes))
-upload(ftp, bin_file, byte_upload_file)
-@test isfile(server_byte_file)
-@test hex2bytes(upload_bytes) == read(server_byte_file)
-cleanup_file(server_byte_file)
-
-bin_file = IOBuffer(hex2bytes(upload_bytes))
-upload(ftp, bin_file, byte_upload_file; mode=ascii_mode)
-@test isfile(server_byte_file)
-@unix_only @test hex2bytes(upload_bytes) == read(server_byte_file)
-cleanup_file(server_byte_file)
-
+# check ftp errors
 buff = IOBuffer()
 msg = "This will go into the message"
 lib_curl_error = 765
