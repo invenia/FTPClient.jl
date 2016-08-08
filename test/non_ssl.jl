@@ -171,14 +171,13 @@ try
         ftp_put(ctxt, local_file, fp)
     end
     @test isfile(server_file)
-
+    ftp_close_connection(ctxt) # close the connection so that the server file closes
     @test readstring(server_file) == readstring(local_file)
 finally
     cleanup_file(server_file)
 end
 check_response(resp, "", 226, headers)
 
-ftp_close_connection(ctxt)
 
 
 # download a file to a specific path
@@ -294,12 +293,11 @@ bin_file = IOBuffer(hex2bytes(upload_bytes))
 ftp_put(byte_upload_file, bin_file, options; mode=ascii_mode)
 server_byte_file = joinpath(ROOT, byte_upload_file)
 @test isfile(server_byte_file)
-# @unix_only @test upload_bytes != readstring(server_byte_file)
-@unix_only @test hex2bytes(upload_bytes) == read(server_byte_file)
+# @unix_only @test upload_bytes != readstring(server_byte_file) this should work
+@unix_only @test hex2bytes(upload_bytes) == read(server_byte_file)# should not be equal
 cleanup_file(server_byte_file)
 
 #"it is the same file when downloading in binary mode" begin
-
 bin_file = IOBuffer(hex2bytes(upload_bytes))
 ftp_put(byte_upload_file, bin_file, options; mode=binary_mode)
 @test isfile(server_byte_file)
@@ -307,17 +305,15 @@ ftp_put(byte_upload_file, bin_file, options; mode=binary_mode)
 cleanup_file(server_byte_file)
 
 # "it is not the same file when downloading in ascii mode" begin
-
 ctxt, resp = ftp_connect(options)
 bin_file = IOBuffer(hex2bytes(upload_bytes))
 ftp_put(ctxt, byte_upload_file, bin_file; mode=ascii_mode)
 @test isfile(server_byte_file)
-@unix_only hex2bytes(upload_bytes) == read(server_byte_file)
+@unix_only hex2bytes(upload_bytes) == read(server_byte_file)# should not be equal
 cleanup_file(server_byte_file)
 ftp_close_connection(ctxt)
 
 # "it is the same file when downloading in binary mode" begin
-
 ctxt, resp = ftp_connect(options)
 bin_file = IOBuffer(hex2bytes(upload_bytes))
 ftp_put(ctxt, byte_upload_file, bin_file)
@@ -331,7 +327,7 @@ ftp = FTP(; ftp_opts...)
 bin_file = IOBuffer(hex2bytes(upload_bytes))
 upload(ftp, bin_file, byte_upload_file; mode=ascii_mode)
 @test isfile(server_byte_file)
-@unix_only hex2bytes(upload_bytes) == read(server_byte_file)
+@unix_only hex2bytes(upload_bytes) == read(server_byte_file) #should not be equal
 cleanup_file(server_byte_file)
 Base.close(ftp)
 

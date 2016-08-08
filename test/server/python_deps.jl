@@ -1,17 +1,19 @@
+# this script uses the default Conda settings to get python, pyopenssl, and pyftpdlib
+# if you already have an acceptable version of python and pip installed it will attempt to use those instead
+
 using Conda
 using Compat
 
-pyconfigvar(python::AbstractString) = chomp(readstring(`$python -c "import platform; print(platform.python_version())"`))
+py_version(python::AbstractString) = chomp(readstring(`$python -c "import platform; print(platform.python_version())"`))
 const python = try
     py = get(ENV, "PYTHON", isfile("PYTHON") ? readchomp("PYTHON") : "python")
-    vers = convert(VersionNumber, pyconfigvar(py))
-    if vers < v"2.7.11"
+    version = convert(VersionNumber, py_version(py))
+    if version < v"2.7.11"
         error("Python version $vers < 2.7.11 is not supported")
-    elseif vers >= v"3.0"
+    elseif version >= v"3.0"
         error("Python version $vers >= 3 is not supported")
     else
         run(`pip install pyopenssl`)
-
     end
     py
 catch error

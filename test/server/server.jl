@@ -5,8 +5,9 @@ const SCRIPT = abspath(dirname(@__FILE__), "server.py")
 const CERT = abspath(dirname(@__FILE__), "test.crt")
 const KEY = abspath(dirname(@__FILE__), "test.key")
 
+# the file PYTHON is where we store the command to use python (in case we are using the Conda installation)
 if !isfile("PYTHON")
-    include("build.jl")
+    include("python_deps.jl")
 end
 
 python = chomp(readstring("PYTHON"))
