@@ -4,12 +4,12 @@ tempfile(joinpath(ROOT,download_file))
 opts = (
     :hostname => hostname(server),
     :username => username(server),
-    :passwd => password(server),
+    :password => password(server),
 )
 ftp_opts = (
     :host => hostname(server),
     :user => username(server),
-    :pswd => password(server),
+    :password => password(server),
 )
 
 #non-ssl active mode
@@ -319,7 +319,7 @@ showerror(buff, error)
 seekstart(buff)
 @test "$msg :: LibCURL error #$lib_curl_error" == readstring(buff)
 
-options = RequestOptions(ssl=false, active_mode=false, hostname="not a host", username=username(server), passwd=password(server))
+options = RequestOptions(ssl=false, active_mode=false, hostname="not a host", username=username(server), password=password(server))
 @test_throws FTPClientError ftp_connect(options)
 
 

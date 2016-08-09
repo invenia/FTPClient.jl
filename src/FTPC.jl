@@ -12,13 +12,13 @@ type RequestOptions
     verify_peer::Bool
     active_mode::Bool
     username::AbstractString
-    passwd::AbstractString
+    password::AbstractString
     url::AbstractString
     hostname::AbstractString
 
     function RequestOptions(;implicit::Bool=false, ssl::Bool=false,
             verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
-            passwd::AbstractString="", url::AbstractString="", hostname::AbstractString="localhost")
+            password::AbstractString="", url::AbstractString="", hostname::AbstractString="localhost")
 
         if isempty(url)
             if implicit
@@ -28,7 +28,7 @@ type RequestOptions
             end
         end
 
-        new(implicit, ssl, verify_peer, active_mode, username, passwd, url, hostname)
+        new(implicit, ssl, verify_peer, active_mode, username, password, url, hostname)
     end
 end
 
@@ -155,9 +155,9 @@ function setup_easy_handle(options::RequestOptions)
     @ce_curl curl_easy_setopt CURLOPT_URL options.url
     # @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
-    if (~isempty(options.username) && ~isempty(options.passwd))
+    if (~isempty(options.username) && ~isempty(options.password))
         @ce_curl curl_easy_setopt CURLOPT_USERNAME options.username
-        @ce_curl curl_easy_setopt CURLOPT_PASSWORD options.passwd
+        @ce_curl curl_easy_setopt CURLOPT_PASSWORD options.password
     end
 
     if options.ssl
@@ -504,7 +504,7 @@ function ==(this::RequestOptions, other::RequestOptions)
         this.verify_peer == other.verify_peer &&
         this.active_mode == other.active_mode &&
         this.username == other.username &&
-        this.passwd == other.passwd &&
+        this.password == other.password &&
         this.url == other.url &&
         this.hostname == other.hostname
 end

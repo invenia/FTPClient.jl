@@ -7,7 +7,7 @@ function ssl_tests(implicit::Bool = true)
     opts = (
         :hostname => hostname(server),
         :username => username(server),
-        :passwd => password(server),
+        :password => password(server),
         :ssl => true,
         :implicit => implicit,
         :verify_peer => false,
@@ -36,7 +36,7 @@ function ssl_tests(implicit::Bool = true)
 
     options = RequestOptions(; opts..., active_mode=true)
     ctxt, resp = ftp_connect(options)
-    #@test resp.code == 226
+    @test resp.code == 226
     println(resp.code)
 
     test_persistent_cmd(ctxt)
@@ -63,7 +63,7 @@ function test_upload(options)
     resp = open(local_file) do fp
         ftp_put(local_file, fp, options)
     end
-    @test resp.code ==226
+    @test resp.code == 226
     @test readstring(server_file) == readstring(local_file)
     rm(server_file)
 end
