@@ -51,7 +51,7 @@ end
 
 function test_download(options)
     download_file = "test_download.txt"
-    resp = ftp_get(download_file, options)
+    resp = ftp_get(options, download_file)
     @test resp.code == 226
     @test readstring(resp.body) == readstring(joinpath(ROOT, download_file))
 end
@@ -61,7 +61,7 @@ function test_upload(options)
     server_file = joinpath(ROOT, local_file)
     cleanup_file(server_file)
     resp = open(local_file) do fp
-        ftp_put(local_file, fp, options)
+        ftp_put(options, local_file, fp)
     end
     @test resp.code == 226
     @test readstring(server_file) == readstring(local_file)
@@ -69,7 +69,7 @@ function test_upload(options)
 end
 
 function test_cmd(options)
-    resp = ftp_command("PWD", options)
+    resp = ftp_command(options, "PWD")
     @test resp.code == 257
     @test readstring(resp.body) == ""
 end

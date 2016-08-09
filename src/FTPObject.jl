@@ -1,12 +1,12 @@
 type FTP
     ctxt::ConnContext
 
-    function FTP(;host::AbstractString="", implicit::Bool=false, ssl::Bool=false,
-            verify::Bool=true, active::Bool=false, user::AbstractString="",
+    function FTP(;hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
+            verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
             password::AbstractString="")
         options = RequestOptions(implicit=implicit, ssl=ssl,
-                    verify_peer=verify, active_mode=active,
-                    username=user, password=password, hostname=host)
+                    verify_peer=verify_peer, active_mode=active_mode,
+                    username=username, password=password, hostname=hostname)
 
         ctxt = nothing
         try
@@ -213,10 +213,10 @@ function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
 end
 
 function ftp(code::Function;
-    host::AbstractString="", implicit::Bool=false, ssl::Bool=false,
-    verify::Bool=true, active::Bool=false, user::AbstractString="", password::AbstractString="" )
+    hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
+    verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="", password::AbstractString="" )
     ftp_init()
-    ftp_client = FTP(;host=host, implicit=implicit, ssl=ssl, verify=verify, active=active, user=user, password=password)
+    ftp_client = FTP(;hostname=hostname, implicit=implicit, ssl=ssl, verify_peer=verify_peer, active_mode=active_mode, username=username, password=password)
 
     try
         code(ftp_client)

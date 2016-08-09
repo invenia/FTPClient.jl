@@ -235,7 +235,7 @@ Download file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_get(file_name::AbstractString, options::RequestOptions=RequestOptions(), save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
+function ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
     ctxt = setup_easy_handle(options)
     try
         return ftp_get(ctxt, file_name, save_path; mode=mode)
@@ -330,7 +330,7 @@ Upload file with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_put(file_name::AbstractString, file::IO, options::RequestOptions=RequestOptions(); mode::FTP_MODE=binary_mode)
+function ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
     ctxt = setup_easy_handle(options)
     try
         return ftp_put(ctxt, file_name, file; mode=mode)
@@ -406,7 +406,7 @@ Pass FTP command with non-persistent connection.
 
 returns resp::Response
 """ ->
-function ftp_command(cmd::AbstractString, options::RequestOptions=RequestOptions())
+function ftp_command(options::RequestOptions, cmd::AbstractString)
     ctxt = setup_easy_handle(options)
     try
         return ftp_command(ctxt, cmd)
@@ -466,7 +466,7 @@ Establish connection to FTP server.
 
 returns ctxt::ConnContext
 """ ->
-function ftp_connect(options::RequestOptions=RequestOptions())
+function ftp_connect(options::RequestOptions)
     ctxt = setup_easy_handle(options)
     try
         # ping the server

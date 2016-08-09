@@ -2,8 +2,8 @@ mv_file = "test_mv.txt"
 tempfile(mv_file)
 
 opts = (
-    :host => hostname(server),
-    :user => username(server),
+    :hostname => hostname(server),
+    :username => username(server),
     :password => password(server),
     :ssl => false,
 )
@@ -26,7 +26,7 @@ function expected_output(active::Bool)
         """
 
     buff = IOBuffer()
-    ftp = FTP(; opts..., active=active)
+    ftp = FTP(; opts..., active_mode=active)
     println(buff, ftp)
     seekstart(buff)
     @test readstring(buff) == expected
@@ -34,7 +34,7 @@ function expected_output(active::Bool)
 end
 
 # check connection error
-@test_throws FTPClientError FTP(host="not a host", user=username(server), password=password(server), ssl=false)
+@test_throws FTPClientError FTP(hostname="not a host", username=username(server), password=password(server), ssl=false)
 
 # check object
 ftp = FTP(; opts...)

@@ -65,7 +65,7 @@ ftp_close_connection(ctxt::ConnContext)
         active_mode::Bool
         headers::Vector{Tuple}
         username::AbstractString
-        passwd::AbstractString
+        password::AbstractString
         url::AbstractString
         binary_mode::Bool
     end
@@ -80,7 +80,7 @@ ftp_close_connection(ctxt::ConnContext)
 
 #### FTPObject functions
 ```julia
-FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=true)
+FTP(;hostname="", block=true, implicit=false, ssl=false, verify_peer=true, active_mode=false, username="", password="", binary_mode=true)
 close(ftp::FTP)
 download(ftp::FTP, file_name::AbstractString, save_path::AbstractString="")
 upload(ftp::FTP, local_name::AbstractString)
@@ -103,7 +103,7 @@ Using non-peristent connection and FTPS with implicit security:
 using FTPClient
 
 ftp_init()
-options = RequestOptions(ssl=true, implicit=true, username="user1", passwd="1234", url="localhost")
+options = RequestOptions(ssl=true, implicit=true, username="user1", password="1234", url="localhost")
 
 resp = ftp_get("download_file.txt", options)
 io_buffer = resp.body
@@ -126,7 +126,7 @@ Using persistent connection and FTPS with explicit security:
 using FTPClient
 
 ftp_init()
-options = RequestOptions(ssl=true, username="user2", passwd="5678", url="localhost")
+options = RequestOptions(ssl=true, username="user2", password="5678", url="localhost")
 
 ctxt = ftp_connect(options)
 
@@ -150,7 +150,7 @@ ftp_cleanup()
 Using the FTP object with a persistent connection and FTPS with implicit security:
 ```julia
 ftp_init()
-ftp = FTP(host="localhost", implt=true, ssl=true, user="user3", pswd="2468" )
+ftp = FTP(host="localhost", implicit=true, ssl=true, username="user3", passwprd="2468" )
 
 dir_list = readdir(ftp)
 cd(ftp, "Documents/School")

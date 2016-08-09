@@ -6,11 +6,6 @@ opts = (
     :username => username(server),
     :password => password(server),
 )
-ftp_opts = (
-    :host => hostname(server),
-    :user => username(server),
-    :password => password(server),
-)
 
 #non-ssl active mode
 options = RequestOptions(; opts..., ssl=false, active_mode=true)
@@ -39,7 +34,7 @@ headers = [
 local_file = download_file
 server_file = joinpath(ROOT, local_file)
 @test !isfile(local_file)
-resp = ftp_get(local_file, options)
+resp = ftp_get(options, local_file)
 @test !isfile(local_file)
 body = readstring(server_file)
 check_response(resp, body, 226, headers)
@@ -64,7 +59,7 @@ server_file = joinpath(ROOT, local_file)
 @test !isfile(server_file)
 try
     resp = open(local_file) do fp
-        ftp_put(local_file, fp, options)
+        ftp_put(options, local_file, fp)
     end
     @test isfile(server_file)
     @test readstring(server_file) == readstring(local_file)
@@ -84,7 +79,7 @@ headers = [
     "257 \"/\" is the current directory."
 ]
 
-resp = ftp_command("PWD", options)
+resp = ftp_command(options, "PWD")
 check_response(resp, "", 257, headers)
 
 
@@ -199,7 +194,7 @@ save_path = joinpath(pwd(), "test_path.txt")
 
 local_file = download_file
 
-resp = ftp_get(local_file, options, save_path)
+resp = ftp_get(options, local_file, save_path)
 server_file = joinpath(ROOT, local_file)
 body = readstring(server_file)
 
@@ -229,13 +224,13 @@ end
 
 # it is not the same file when downloading in ascii mode
 options = RequestOptions(; opts..., ssl=false, active_mode=false)
-resp = ftp_get(byte_file, options; mode=ascii_mode)
+resp = ftp_get(options, byte_file; mode=ascii_mode)
 bytes = read(resp.body)
 @unix_only @test bytes != hex2bytes(download_bytes)
 @unix_only @test bytes == hex2bytes(download_bytes_ascii)
 
 # it is the same file when downloading in binary mode
-resp = ftp_get(byte_file, options)
+resp = ftp_get(options, byte_file)
 bytes = read(resp.body)
 @test bytes == hex2bytes(download_bytes)
 
@@ -255,7 +250,7 @@ bytes = read(resp.body)
 ftp_close_connection(ctxt)
 
 # it is not the same file when downloading in ascii mode
-ftp = FTP(; ftp_opts...)
+ftp = FTP(; opts...)
 buff = download(ftp, byte_file, mode=ascii_mode)
 bytes = read(buff)
 @unix_only @test bytes != hex2bytes(download_bytes)
@@ -263,14 +258,14 @@ bytes = read(buff)
 Base.close(ftp)
 
 # it is the same file when downloading in binary mode
-ftp = FTP(; ftp_opts...)
+ftp = FTP(; opts...)
 buff = download(ftp, byte_file)
 bytes = read(buff)
 @test bytes == hex2bytes(download_bytes)
 Base.close(ftp)
 
 # binary file download using ftp object, start in ascii, and switch to binary, then back
-ftp = FTP(; ftp_opts...)
+ftp = FTP(; opts...)
 buff = download(ftp, byte_file, mode=ascii_mode)
 bytes = read(buff)
 @unix_only @test bytes != hex2bytes(download_bytes)
@@ -287,7 +282,7 @@ Base.close(ftp)
 # upload
 server_byte_file = joinpath(ROOT, byte_upload_file)
 bin_file = IOBuffer(hex2bytes(upload_bytes))
-ftp_put(byte_upload_file, bin_file, options; mode=binary_mode)
+ftp_put(options, byte_upload_file, bin_file; mode=binary_mode)
 @test isfile(server_byte_file)
 @test hex2bytes(upload_bytes) == read(server_byte_file)
 cleanup_file(server_byte_file)
@@ -302,7 +297,7 @@ cleanup_file(server_byte_file)
 ftp_close_connection(ctxt)
 
 # ftpObject upload
-ftp = FTP(; ftp_opts...)
+ftp = FTP(; opts...)
 bin_file = IOBuffer(hex2bytes(upload_bytes))
 upload(ftp, bin_file, byte_upload_file)
 @test isfile(server_byte_file)
