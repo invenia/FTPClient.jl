@@ -1,6 +1,13 @@
 type FTP
     ctxt::ConnContext
 
+    """
+        FTP(;hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
+            verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
+            password::AbstractString="")
+
+    Create FTPObject.
+    """
     function FTP(;hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
             verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
             password::AbstractString="")
@@ -22,7 +29,6 @@ type FTP
     end
 end
 
-
 function show(io::IO, ftp::FTP)
     o = ftp.ctxt.options
     println(io, "Host:      $(ftp.ctxt.url)")
@@ -35,19 +41,21 @@ function show(io::IO, ftp::FTP)
     end
 end
 
+"""
+    close(ftp::FTP)
 
-@doc """
 Close FTP connection.
-""" ->
+"""
 function close(ftp::FTP)
     ftp_close_connection(ftp.ctxt)
 end
 
+"""
+    download(ftp::FTP, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
 
-@doc """
 Download the file "file_name" from FTP server and return IOStream.
-If "save_path" is not specified, contents are written to and returned as IOBuffer.
-""" ->
+If "save_path" is not specified, contents are written to and returned as an IOBuffer.
+"""
 function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
     resp = nothing
     try
@@ -61,26 +69,31 @@ function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString
     return resp.body
 end
 
+"""
+    upload(ftp::FTP, local_name::AbstractString; mode::FTP_MODE=binary_mode)
 
-@doc """
 Upload the file "local_name" to the FTP server and save as "local_name".
-""" ->
+"""
 function upload(ftp::FTP, local_name::AbstractString; mode::FTP_MODE=binary_mode)
     return upload(ftp, local_name, local_name; mode=mode)
 end
 
-@doc """
+"""
+    upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString; mode::FTP_MODE=binary_mode)
+
 Upload the file "local_name" to the FTP server and save as "remote_name".
-""" ->
+"""
 function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString; mode::FTP_MODE=binary_mode)
     open(local_name) do local_file
         return upload(ftp, local_file, remote_name; mode=mode)
     end
 end
 
-@doc """
+"""
+    upload(ftp::FTP, local_file::IO, remote_name::AbstractString; mode::FTP_MODE=binary_mode)
+
 Upload IO object "local_file" to the FTP server and save as "remote_name".
-""" ->
+"""
 function upload(ftp::FTP, local_file::IO, remote_name::AbstractString; mode::FTP_MODE=binary_mode)
     try
         ftp_put(ftp.ctxt, remote_name, local_file; mode=mode)
@@ -94,9 +107,11 @@ function upload(ftp::FTP, local_file::IO, remote_name::AbstractString; mode::FTP
 end
 
 
-@doc """
-Returns the contents of the current working directory of the FTP server.
-""" ->
+"""
+    readdir(ftp::FTP)
+
+Return the contents of the current working directory of the FTP server.
+"""
 function readdir(ftp::FTP)
 
     resp = nothing
@@ -117,9 +132,11 @@ function readdir(ftp::FTP)
 end
 
 
-@doc """
-Sets the current working directory of the FTP server to "dir".
-""" ->
+"""
+    cd(ftp::FTP, dir::AbstractString)
+
+Set the current working directory of the FTP server to "dir".
+"""
 function cd(ftp::FTP, dir::AbstractString)
 
     if (~endswith(dir, "/"))
@@ -135,9 +152,11 @@ function cd(ftp::FTP, dir::AbstractString)
 end
 
 
-@doc """
+"""
+    pwd(ftp::FTP)
+
 Get the current working directory of the FTP server
-""" ->
+"""
 function pwd(ftp::FTP)
 
     resp = ftp_command(ftp.ctxt, "PWD")
@@ -151,9 +170,11 @@ function pwd(ftp::FTP)
 end
 
 
-@doc """
+"""
+    rm(ftp::FTP, file_name::AbstractString)
+
 Delete file "file_name" from FTP server.
-""" ->
+"""
 function rm(ftp::FTP, file_name::AbstractString)
 
     resp = ftp_command(ftp.ctxt, "DELE $file_name")
@@ -165,9 +186,11 @@ function rm(ftp::FTP, file_name::AbstractString)
 end
 
 
-@doc """
+"""
+    rmdir(ftp::FTP, dir_name::AbstractString)
+
 Delete directory "dir_name" from FTP server.
-""" ->
+"""
 function rmdir(ftp::FTP, dir_name::AbstractString)
 
     resp = ftp_command(ftp.ctxt, "RMD $dir_name")
@@ -179,9 +202,11 @@ function rmdir(ftp::FTP, dir_name::AbstractString)
 end
 
 
-@doc """
+"""
+    mkdir(ftp::FTP, dir::AbstractString)
+
 Make directory "dir" on FTP server.
-""" ->
+"""
 function mkdir(ftp::FTP, dir::AbstractString)
 
     resp = ftp_command(ftp.ctxt, "MKD $dir")
@@ -193,9 +218,11 @@ function mkdir(ftp::FTP, dir::AbstractString)
 end
 
 
-@doc """
+"""
+    mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
+
 Move (rename) file "file_name" to "new_name" on FTP server.
-""" ->
+"""
 function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
 
     resp = ftp_command(ftp.ctxt, "RNFR $file_name")
@@ -212,6 +239,13 @@ function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
 
 end
 
+"""
+    ftp(code::Function;
+    hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
+    verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="", password::AbstractString="" )
+
+Execute Function "code" on FTP server.
+"""
 function ftp(code::Function;
     hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
     verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="", password::AbstractString="" )

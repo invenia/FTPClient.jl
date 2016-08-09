@@ -210,14 +210,18 @@ end
 # Library initializations
 ##############################
 
-@doc """
-Global libcurl initialisation
-""" ->
+"""
+    ftp_init()
+
+Initialise global libcurl
+"""
 ftp_init() = curl_global_init(CURL_GLOBAL_ALL)
 
-@doc """
-Global libcurl cleanup
-""" ->
+"""
+    ftp_cleanup()
+
+Cleanup global libcurl.
+"""
 ftp_cleanup() = curl_global_cleanup()
 
 
@@ -225,16 +229,11 @@ ftp_cleanup() = curl_global_cleanup()
 # GET
 ##############################
 
-@doc """
-Download file with non-persistent connection.
+"""
+    ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
 
-- url: FTP server, ex "localhost"
-- file_name: name of file to download
-- options: options for connection, ex use ssl, implicit security, etc.
-- save_path: location to save file to, if not specified file is written to a buffer
-
-returns resp::Response
-""" ->
+Download file with non-persistent connection. If save_path is not specified the file is written to a buffer.
+"""
 function ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
     ctxt = setup_easy_handle(options)
     try
@@ -244,15 +243,11 @@ function ftp_get(options::RequestOptions, file_name::AbstractString, save_path::
     end
 end
 
-@doc """
-Download file with persistent connection.
+"""
+    ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
 
-- ctxt: open connection to FTP server
-- file_name: name of file to download
-- save_path: location to save file to, if not specified file is written to a buffer
-
-returns resp::Response
-""" ->
+Download file with persistent connection. If save_path is not specified the file is written to a buffer.
+"""
 function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
     resp = Response()
     wd = WriteData()
@@ -319,17 +314,11 @@ end
 # PUT
 ##############################
 
-@doc """
+"""
+    ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
+
 Upload file with non-persistent connection.
-
-- url: FTP server, ex "localhost"
-- ctxt: open connection to FTP server
-- file_name: name of file to upload
-- file: the file to upload
-- options: options for connection, ex use ssl, implicit security, etc.
-
-returns resp::Response
-""" ->
+"""
 function ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
     ctxt = setup_easy_handle(options)
     try
@@ -339,15 +328,11 @@ function ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; m
     end
 end
 
-@doc """
+"""
+    ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
+
 Upload file with persistent connection.
-
-- ctxt: open connection to FTP server
-- file_name: name of file to upload
-- file: the file to upload
-
-returns resp::Response
-""" ->
+"""
 function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
     resp = Response()
     rd = ReadData()
@@ -397,15 +382,11 @@ end
 # COMMAND
 ##############################
 
-@doc """
+"""
+    ftp_command(options::RequestOptions, cmd::AbstractString)
+
 Pass FTP command with non-persistent connection.
-
-- url: FTP server, ex "localhost"
-- cmd: FTP command to execute
-- options: options for connection, ex use ssl, implicit security, etc.
-
-returns resp::Response
-""" ->
+"""
 function ftp_command(options::RequestOptions, cmd::AbstractString)
     ctxt = setup_easy_handle(options)
     try
@@ -415,14 +396,11 @@ function ftp_command(options::RequestOptions, cmd::AbstractString)
     end
 end
 
-@doc """
+"""
+    ftp_command(ctxt::ConnContext, cmd::AbstractString)
+
 Pass FTP command with persistent connection.
-
-- ctxt: open connection to FTP server
-- cmd: FTP command to execute
-
-returns resp::Response
-""" ->
+"""
 function ftp_command(ctxt::ConnContext, cmd::AbstractString)
     resp = Response()
     wd = WriteData()
@@ -458,14 +436,11 @@ end
 # CONNECT
 ##############################
 
-@doc """
+"""
+    ftp_connect(options::RequestOptions)
+
 Establish connection to FTP server.
-
-- url: FTP server, ex "localhost"
-- options: options for connection, ex use ssl, implicit security, etc.
-
-returns ctxt::ConnContext
-""" ->
+"""
 function ftp_connect(options::RequestOptions)
     ctxt = setup_easy_handle(options)
     try
@@ -484,11 +459,11 @@ end
 # CLOSE
 ##############################
 
-@doc """
-Close connection FTP server.
+"""
+    ftp_close_connection(ctxt::ConnContext)
 
-- ctxt: connection to clean up
-""" ->
+Close the connection to the FTP server.
+"""
 function ftp_close_connection(ctxt::ConnContext)
     cleanup_easy_context(ctxt)
 end
