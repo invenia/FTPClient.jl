@@ -98,7 +98,7 @@ Using non-persistent connection and FTPS with implicit security:
 using FTPClient
 
 ftp_init()
-options = RequestOptions(ssl=true, implicit=true, username="user1", password="1234", url="localhost")
+options = RequestOptions(ssl=true, implicit=true, username="user1", password="1234", hostname="localhost")
 
 resp = ftp_get("download_file.txt", options)
 io_buffer = resp.body
@@ -145,7 +145,7 @@ ftp_cleanup()
 Using the FTP object with a persistent connection and FTPS with implicit security:
 ```julia
 ftp_init()
-ftp = FTP(host="localhost", implicit=true, ssl=true, username="user3", password="2468" )
+ftp = FTP(hostname="localhost", implicit=true, ssl=true, username="user3", password="2468" )
 
 dir_list = readdir(ftp)
 cd(ftp, "Documents/School")

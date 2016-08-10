@@ -1,13 +1,20 @@
+"""
+    FTP(; kwargs...) -> FTP
+
+Create an FTP object.
+
+# Arguments
+* `hostname::AbstractString=""`: the hostname or address of the FTP server.
+* `implicit::Bool=false`: use implicit security.
+* `ssl::Bool=false`: use FTPS.
+* `verify_peer::Bool=true`: verify authenticity of peer's certificate.
+* `active_mode::Bool=false`: use active mode to establish data connection.
+* `username::AbstractString=""`: the username used to access the FTP server.
+* `password::AbstractString=""`: the password used to access the FTP server.
+"""
 type FTP
     ctxt::ConnContext
 
-    """
-        FTP(;hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
-            verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
-            password::AbstractString="")
-
-    Create FTPObject.
-    """
     function FTP(;hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
             verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
             password::AbstractString="")

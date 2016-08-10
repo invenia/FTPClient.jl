@@ -5,7 +5,21 @@ import Base: ==
 ##############################
 # Type definitions
 ##############################
+"""
+    RequestOptions(;kwargs)
 
+The options used to connect to an FTP server.
+
+# Parameters
+* `implicit::Bool=false`: use implicit security.
+* `ssl::Bool=false`: use FTPS.
+* `verify_peer::Bool=true`: verify authenticity of peer's certificate.
+* `active_mode::Bool=false`: use active mode to establish data connection.
+* `username::AbstractString=""`: the username used to access the FTP server.
+* `password::AbstractString=""`: the password used to access the FTP server.
+* `url::AbstractString=""`: the url of the FTP server.
+* `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
+"""
 type RequestOptions
     implicit::Bool
     ssl::Bool
@@ -32,6 +46,19 @@ type RequestOptions
     end
 end
 
+"""
+    Response
+
+The response returned from a connection to an FTP server.
+
+# Parameters
+* `body::IO`: contains the result of a command from ftp_command.
+    or the content of a downloaded file from ftp_get (if no destination file was defined).
+* `headers::Array{AbstractString}`: the header responses from the server.
+* `code::UInt`: the last header response code from the server.
+* `total_time::Float64`: the time the connection took.
+* `bytes_recd::Int`: the amount of bytes transmitted from the server (the file size in the case of ftp_get).
+"""
 type Response
     body::IO
     headers::Array{AbstractString}
@@ -64,6 +91,15 @@ type WriteData
     WriteData() = new(IOBuffer(), 0)
 end
 
+"""
+    ConnContext
+
+Keeps track of a persistent FTP connection.
+
+# Parameters
+* `url::AbstractString`: url of the FTP server.
+* `options::RequestOptions`: the options used for the connection.
+"""
 type ConnContext
     curl::Ptr{CURL}
     url::AbstractString
@@ -232,8 +268,13 @@ ftp_cleanup() = curl_global_cleanup()
 """
     ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
 
-Download file with non-persistent connection. If save_path is not specified the file is written to a buffer.
-Returns a Response.
+Download a file with a non-persistent connection. Returns a Response.
+
+# Arguments
+* `options::RequestOptions`: the connection options. See RequestOptions for details.
+* `file_name::AbstractString`: the path to the file on the server.
+* `save_path::AbstractString=""`: if not specified the file is written to the Response body.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
 """
 function ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
     ctxt = setup_easy_handle(options)
@@ -247,14 +288,19 @@ end
 """
     ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
 
-Download file with persistent connection. If save_path is not specified the file is written to a buffer.
-Returns a Response.
+Download a file with a persistent connection. Returns a Response.
+
+# Arguments
+* `ctxt::ConnContext`: encompases the connection options defined via ftp_connect. See RequestOptions for details.
+* `file_name::AbstractString`: the path to the file on the server.
+* `save_path::AbstractString=""`: if not specified the file is written to the Response body.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
 """
 function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
     resp = Response()
     wd = WriteData()
 
-    if ~isempty(save_path)
+    if !isempty(save_path)
         wd.buffer = open(save_path, "w")
     end
 
@@ -302,7 +348,7 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         return resp
 
     finally
-        if ~isempty(save_path)
+        if !isempty(save_path)
             close(wd.buffer)
         end
 
@@ -317,6 +363,12 @@ end
     ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
 
 Upload file with non-persistent connection. Returns a Response.
+
+# Arguments
+* `options::RequestOptions`: the connection options. See RequestOptions for details.
+* `file_name::AbstractString`: the path to the file on the server.
+* `file::IO`: what is being written to the server.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
 """
 function ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
     ctxt = setup_easy_handle(options)
@@ -331,6 +383,12 @@ end
     ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
 
 Upload file with persistent connection. Returns a Response.
+
+# Arguments
+* `ctxt::ConnContext`: encompases the connection options defined via ftp_connect. See RequestOptions for details.
+* `file_name::AbstractString`: the path to the file on the server.
+* `file::IO`: what is being written to the server.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
 """
 function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
     resp = Response()
