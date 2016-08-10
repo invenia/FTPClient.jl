@@ -155,7 +155,7 @@ function setup_easy_handle(options::RequestOptions)
     @ce_curl curl_easy_setopt CURLOPT_URL options.url
     # @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
-    if (~isempty(options.username) && ~isempty(options.password))
+    if (!isempty(options.username) && !isempty(options.password))
         @ce_curl curl_easy_setopt CURLOPT_USERNAME options.username
         @ce_curl curl_easy_setopt CURLOPT_PASSWORD options.password
     end

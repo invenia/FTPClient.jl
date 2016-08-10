@@ -2,8 +2,7 @@
 *.jl.mem
 
 # Ignore files we can build.
-deps/ext
-test/MockFTPServerJulia.class
+test/PYTHON
 test/test_upload.txt
 
 test/server/root

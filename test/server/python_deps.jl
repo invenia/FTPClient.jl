@@ -7,7 +7,7 @@ using Compat
 py_version(python::AbstractString) = chomp(readstring(`$python -c "import platform; print(platform.python_version())"`))
 const python = try
     py = get(ENV, "PYTHON", isfile("PYTHON") ? readchomp("PYTHON") : "python")
-    version = convert(VersionNumber, py_version(py))
+    version = VersionNumber(py_version(py))
     if version < v"2.7.11"
         error("Python version $vers < 2.7.11 is not supported")
     elseif version >= v"3.0"

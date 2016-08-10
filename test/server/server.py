@@ -45,10 +45,10 @@ def create_self_signed_cert(cert_dir, cert_file, key_file, hostname):
         cert.set_pubkey(k)
         cert.sign(k, 'sha1')
 
-        open(join(cert_dir, cert_file), "wt").write(
-            crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-        open(join(cert_dir, key_file), "wt").write(
-            crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
+        with open(join(cert_dir, cert_file), "wt") as fp:
+            fp.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+        with open(join(cert_dir, key_file), "wt") as fp:
+            fp.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
         
 
 
@@ -65,17 +65,16 @@ if __name__ == '__main__':
     parser.add_argument('--tls-require', choices=['control', 'data'], nargs='*', default=[])  # noqa
     parser.add_argument('--cert-file', type=str, default='test.crt')
     parser.add_argument('--key-file', type=str, default='test.key')
-    parser.add_argument('--cert-dir', type=str, default='')
     parser.add_argument('--debug', type=bool, default=False)
-    parser.add_argument('--gen-certs', type=bool, default=False)
+    parser.add_argument('--gen-certs-dir', type=str, default='')
 
     args = parser.parse_args()
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    if args.gen_certs:
-        create_self_signed_cert(args.cert_dir, args.cert_file, args.key_file, args.hostname)
+    if args.gen_certs_dir:
+        create_self_signed_cert(args.gen_certs_dir, args.cert_file, args.key_file, args.hostname)
 
     if args.passive_ports:
         passive = tuple(int(p) for p in args.passive_ports.split('-'))
