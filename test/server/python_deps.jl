@@ -9,9 +9,9 @@ const python = try
     py = get(ENV, "PYTHON", isfile("PYTHON") ? readchomp("PYTHON") : "python")
     version = VersionNumber(py_version(py))
     if version < v"2.7.11"
-        error("Python version $vers < 2.7.11 is not supported")
+        error("Python version $version < 2.7.11 is not supported")
     elseif version >= v"3.0"
-        error("Python version $vers >= 3 is not supported")
+        error("Python version $version >= 3 is not supported")
     else
         run(`pip install pyopenssl`)
     end
