@@ -263,12 +263,10 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         p_wd = pointer_from_objref(wd)
         p_resp = pointer_from_objref(resp)
 
-        @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
-
         # Force active mode
-        @ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPSV 0
-        @ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPRT 0
-        @ce_curl curl_easy_setopt CURLOPT_FTPPORT "-"
+        #@ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPSV 0
+        #@ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPRT 0
+        #@ce_curl curl_easy_setopt CURLOPT_FTPPORT "-"
 
 
         @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
@@ -308,7 +306,6 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
             close(wd.buffer)
         end
 
-        @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(0)
     end
 end
 

@@ -85,7 +85,7 @@ function tests_by_mode(active::Bool)
         "331 Username ok, send password.",
         "230 Login successful.",
         "257 \"/\" is the current directory.",
-        "200 Active data connection established.",
+        mode_header,
         "200 Type set to: Binary.",
         "213 ...",
         "125 Data connection already open. Transfer starting.",
@@ -99,7 +99,7 @@ function tests_by_mode(active::Bool)
         "331 Username ok, send password.",
         "230 Login successful.",
         "257 \"/\" is the current directory.",
-        "200 Active data connection established.",
+        mode_header,
         "200 Type set to: Binary.",
         "213 ...",
         "125 Data connection already open. Transfer starting.",
@@ -161,7 +161,7 @@ function tests_by_mode(active::Bool)
     ftp_close_connection(ctxt)
 
     headers = [
-        "200 Active data connection established.",
+        mode_header,
         "200 Type set to: Binary.",
         "213 ...",
         "125 Data connection already open. Transfer starting.",
