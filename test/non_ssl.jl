@@ -7,8 +7,6 @@ opts = (
     :password => password(server),
 )
 
-#non-ssl active mode
-options = RequestOptions(; opts..., ssl=false, active_mode=true)
 # options = RequestOptions(hostname="127.0.0.1:8000", username="user", passwd="passwd", ssl=false, active_mode=true)
 function check_response(resp, body, code, headers)
     @test typeof(resp.total_time) == Float64
@@ -18,196 +16,180 @@ function check_response(resp, body, code, headers)
     @test is_headers_equal(resp.headers, headers)
 end
 
+function test_get(headers, opt)
+    local_file = download_file
+    server_file = joinpath(ROOT, local_file)
+    @test !isfile(local_file)
+    resp = ftp_get(opt, local_file)
+    @test !isfile(local_file)
+    body = readstring(server_file)
+    check_response(resp, body, 226, headers)
+end
 
-headers = [
-    "220 pyftpdlib ... ready.",
-    "331 Username ok, send password.",
-    "230 Login successful.",
-    "257 \"/\" is the current directory.",
-    "200 Active data connection established.",
-    "200 Type set to: Binary.",
-    "213 ...",
-    "125 Data connection already open. Transfer starting.",
-    "226 Transfer complete.",
-]
+function test_put(headers, opt)
+    local_file = upload_file
+    server_file = joinpath(ROOT, local_file)
 
-local_file = download_file
-server_file = joinpath(ROOT, local_file)
-@test !isfile(local_file)
-resp = ftp_get(options, local_file)
-@test !isfile(local_file)
-body = readstring(server_file)
-check_response(resp, body, 226, headers)
-
-
-# @testset "ftp_put" begin
-
-# options = RequestOptions(hostname="127.0.0.1:8000", username="user", passwd="passwd", ssl=false, active_mode=false)
-headers = [
-    "220 pyftpdlib ... ready.",
-    "331 Username ok, send password.",
-    "230 Login successful.",
-    "257 \"/\" is the current directory.",
-    "200 Active data connection established.",
-    "200 Type set to: Binary.",
-    "125 Data connection already open. Transfer starting.",
-    "226 Transfer complete.",
-]
-local_file = upload_file
-server_file = joinpath(ROOT, local_file)
-
-@test !isfile(server_file)
-try
+    @test !isfile(server_file)
     resp = open(local_file) do fp
-        ftp_put(options, local_file, fp)
+        ftp_put(opt, local_file, fp)
     end
+
+    if isa(opt, ConnContext)
+        ftp_close_connection(opt) # close the connection so that the server file closes
+    end
+
     @test isfile(server_file)
     @test readstring(server_file) == readstring(local_file)
-finally
     cleanup_file(server_file)
+
+    check_response(resp, "", 226, headers)
 end
-check_response(resp, "", 226, headers)
 
-
-headers = [
-    "220 pyftpdlib ... ready.",
-    "331 Username ok, send password.",
-    "230 Login successful.",
-    "257 \"/\" is the current directory.",
-    "200 Active data connection established.",
-    "200 Type set to: ASCII.",
-    "257 \"/\" is the current directory."
-]
-
-resp = ftp_command(options, "PWD")
-check_response(resp, "", 257, headers)
-
-
-
-#Persistent connection tests, passive mode
-options = RequestOptions(; opts..., ssl=false, active_mode=false)
-# ftp connect
-ctxt, resp = ftp_connect(options)
-headers = [
-    "220 pyftpdlib ... ready.",
-    "331 Username ok, send password.",
-    "230 Login successful.",
-    "257 \"/\" is the current directory.",
-    "229 Entering extended passive mode (...).",
-    "200 Type set to: ASCII.",
-    "125 Data connection already open. Transfer starting.",
-    "226 Transfer complete.",
-]
-
-directory_name = "test_directory"
-body = readstring(resp.body)
-@test contains(body, download_file)
-@test contains(body, directory_name)
-@test resp.bytes_recd == length(body)
-@test resp.code == 226
-@test is_headers_equal(resp.headers, headers)
-@test ctxt.url == options.url == "ftp://$(hostname(server))/"
-@test ctxt.options == options
-ftp_close_connection(ctxt)
-
-# ftp_command
-ctxt, resp = ftp_connect(options)
-headers = [
-    "229 Entering extended passive mode (...).",
-    "257 \"/\" is the current directory."
-]
-resp = ftp_command(ctxt, "PWD")
-@test ctxt.url == options.url == "ftp://$(hostname(server))/"
-@test ctxt.options == options
-check_response(resp, "", 257, headers)
-
-ftp_close_connection(ctxt)
-
-# ftp_get
-ctxt, resp = ftp_connect(options)
-headers = [
-    "200 Active data connection established.",
-    "200 Type set to: Binary.",
-    "213 ...",
-    "125 Data connection already open. Transfer starting.",
-    "226 Transfer complete.",
-]
-
-local_file = download_file
-server_file = joinpath(ROOT, local_file)
-@test !isfile(local_file)
-
-resp = ftp_get(ctxt, local_file)
-body = readstring(server_file)
-
-@test !isfile(local_file)
-@test ctxt.url == options.url == "ftp://$(hostname(server))/"
-@test ctxt.options == options
-
-check_response(resp, body, 226, headers)
-ftp_close_connection(ctxt)
-
-# ftp_put
-headers = [
-    "229 Entering extended passive mode (...).",
-    "200 Type set to: Binary.",
-    "125 Data connection already open. Transfer starting.",
-    "226 Transfer complete."
-    ]
-local_file = upload_file
-server_file = joinpath(ROOT, local_file)
-@test !isfile(server_file)
-
-ctxt, resp = ftp_connect(options)
-
-try
-    resp = open(local_file) do fp
-
-        ftp_put(ctxt, local_file, fp)
-    end
-    @test isfile(server_file)
-    ftp_close_connection(ctxt) # close the connection so that the server file closes
-    @test readstring(server_file) == readstring(local_file)
-finally
-    cleanup_file(server_file)
+function test_command(headers, opt)
+    resp = ftp_command(opt, "PWD")
+    check_response(resp, "", 257, headers)
 end
-check_response(resp, "", 226, headers)
 
+function tests_by_mode(active::Bool)
 
+    options = RequestOptions(; opts..., ssl=false, active_mode=active)
+    mode_header = active? "200 Active data connection established." : "229 Entering extended passive mode (...)."
 
-# download a file to a specific path
-headers = [
-    "220 pyftpdlib ... ready.",
-    "331 Username ok, send password.",
-    "230 Login successful.",
-    "257 \"/\" is the current directory.",
-    "200 Active data connection established.",
-    "200 Type set to: Binary.",
-    "213 ...",
-    "125 Data connection already open. Transfer starting.",
-    "226 Transfer complete."
+    headers = [
+        "220 pyftpdlib ... ready.",
+        "331 Username ok, send password.",
+        "230 Login successful.",
+        "257 \"/\" is the current directory.",
+        mode_header,
+        "200 Type set to: Binary.",
+        "125 Data connection already open. Transfer starting.",
+        "226 Transfer complete.",
     ]
-options = RequestOptions(; opts..., ssl=false, active_mode=false)
+    test_put(headers, options)
 
-save_path = joinpath(pwd(), "test_path.txt")
-@test !isfile(save_path)
-
-local_file = download_file
-
-resp = ftp_get(options, local_file, save_path)
-server_file = joinpath(ROOT, local_file)
-body = readstring(server_file)
-
-@test isfile(save_path) == true
-
-@test readstring(save_path) == body
-@test resp.code == 226
-@test readstring(resp.body) == ""
-@test is_headers_equal(resp.headers, headers)
-
-rm(save_path)
+    headers = [
+        "220 pyftpdlib ... ready.",
+        "331 Username ok, send password.",
+        "230 Login successful.",
+        "257 \"/\" is the current directory.",
+        mode_header,
+        "200 Type set to: ASCII.",
+        "257 \"/\" is the current directory."
+    ]
+    test_command(headers, options)
 
 
+    headers = [
+        "220 pyftpdlib ... ready.",
+        "331 Username ok, send password.",
+        "230 Login successful.",
+        "257 \"/\" is the current directory.",
+        "200 Active data connection established.",
+        "200 Type set to: Binary.",
+        "213 ...",
+        "125 Data connection already open. Transfer starting.",
+        "226 Transfer complete.",
+    ]
+    test_get(headers, options)
+
+    # download a file to a specific path
+    headers = [
+        "220 pyftpdlib ... ready.",
+        "331 Username ok, send password.",
+        "230 Login successful.",
+        "257 \"/\" is the current directory.",
+        "200 Active data connection established.",
+        "200 Type set to: Binary.",
+        "213 ...",
+        "125 Data connection already open. Transfer starting.",
+        "226 Transfer complete."
+        ]
+
+    save_path = joinpath(pwd(), "test_path.txt")
+    @test !isfile(save_path)
+
+    local_file = download_file
+
+    resp = ftp_get(options, local_file, save_path)
+    server_file = joinpath(ROOT, local_file)
+    body = readstring(server_file)
+
+    @test isfile(save_path) == true
+
+    @test readstring(save_path) == body
+    @test resp.code == 226
+    @test readstring(resp.body) == ""
+    @test is_headers_equal(resp.headers, headers)
+
+    rm(save_path)
+
+    # ftp connect
+    headers = [
+        "220 pyftpdlib ... ready.",
+        "331 Username ok, send password.",
+        "230 Login successful.",
+        "257 \"/\" is the current directory.",
+        mode_header,
+        "200 Type set to: ASCII.",
+        "125 Data connection already open. Transfer starting.",
+        "226 Transfer complete.",
+    ]
+
+    ctxt, resp = ftp_connect(options)
+    directory_name = "test_directory"
+    body = readstring(resp.body)
+    @test contains(body, download_file)
+    @test contains(body, directory_name)
+    @test resp.bytes_recd == length(body)
+    @test resp.code == 226
+    @test is_headers_equal(resp.headers, headers)
+    @test ctxt.url == options.url == "ftp://$(hostname(server))/"
+    @test ctxt.options == options
+    ftp_close_connection(ctxt)
+
+
+    headers = [
+        mode_header,
+        "257 \"/\" is the current directory."
+    ]
+    ctxt, resp = ftp_connect(options)
+    test_command(headers, ctxt)
+
+    @test ctxt.url == options.url == "ftp://$(hostname(server))/"
+    @test ctxt.options == options
+    ftp_close_connection(ctxt)
+
+    headers = [
+        "200 Active data connection established.",
+        "200 Type set to: Binary.",
+        "213 ...",
+        "125 Data connection already open. Transfer starting.",
+        "226 Transfer complete.",
+    ]
+    ctxt, resp = ftp_connect(options)
+    test_get(headers, ctxt)
+
+    @test ctxt.url == options.url == "ftp://$(hostname(server))/"
+    @test ctxt.options == options
+    ftp_close_connection(ctxt)
+
+    headers = [
+        mode_header,
+        "200 Type set to: Binary.",
+        "125 Data connection already open. Transfer starting.",
+        "226 Transfer complete."
+        ]
+
+    ctxt, resp = ftp_connect(options)
+    test_put(headers, ctxt)
+
+end
+
+tests_by_mode(true)
+tests_by_mode(false)
+
+# test binary vs ascii
 @unix_only upload_bytes = string("466F6F426172", "0A", "466F6F426172")
 @windows_only upload_bytes = string("466F6F426172", "0D0A", "466F6F426172")
 

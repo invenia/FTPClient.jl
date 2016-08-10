@@ -233,6 +233,7 @@ ftp_cleanup() = curl_global_cleanup()
     ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
 
 Download file with non-persistent connection. If save_path is not specified the file is written to a buffer.
+Returns a Response.
 """
 function ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
     ctxt = setup_easy_handle(options)
@@ -247,6 +248,7 @@ end
     ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
 
 Download file with persistent connection. If save_path is not specified the file is written to a buffer.
+Returns a Response.
 """
 function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
     resp = Response()
@@ -317,7 +319,7 @@ end
 """
     ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
 
-Upload file with non-persistent connection.
+Upload file with non-persistent connection. Returns a Response.
 """
 function ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
     ctxt = setup_easy_handle(options)
@@ -331,7 +333,7 @@ end
 """
     ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
 
-Upload file with persistent connection.
+Upload file with persistent connection. Returns a Response.
 """
 function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
     resp = Response()
@@ -385,7 +387,7 @@ end
 """
     ftp_command(options::RequestOptions, cmd::AbstractString)
 
-Pass FTP command with non-persistent connection.
+Pass FTP command with non-persistent connection. Returns a Response.
 """
 function ftp_command(options::RequestOptions, cmd::AbstractString)
     ctxt = setup_easy_handle(options)
@@ -399,7 +401,7 @@ end
 """
     ftp_command(ctxt::ConnContext, cmd::AbstractString)
 
-Pass FTP command with persistent connection.
+Pass FTP command with persistent connection. Returns a Response.
 """
 function ftp_command(ctxt::ConnContext, cmd::AbstractString)
     resp = Response()
@@ -439,7 +441,7 @@ end
 """
     ftp_connect(options::RequestOptions)
 
-Establish connection to FTP server.
+Establish connection to FTP server. Returns a ConnContext and a Response.
 """
 function ftp_connect(options::RequestOptions)
     ctxt = setup_easy_handle(options)
