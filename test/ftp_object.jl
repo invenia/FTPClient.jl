@@ -44,9 +44,9 @@ Base.close(ftp)
 # check readdir
 ftp = FTP(; opts...)
 server_dir = readdir(ftp)
-contains(string(server_dir), "test_directory")
-contains(string(server_dir), "test_byte_file")
-contains(string(server_dir), "test_download.txt")
+@test contains(string(server_dir), "test_directory")
+@test contains(string(server_dir), "test_byte_file")
+@test contains(string(server_dir), "test_download.txt")
 no_unexpected_changes(ftp)
 Base.close(ftp)
 

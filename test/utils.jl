@@ -18,14 +18,14 @@ function is_header_equal(original::AbstractString, expected::AbstractString)
 end
 
 function cleanup_file(filename::AbstractString)
-    if (isfile(filename))
+    if isfile(filename)
         rm(filename)
     end
     @test !isfile(filename)
 end
 
 function cleanup_dir(dirname::AbstractString, recursive = true)
-    if (isdir(dirname))
+    if isdir(dirname)
         rm(dirname)
     end
     @test !isdir(dirname)

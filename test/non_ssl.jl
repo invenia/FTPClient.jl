@@ -8,12 +8,23 @@ opts = (
 )
 
 # options = RequestOptions(hostname="127.0.0.1:8000", username="user", passwd="passwd", ssl=false, active_mode=true)
-function check_response(resp, body, code, headers)
+function test_response(resp, body, code, headers)
     @test typeof(resp.total_time) == Float64
     @test resp.code == code
     @test readstring(resp.body) == body
-    @test resp.bytes_recd == length(body)
     @test is_headers_equal(resp.headers, headers)
+    @test resp.bytes_recd == length(body)
+end
+
+function test_response(resp, code, headers, save_path, file_body)
+    @test isfile(save_path) == true
+
+    @test typeof(resp.total_time) == Float64
+    @test resp.code == code
+    @test readstring(resp.body) == ""
+    @test readstring(save_path) == file_body
+    @test is_headers_equal(resp.headers, headers)
+    @test resp.bytes_recd == length(file_body)
 end
 
 function test_get(headers, opt)
@@ -23,7 +34,7 @@ function test_get(headers, opt)
     resp = ftp_get(opt, local_file)
     @test !isfile(local_file)
     body = readstring(server_file)
-    check_response(resp, body, 226, headers)
+    test_response(resp, body, 226, headers)
 end
 
 function test_put(headers, opt)
@@ -43,18 +54,18 @@ function test_put(headers, opt)
     @test readstring(server_file) == readstring(local_file)
     cleanup_file(server_file)
 
-    check_response(resp, "", 226, headers)
+    test_response(resp, "", 226, headers)
 end
 
 function test_command(headers, opt)
     resp = ftp_command(opt, "PWD")
-    check_response(resp, "", 257, headers)
+    test_response(resp, "", 257, headers)
 end
 
 function tests_by_mode(active::Bool)
 
     options = RequestOptions(; opts..., ssl=false, active_mode=active)
-    mode_header = active? "200 Active data connection established." : "229 Entering extended passive mode (...)."
+    mode_header = active ? "200 Active data connection established." : "229 Entering extended passive mode (...)."
 
     headers = [
         "220 pyftpdlib ... ready.",
@@ -115,12 +126,7 @@ function tests_by_mode(active::Bool)
     server_file = joinpath(ROOT, local_file)
     body = readstring(server_file)
 
-    @test isfile(save_path) == true
-
-    @test readstring(save_path) == body
-    @test resp.code == 226
-    @test readstring(resp.body) == ""
-    @test is_headers_equal(resp.headers, headers)
+    test_response(resp, 226, headers, save_path, body)
 
     rm(save_path)
 
