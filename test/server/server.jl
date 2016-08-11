@@ -4,13 +4,8 @@ using Conda
 using Compat
 
 Conda.add("pyopenssl")
-if is_apple()
-    Conda.add_channel("morris25")
-elseif is_windows()
-    Conda.add_channel("rmorgans")
-else
-    Conda.add_channel("auto")
-end
+
+Conda.add_channel("morris25")
 Conda.add("pyftpdlib")
 
 const ROOT = abspath(dirname(@__FILE__), "root")
