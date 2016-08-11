@@ -402,8 +402,6 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
     p_rd = pointer_from_objref(rd)
     p_resp = pointer_from_objref(resp)
 
-    @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
-
     @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
     @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
     @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
@@ -428,8 +426,6 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
     @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
     @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(0)
     @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
-
-    @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(0)
 
     return resp
 end

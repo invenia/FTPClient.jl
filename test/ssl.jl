@@ -35,7 +35,6 @@ function ssl_tests(implicit::Bool = true)
     options = RequestOptions(; opts..., active_mode=true)
     ctxt, resp = ftp_connect(options)
     @test resp.code == 226
-    println(resp.code)
 
     test_cmd(ctxt)
     test_download(ctxt)

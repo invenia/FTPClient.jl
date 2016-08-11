@@ -39,7 +39,8 @@ export RequestOptions,
        ascii,
        binary,
        ascii_mode,
-       binary_mode
+       binary_mode,
+       close
 
 include("FTPC.jl")
 include("FTPObject.jl")
