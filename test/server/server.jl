@@ -5,7 +5,7 @@ using Compat
 
 Conda.add("pyopenssl")
 
-Conda.add_channel("morris25")
+Conda.add_channel("invenia")
 Conda.add("pyftpdlib")
 
 const ROOT = abspath(dirname(@__FILE__), "root")
