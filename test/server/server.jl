@@ -1,16 +1,25 @@
 import Base: Process
 
+using Conda
+using Compat
+
+Conda.add("pyopenssl")
+if is_apple()
+    Conda.add_channel("morris25")
+elseif is_windows()
+    Conda.add_channel("rmorgans")
+else
+    Conda.add_channel("auto")
+end
+Conda.add("pyftpdlib")
+
 const ROOT = abspath(dirname(@__FILE__), "root")
 const SCRIPT = abspath(dirname(@__FILE__), "server.py")
 const CERT = abspath(dirname(@__FILE__), "test.crt")
 const KEY = abspath(dirname(@__FILE__), "test.key")
 
-# the file PYTHON is where we store the command to use python (in case we are using the Conda installation)
-if !isfile("PYTHON")
-    include("python_deps.jl")
-end
-
-python = chomp(readstring("PYTHON"))
+python =
+python = joinpath(Conda.PYTHONDIR, is_windows()? "python.exe" : "python")
 
 type FTPServer
     root::AbstractString
