@@ -13,6 +13,9 @@ function test_response(resp, body, code, headers)
     @test resp.code == code
     @test readstring(resp.body) == body
     @test is_headers_equal(resp.headers, headers)
+    println("HEADERS: $headers")
+    println("RESPONSE: $(resp.headers)")
+    println(headers == resp.headers)
     @test resp.bytes_recd == length(body)
 end
 
@@ -24,6 +27,9 @@ function test_response(resp, code, headers, save_path, file_body)
     @test readstring(resp.body) == ""
     @test readstring(save_path) == file_body
     @test is_headers_equal(resp.headers, headers)
+    println("HEADERS: $headers")
+    println("RESPONSE: $(resp.headers)")
+    println(headers == resp.headers)
     @test resp.bytes_recd == length(file_body)
 end
 
