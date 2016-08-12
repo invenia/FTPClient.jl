@@ -19,17 +19,16 @@ try
     tempfile(joinpath(ROOT,download_file))
     cleanup_file(download_file)
     cleanup_file(joinpath(ROOT, upload_file))
-
-    include("ssl.jl")
     include("non_ssl.jl")
     include("ftp_object.jl")
+    include("ssl.jl")
 
 finally
     cleanup_file(upload_file)
     cleanup_file(joinpath(ROOT, download_file))
 
-    ftp_cleanup()
     teardown_server()
     close(server)
 end
 
+ftp_cleanup()

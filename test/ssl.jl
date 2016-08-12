@@ -19,7 +19,6 @@ function ssl_tests(implicit::Bool = true)
         test_upload(options)
         test_cmd(options)
 
-
         options = RequestOptions(; opts..., active_mode=true)
         test_download(options)
         test_upload(options)
@@ -44,6 +43,7 @@ function ssl_tests(implicit::Bool = true)
 
         # the connection has to be closed during test_upload(ctxt) to get the server file to write out
         # ftp_close_connection(ctxt)
+
     finally
         close(server)
     end
