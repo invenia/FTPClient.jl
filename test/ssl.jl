@@ -4,6 +4,7 @@ function ssl_tests(implicit::Bool = true)
     setup_server()
 
     server = FTPServer(security=mode)
+
     opts = (
         :hostname => hostname(server),
         :username => username(server),
@@ -12,38 +13,40 @@ function ssl_tests(implicit::Bool = true)
         :implicit => implicit,
         :verify_peer => false,
     )
+    try
+        options = RequestOptions(; opts..., active_mode=false)
+        test_download(options)
+        test_upload(options)
+        test_cmd(options)
 
-    options = RequestOptions(; opts..., active_mode=false)
-    test_download(options)
-    test_upload(options)
-    test_cmd(options)
+
+        options = RequestOptions(; opts..., active_mode=true)
+        test_download(options)
+        test_upload(options)
+        test_cmd(options)
+
+        options = RequestOptions(; opts..., active_mode=false)
+        ctxt, resp = ftp_connect(options)
+        @test resp.code == 226
 
 
-    options = RequestOptions(; opts..., active_mode=true)
-    test_download(options)
-    test_upload(options)
-    test_cmd(options)
+        test_cmd(ctxt)
+        test_download(ctxt)
+        test_upload(ctxt)
 
-    options = RequestOptions(; opts..., active_mode=false)
-    ctxt, resp = ftp_connect(options)
-    @test resp.code == 226
+        options = RequestOptions(; opts..., active_mode=true)
+        ctxt, resp = ftp_connect(options)
+        @test resp.code == 226
 
-    test_cmd(ctxt)
-    test_download(ctxt)
-    test_upload(ctxt)
+        test_cmd(ctxt)
+        test_download(ctxt)
+        test_upload(ctxt)
 
-    options = RequestOptions(; opts..., active_mode=true)
-    ctxt, resp = ftp_connect(options)
-    @test resp.code == 226
-
-    test_cmd(ctxt)
-    test_download(ctxt)
-    test_upload(ctxt)
-
-    # the connection has to be closed during test_upload(ctxt) to get the server file to write out
-    # ftp_close_connection(ctxt)
-
-    close(server)
+        # the connection has to be closed during test_upload(ctxt) to get the server file to write out
+        # ftp_close_connection(ctxt)
+    finally
+        close(server)
+    end
 end
 
 function test_download(options::RequestOptions)

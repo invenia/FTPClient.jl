@@ -9,24 +9,27 @@ include("utils.jl")
 setup_server()
 ftp_init()
 server = FTPServer()
+try
 
-testdir = "test_dir"
-upload_file = "test_upload.txt"
-download_file = "test_download.txt"
-tempfile(upload_file)
-tempfile(joinpath(ROOT,download_file))
+    testdir = "test_dir"
+    upload_file = "test_upload.txt"
+    download_file = "test_download.txt"
+    tempfile(upload_file)
+    tempfile(joinpath(ROOT,download_file))
 
-cleanup_file(download_file)
-cleanup_file(joinpath(ROOT, upload_file))
+    cleanup_file(download_file)
+    cleanup_file(joinpath(ROOT, upload_file))
 
-include("ssl.jl")
-include("non_ssl.jl")
-include("ftp_object.jl")
+    include("ssl.jl")
+    include("non_ssl.jl")
+    include("ftp_object.jl")
 
-cleanup_file(upload_file)
-cleanup_file(joinpath(ROOT, download_file))
+finally
+    cleanup_file(upload_file)
+    cleanup_file(joinpath(ROOT, download_file))
 
-ftp_cleanup()
-teardown_server()
+    ftp_cleanup()
+    teardown_server()
+    close(server)
+end
 
-close(server)
