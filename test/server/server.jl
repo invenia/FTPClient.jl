@@ -86,6 +86,6 @@ end
 
 function teardown_server()
     rm(ROOT, recursive=true)
-    rm(CERT)
-    rm(KEY)
+    isfile(CERT) || rm(CERT)
+    isfile(KEY) || rm(KEY)
 end
