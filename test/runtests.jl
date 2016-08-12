@@ -19,8 +19,8 @@ try
     tempfile(joinpath(ROOT,download_file))
     cleanup_file(download_file)
     cleanup_file(joinpath(ROOT, upload_file))
-    include("non_ssl.jl")
     include("ftp_object.jl")
+    include("non_ssl.jl")
     include("ssl.jl")
 
 finally
