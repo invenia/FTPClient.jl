@@ -1,5 +1,5 @@
 import Base: Process
-
+import Base: close
 using Conda
 using Compat
 
