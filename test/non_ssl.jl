@@ -111,7 +111,7 @@ function tests_by_mode(active::Bool)
         mode_header,
         "200 Type set to: Binary.",
         "213 ...",
-        "125 Data connection already open. Transfer starting.",
+        "125 Data connection already open. Transfer starting.||150 File status okay. About to open data connection.",
         "226 Transfer complete.",
     ]
     test_get(headers, options)
@@ -125,7 +125,7 @@ function tests_by_mode(active::Bool)
         mode_header,
         "200 Type set to: Binary.",
         "213 ...",
-        "125 Data connection already open. Transfer starting.",
+        "125 Data connection already open. Transfer starting.||150 File status okay. About to open data connection.",
         "226 Transfer complete."
         ]
 
@@ -150,7 +150,7 @@ function tests_by_mode(active::Bool)
         "257 \"/\" is the current directory.",
         mode_header,
         "200 Type set to: ASCII.",
-        "125 Data connection already open. Transfer starting.",
+        "125 Data connection already open. Transfer starting.||150 File status okay. About to open data connection.",
         "226 Transfer complete.",
     ]
 
@@ -182,7 +182,7 @@ function tests_by_mode(active::Bool)
         mode_header,
         "200 Type set to: Binary.",
         "213 ...",
-        "125 Data connection already open. Transfer starting.",
+        "125 Data connection already open. Transfer starting.||150 File status okay. About to open data connection.",
         "226 Transfer complete.",
     ]
     ctxt, resp = ftp_connect(options)
@@ -195,7 +195,7 @@ function tests_by_mode(active::Bool)
     headers = [
         mode_header,
         "200 Type set to: Binary.",
-        "125 Data connection already open. Transfer starting.",
+        "125 Data connection already open. Transfer starting.||150 File status okay. About to open data connection.",
         "226 Transfer complete."
         ]
 
