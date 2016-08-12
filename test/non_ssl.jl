@@ -214,8 +214,8 @@ end
 options = RequestOptions(; opts..., ssl=false, active_mode=false)
 resp = ftp_get(options, byte_file; mode=ascii_mode)
 bytes = read(resp.body)
-is_unix() && (@test bytes != hex2bytes(download_bytes))
-is_unix() && (@test bytes == hex2bytes(download_bytes_ascii))
+is_unix() && @test bytes != hex2bytes(download_bytes)
+is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
 
 # it is the same file when downloading in binary mode
 resp = ftp_get(options, byte_file)
@@ -226,8 +226,8 @@ bytes = read(resp.body)
 ctxt, resp = ftp_connect(options)
 resp = ftp_get(ctxt, byte_file, mode=ascii_mode)
 bytes = read(resp.body)
-is_unix() && (@test bytes != hex2bytes(download_bytes))
-is_unix() && (@test bytes == hex2bytes(download_bytes_ascii))
+is_unix() && @test bytes != hex2bytes(download_bytes)
+is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
 ftp_close_connection(ctxt)
 
 # it is the same file when downloading in binary mode
@@ -241,8 +241,8 @@ ftp_close_connection(ctxt)
 ftp = FTP(; opts...)
 buff = download(ftp, byte_file, mode=ascii_mode)
 bytes = read(buff)
-is_unix() && (@test bytes != hex2bytes(download_bytes))
-is_unix() && (@test bytes == hex2bytes(download_bytes_ascii))
+is_unix() && @test bytes != hex2bytes(download_bytes)
+is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
 Base.close(ftp)
 
 # it is the same file when downloading in binary mode
@@ -263,8 +263,8 @@ bytes = read(buff)
 @test bytes == hex2bytes(download_bytes)
 buff = download(ftp, byte_file, mode=ascii_mode)
 bytes = read(buff)
-is_unix() && (@test bytes != hex2bytes(download_bytes))
-is_unix() && (@test bytes == hex2bytes(download_bytes_ascii))
+is_unix() && @test bytes != hex2bytes(download_bytes)
+is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
 Base.close(ftp)
 
 # upload
