@@ -6,11 +6,24 @@ function is_headers_equal{A<:AbstractString, B<:AbstractString}(original::Abstra
     return true
 end
 
+"""
+    is_header_equal(original, expected) -> Bool
+
+Compares a header line returned from the server with a simplified pattern matching that
+supports `...` to match any number of characters and `||` which allows for alternatives.
+Note we could use regular expressions directly to compare the headers but this can be
+annoying to escape most of the expected headers. If more and more functionality is needed
+to match against headers regular expressions should be used instead.
+"""
 function is_header_equal(original::AbstractString, expected::AbstractString)
-    if contains(expected, "...")
-        # Change `...` to `.*` while quoting the rest of the string.
-        expected = string("^\\Q", replace(expected, "...", "\\E.*\\Q"), "\\E\$")
-        expected = replace(expected, "\\Q\\E", "")  # Remove empty quoted sections
+    if contains(expected, "...") || contains(expected, "||")
+        # Change `...` to `.*` and `||` to `|` while quoting the rest of the string.
+        expected = replace(expected, "...", "\\E.*\\Q")
+        expected = replace(expected, "||", "\\E|\\Q")
+        expected = string("^(?:\\Q", expected, "\\E)\$")
+
+        # Remove empty quoted sections
+        expected = replace(expected, "\\Q\\E", "")
         return ismatch(Regex(expected), original)
     else
         return original == expected
@@ -29,4 +42,8 @@ function cleanup_dir(dirname::AbstractString, recursive = true)
         rm(dirname)
     end
     @test !isdir(dirname)
+end
+
+macro test_headers(original, expected)
+
 end

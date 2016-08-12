@@ -86,7 +86,7 @@ function tests_by_mode(active::Bool)
         "257 \"/\" is the current directory.",
         mode_header,
         "200 Type set to: Binary.",
-        "125 Data connection already open. Transfer starting.",
+        "125 Data connection already open. Transfer starting.||150 File status okay. About to open data connection.",
         "226 Transfer complete.",
     ]
     test_put(headers, options)
