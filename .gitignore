@@ -2,7 +2,6 @@
 *.jl.mem
 
 # Ignore files we can build.
-test/PYTHON
 test/test_upload.txt
 
 test/server/root

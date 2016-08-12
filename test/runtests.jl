@@ -9,14 +9,14 @@ include("utils.jl")
 setup_server()
 ftp_init()
 server = FTPServer()
-try
 
-    testdir = "test_dir"
-    upload_file = "test_upload.txt"
-    download_file = "test_download.txt"
+testdir = "test_dir"
+upload_file = "test_upload.txt"
+download_file = "test_download.txt"
+
+try
     tempfile(upload_file)
     tempfile(joinpath(ROOT,download_file))
-
     cleanup_file(download_file)
     cleanup_file(joinpath(ROOT, upload_file))
 
