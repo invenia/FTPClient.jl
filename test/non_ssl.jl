@@ -12,12 +12,6 @@ function test_response(resp, body, code, headers)
     @test typeof(resp.total_time) == Float64
     @test resp.code == code
     @test readstring(resp.body) == body
-
-    println("HEADERS: $headers")
-    println("RESPONSE: $(resp.headers)")
-    for i in 1:length(headers)
-        println(is_header_equal(resp.headers[i], headers[i]))
-    end
     @test is_headers_equal(resp.headers, headers)
     @test resp.bytes_recd == length(body)
 end
@@ -29,12 +23,6 @@ function test_response(resp, code, headers, save_path, file_body)
     @test resp.code == code
     @test readstring(resp.body) == ""
     @test readstring(save_path) == file_body
-
-    println("HEADERS: $headers")
-    println("RESPONSE: $(resp.headers)")
-    for i in 1:length(headers)
-        println(is_header_equal(resp.headers[i], headers[i]))
-    end
     @test is_headers_equal(resp.headers, headers)
     @test resp.bytes_recd == length(file_body)
 end

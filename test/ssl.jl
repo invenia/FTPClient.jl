@@ -42,6 +42,8 @@ function ssl_tests(implicit::Bool = true)
 
         # the connection has to be closed during test_upload(ctxt) to get the server file to write out
         # ftp_close_connection(ctxt)
+    catch
+        println(resp.headers)
     finally
         close(server)
 
