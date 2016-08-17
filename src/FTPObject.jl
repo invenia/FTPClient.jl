@@ -153,7 +153,7 @@ function cd(ftp::FTP, dir::AbstractString)
     resp = ftp_command(ftp.ctxt, "CWD $dir")
 
     if resp.code != 250
-        throw(FTPClientError("Failed to change to directory $dir. $resp.code", 0))
+        throw(FTPClientError("Failed to change to directory $dir. $(resp.code)", 0))
     end
 
 end
@@ -169,7 +169,7 @@ function pwd(ftp::FTP)
     resp = ftp_command(ftp.ctxt, "PWD")
 
     if resp.code != 257
-        throw(FTPClientError("Failed to get the current working directory. $resp.code", 0))
+        throw(FTPClientError("Failed to get the current working directory. $(resp.code)", 0))
     end
 
     dir = split(resp.headers[end], '\"')[end-1]
@@ -187,7 +187,7 @@ function rm(ftp::FTP, file_name::AbstractString)
     resp = ftp_command(ftp.ctxt, "DELE $file_name")
 
     if resp.code != 250
-        throw(FTPClientError("Failed to remove $file_name. $resp.code", 0))
+        throw(FTPClientError("Failed to remove $file_name. $(resp.code)", 0))
     end
 
 end
@@ -203,7 +203,7 @@ function rmdir(ftp::FTP, dir_name::AbstractString)
     resp = ftp_command(ftp.ctxt, "RMD $dir_name")
 
     if resp.code != 250
-        throw(FTPClientError("Failed to remove $dir_name. $resp.code", 0))
+        throw(FTPClientError("Failed to remove $dir_name. $(resp.code)", 0))
     end
 
 end
@@ -219,7 +219,7 @@ function mkdir(ftp::FTP, dir::AbstractString)
     resp = ftp_command(ftp.ctxt, "MKD $dir")
 
     if resp.code != 257
-        throw(FTPClientError("Failed to make $dir. $resp.code", 0))
+        throw(FTPClientError("Failed to make $dir. $(resp.code)", 0))
     end
 
 end
@@ -235,13 +235,13 @@ function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
     resp = ftp_command(ftp.ctxt, "RNFR $file_name")
 
     if resp.code != 350
-        throw(FTPClientError("Failed to move $file_name. $resp.code", 0))
+        throw(FTPClientError("Failed to move $file_name. $(resp.code)", 0))
     end
 
     resp = ftp_command(ftp.ctxt, "RNTO $new_name")
 
     if resp.code != 250
-        throw(FTPClientError("Failed to move $file_name. $resp.code", 0))
+        throw(FTPClientError("Failed to move $file_name. $(resp.code)", 0))
     end
 
 end
