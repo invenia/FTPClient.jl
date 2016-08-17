@@ -2,7 +2,6 @@ import Compat: readstring
 using FTPClient
 using Base.Test
 
-
 include("server/server.jl")
 include("utils.jl")
 
@@ -24,12 +23,14 @@ try
     include("ssl.jl")
 
 finally
+    # ensure the server is cleaned up if one of the tests fail
     cleanup_file(upload_file)
     cleanup_file(joinpath(ROOT, download_file))
 
     teardown_server()
     close(server)
 
+    # get the output from the server for more information
     for line in eachline(server.io)
         print(line)
         if contains(line, "FTP session closed")

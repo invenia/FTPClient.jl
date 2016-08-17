@@ -43,7 +43,3 @@ function cleanup_dir(dirname::AbstractString, recursive = true)
     end
     @test !isdir(dirname)
 end
-
-macro test_headers(original, expected)
-
-end
