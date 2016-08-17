@@ -100,17 +100,17 @@ using FTPClient
 ftp_init()
 options = RequestOptions(ssl=true, implicit=true, username="user1", password="1234", hostname="localhost")
 
-resp = ftp_get("download_file.txt", options)
+resp = ftp_get(options, "download_file.txt")
 io_buffer = resp.body
 
-resp = ftp_get("download_file.txt", options, "Documents/downloaded_file.txt")
+resp = ftp_get(options, "download_file.txt", "Documents/downloaded_file.txt")
 io_stream = resp.body
 
 file = open("upload_file.txt")
-resp = ftp_put("upload_file.txt", file, options)
+resp = ftp_put(options, "upload_file.txt", file)
 close(file)
 
-resp = ftp_command("LIST", options)
+resp = ftp_command(options, "LIST")
 dir = resp.body
 
 ftp_cleanup()
