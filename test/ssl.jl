@@ -43,18 +43,8 @@ function ssl_tests(implicit::Bool = true)
         # the connection has to be closed during test_upload(ctxt) to get the server file to write out
         # ftp_close_connection(ctxt)
     finally
-
         # ensure the server closes if one of the tests fail
         close(server)
-
-        # get the output from the server to if anything went wrong on the server side
-        for line in eachline(server.io)
-            print(line)
-            if contains(line, "FTP session closed")
-                break
-            end
-        end
-
     end
 end
 

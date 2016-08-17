@@ -29,14 +29,6 @@ finally
 
     teardown_server()
     close(server)
-
-    # get the output from the server for more information
-    for line in eachline(server.io)
-        print(line)
-        if contains(line, "FTP session closed")
-            break
-        end
-    end
 end
 
 ftp_cleanup()
