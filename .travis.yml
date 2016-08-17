@@ -1,7 +1,7 @@
 language: julia
 os:
   - linux
-  # - osx
+  - osx
 julia:
   - nightly
   - 0.4
@@ -10,6 +10,6 @@ notifications:
 sudo: false
 script:
  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
- - julia --check-bounds=yes --color=yes -e 'Pkg.add("LibCURL"); Pkg.checkout("LibCURL"); Pkg.clone("https://github.com/samuel-massinon-invenia/JavaCall.jl.git"); Pkg.checkout("JavaCall", "pull-request/bf8b4987"); Pkg.clone(pwd()); Pkg.build("FTPClient"); Pkg.test("FTPClient"; coverage=true)'
+ - julia --check-bounds=yes --color=yes -e 'Pkg.clone(pwd()); Pkg.build("FTPClient"); Pkg.test("FTPClient"; coverage=true)'
 after_success:
  - julia -e 'cd(Pkg.dir("FTPClient")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
