@@ -170,7 +170,7 @@ macro ce_curl(f, args...)
         cc = CURLE_OK
         cc = $(esc(f))(ctxt.curl, $(args...))
 
-        if(cc != CURLE_OK && cc != CURLE_FTP_COULDNT_RETR_FILE)
+        if cc != CURLE_OK && cc != CURLE_FTP_COULDNT_RETR_FILE
             throw(FTPClientError("", cc))
         end
     end
@@ -191,7 +191,7 @@ function setup_easy_handle(options::RequestOptions)
     @ce_curl curl_easy_setopt CURLOPT_URL options.url
     # @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
-    if (!isempty(options.username) && !isempty(options.password))
+    if !isempty(options.username) && !isempty(options.password)
         @ce_curl curl_easy_setopt CURLOPT_USERNAME options.username
         @ce_curl curl_easy_setopt CURLOPT_PASSWORD options.password
     end
@@ -216,7 +216,7 @@ function setup_easy_handle(options::RequestOptions)
 end
 
 function cleanup_easy_context(ctxt::ConnContext)
-    if (ctxt.curl != C_NULL)
+    if ctxt.curl != C_NULL
 
         # cleaning up should not write any data
         @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION C_NULL
@@ -480,7 +480,7 @@ function ftp_command(ctxt::ConnContext, cmd::AbstractString)
     resp.bytes_recd = wd.bytes_recd
 
     cmd = split(cmd)
-    if (resp.code == 250 && cmd[1] == "CWD")
+    if resp.code == 250 && cmd[1] == "CWD"
         ctxt.url *= join(cmd[2:end], ' ')
     end
 
