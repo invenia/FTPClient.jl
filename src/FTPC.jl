@@ -133,7 +133,7 @@ function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Pt
     nbytes = sz * n
     hdrlines = split(unsafe_string(buff,convert(Int, nbytes)), "\r\n")
 
-    hdrlines = filter(line -> ~isempty(line), hdrlines)
+    hdrlines = filter(line -> !isempty(line), hdrlines)
     @assert typeof(resp) == Response
     append!(resp.headers, hdrlines)
 
@@ -201,7 +201,7 @@ function setup_easy_handle(options::RequestOptions)
         @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
         @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
 
-        if ~options.verify_peer
+        if !options.verify_peer
             @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
         else
             @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(1)

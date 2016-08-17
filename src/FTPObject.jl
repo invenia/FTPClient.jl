@@ -133,7 +133,7 @@ function readdir(ftp::FTP)
     end
 
     @compat dir = split(readstring(resp.body), '\n')
-    dir = filter( x -> ~isempty(x), dir)
+    dir = filter( x -> !isempty(x), dir)
     dir = [ join(split(line)[9:end], ' ') for line in dir ]
 
 end
@@ -146,7 +146,7 @@ Set the current working directory of the FTP server to "dir".
 """
 function cd(ftp::FTP, dir::AbstractString)
 
-    if ~endswith(dir, "/")
+    if !endswith(dir, "/")
         dir *= "/"
     end
 
