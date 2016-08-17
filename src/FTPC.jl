@@ -308,7 +308,6 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
     end
 
     try
-
         p_wd = pointer_from_objref(wd)
         p_resp = pointer_from_objref(resp)
 
@@ -316,7 +315,6 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         #@ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPSV 0
         #@ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPRT 0
         #@ce_curl curl_easy_setopt CURLOPT_FTPPORT "-"
-
 
         @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
         @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
@@ -349,12 +347,10 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         resp.body = wd.buffer
 
         return resp
-
     finally
         if !isempty(save_path)
             close(wd.buffer)
         end
-
     end
 end
 

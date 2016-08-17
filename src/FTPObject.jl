@@ -120,7 +120,6 @@ end
 Return the contents of the current working directory of the FTP server.
 """
 function readdir(ftp::FTP)
-
     resp = nothing
 
     try
@@ -135,7 +134,6 @@ function readdir(ftp::FTP)
     @compat dir = split(readstring(resp.body), '\n')
     dir = filter( x -> !isempty(x), dir)
     dir = [ join(split(line)[9:end], ' ') for line in dir ]
-
 end
 
 
@@ -145,7 +143,6 @@ end
 Set the current working directory of the FTP server to "dir".
 """
 function cd(ftp::FTP, dir::AbstractString)
-
     if !endswith(dir, "/")
         dir *= "/"
     end
@@ -155,7 +152,6 @@ function cd(ftp::FTP, dir::AbstractString)
     if resp.code != 250
         throw(FTPClientError("Failed to change to directory $dir. $(resp.code)", 0))
     end
-
 end
 
 
@@ -165,7 +161,6 @@ end
 Get the current working directory of the FTP server
 """
 function pwd(ftp::FTP)
-
     resp = ftp_command(ftp.ctxt, "PWD")
 
     if resp.code != 257
@@ -173,7 +168,6 @@ function pwd(ftp::FTP)
     end
 
     dir = split(resp.headers[end], '\"')[end-1]
-
 end
 
 
@@ -183,13 +177,11 @@ end
 Delete file "file_name" from FTP server.
 """
 function rm(ftp::FTP, file_name::AbstractString)
-
     resp = ftp_command(ftp.ctxt, "DELE $file_name")
 
     if resp.code != 250
         throw(FTPClientError("Failed to remove $file_name. $(resp.code)", 0))
     end
-
 end
 
 
@@ -199,13 +191,11 @@ end
 Delete directory "dir_name" from FTP server.
 """
 function rmdir(ftp::FTP, dir_name::AbstractString)
-
     resp = ftp_command(ftp.ctxt, "RMD $dir_name")
 
     if resp.code != 250
         throw(FTPClientError("Failed to remove $dir_name. $(resp.code)", 0))
     end
-
 end
 
 
@@ -215,13 +205,11 @@ end
 Make directory "dir" on FTP server.
 """
 function mkdir(ftp::FTP, dir::AbstractString)
-
     resp = ftp_command(ftp.ctxt, "MKD $dir")
 
     if resp.code != 257
         throw(FTPClientError("Failed to make $dir. $(resp.code)", 0))
     end
-
 end
 
 
@@ -231,7 +219,6 @@ end
 Move (rename) file "file_name" to "new_name" on FTP server.
 """
 function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
-
     resp = ftp_command(ftp.ctxt, "RNFR $file_name")
 
     if resp.code != 350
@@ -243,7 +230,6 @@ function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
     if resp.code != 250
         throw(FTPClientError("Failed to move $file_name. $(resp.code)", 0))
     end
-
 end
 
 """
