@@ -180,7 +180,7 @@ function setup_easy_handle(options::RequestOptions)
     ctxt = ConnContext(options)
 
     curl = curl_easy_init()
-    if (curl == C_NULL) throw("curl_easy_init() failed") end
+    curl == C_NULL && error("curl_easy_init() failed")
 
     ctxt.curl = curl
 
@@ -200,12 +200,7 @@ function setup_easy_handle(options::RequestOptions)
         @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
         @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
         @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
-
-        if !options.verify_peer
-            @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
-        else
-            @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(1)
-        end
+        @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(options.verify_peer)
     end
 
     if options.active_mode
@@ -216,21 +211,20 @@ function setup_easy_handle(options::RequestOptions)
 end
 
 function cleanup_easy_context(ctxt::ConnContext)
-    if ctxt.curl != C_NULL
+    ctxt.curl == C_NULL && return nothing
 
-        # cleaning up should not write any data
-        @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION C_NULL
-        @ce_curl curl_easy_setopt CURLOPT_WRITEDATA C_NULL
+    # cleaning up should not write any data
+    @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION C_NULL
+    @ce_curl curl_easy_setopt CURLOPT_WRITEDATA C_NULL
 
-        @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION C_NULL
-        @ce_curl curl_easy_setopt CURLOPT_HEADERDATA C_NULL
+    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION C_NULL
+    @ce_curl curl_easy_setopt CURLOPT_HEADERDATA C_NULL
 
-        @ce_curl curl_easy_setopt CURLOPT_READDATA C_NULL
-        @ce_curl curl_easy_setopt CURLOPT_READFUNCTION C_NULL
+    @ce_curl curl_easy_setopt CURLOPT_READDATA C_NULL
+    @ce_curl curl_easy_setopt CURLOPT_READFUNCTION C_NULL
 
-        curl_easy_cleanup(ctxt.curl)
-        ctxt.curl = C_NULL
-    end
+    curl_easy_cleanup(ctxt.curl)
+    ctxt.curl = C_NULL
 end
 
 function process_response(ctxt::ConnContext, resp::Response)

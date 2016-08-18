@@ -41,11 +41,7 @@ function show(io::IO, ftp::FTP)
     println(io, "Host:      $(ftp.ctxt.url)")
     println(io, "User:      $(o.username)")
     println(io, "Transfer:  $(o.active_mode ? "active" : "passive") mode")
-    if o.ssl
-        println(io, "Security:  $(o.implicit ? "implicit" : "explicit")")
-    else
-        println(io, "Security:  None")
-    end
+    println(io, "Security:  $(o.ssl ? (o.implicit ? "implicit" : "explicit") : "None")")
 end
 
 """
@@ -132,8 +128,8 @@ function readdir(ftp::FTP)
     end
 
     @compat dir = split(readstring(resp.body), '\n')
-    dir = filter( x -> !isempty(x), dir)
-    dir = [ join(split(line)[9:end], ' ') for line in dir ]
+    dir = filter(x -> !isempty(x), dir)
+    dir = [join(split(line)[9:end], ' ') for line in dir]
 end
 
 
@@ -235,15 +231,18 @@ end
 """
     ftp(code::Function;
     hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
-    verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="", password::AbstractString="" )
+    verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="", password::AbstractString="")
 
 Execute Function "code" on FTP server.
 """
 function ftp(code::Function;
     hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
-    verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="", password::AbstractString="" )
+    verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="", password::AbstractString="")
     ftp_init()
-    ftp_client = FTP(;hostname=hostname, implicit=implicit, ssl=ssl, verify_peer=verify_peer, active_mode=active_mode, username=username, password=password)
+    ftp_client = FTP(
+        hostname=hostname, implicit=implicit, ssl=ssl, verify_peer=verify_peer,
+        active_mode=active_mode, username=username, password=password,
+    )
 
     try
         code(ftp_client)
