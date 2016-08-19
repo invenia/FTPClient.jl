@@ -133,7 +133,7 @@ function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Pt
     nbytes = sz * n
     hdrlines = split(unsafe_string(buff,convert(Int, nbytes)), "\r\n")
 
-    hdrlines = filter(line -> ~isempty(line), hdrlines)
+    hdrlines = filter(line -> !isempty(line), hdrlines)
     @assert typeof(resp) == Response
     append!(resp.headers, hdrlines)
 
@@ -170,7 +170,7 @@ macro ce_curl(f, args...)
         cc = CURLE_OK
         cc = $(esc(f))(ctxt.curl, $(args...))
 
-        if(cc != CURLE_OK && cc != CURLE_FTP_COULDNT_RETR_FILE)
+        if cc != CURLE_OK && cc != CURLE_FTP_COULDNT_RETR_FILE
             throw(FTPClientError("", cc))
         end
     end
@@ -180,7 +180,7 @@ function setup_easy_handle(options::RequestOptions)
     ctxt = ConnContext(options)
 
     curl = curl_easy_init()
-    if (curl == C_NULL) throw("curl_easy_init() failed") end
+    curl == C_NULL && error("curl_easy_init() failed")
 
     ctxt.curl = curl
 
@@ -191,7 +191,7 @@ function setup_easy_handle(options::RequestOptions)
     @ce_curl curl_easy_setopt CURLOPT_URL options.url
     # @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
-    if (!isempty(options.username) && !isempty(options.password))
+    if !isempty(options.username) && !isempty(options.password)
         @ce_curl curl_easy_setopt CURLOPT_USERNAME options.username
         @ce_curl curl_easy_setopt CURLOPT_PASSWORD options.password
     end
@@ -200,12 +200,7 @@ function setup_easy_handle(options::RequestOptions)
         @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
         @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
         @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
-
-        if ~options.verify_peer
-            @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(0)
-        else
-            @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(1)
-        end
+        @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(options.verify_peer)
     end
 
     if options.active_mode
@@ -216,18 +211,20 @@ function setup_easy_handle(options::RequestOptions)
 end
 
 function cleanup_easy_context(ctxt::ConnContext)
-    if (ctxt.curl != C_NULL)
+    ctxt.curl == C_NULL && return nothing
 
-        # cleaning up should not write any data
-        @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION C_NULL
-        @ce_curl curl_easy_setopt CURLOPT_WRITEDATA C_NULL
+    # cleaning up should not write any data
+    @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION C_NULL
+    @ce_curl curl_easy_setopt CURLOPT_WRITEDATA C_NULL
 
-        @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION C_NULL
-        @ce_curl curl_easy_setopt CURLOPT_HEADERDATA C_NULL
+    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION C_NULL
+    @ce_curl curl_easy_setopt CURLOPT_HEADERDATA C_NULL
 
-        curl_easy_cleanup(ctxt.curl)
-        ctxt.curl = C_NULL
-    end
+    @ce_curl curl_easy_setopt CURLOPT_READDATA C_NULL
+    @ce_curl curl_easy_setopt CURLOPT_READFUNCTION C_NULL
+
+    curl_easy_cleanup(ctxt.curl)
+    ctxt.curl = C_NULL
 end
 
 function process_response(ctxt::ConnContext, resp::Response)
@@ -305,7 +302,6 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
     end
 
     try
-
         p_wd = pointer_from_objref(wd)
         p_resp = pointer_from_objref(resp)
 
@@ -313,7 +309,6 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         #@ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPSV 0
         #@ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPRT 0
         #@ce_curl curl_easy_setopt CURLOPT_FTPPORT "-"
-
 
         @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
         @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
@@ -346,12 +341,10 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
         resp.body = wd.buffer
 
         return resp
-
     finally
         if !isempty(save_path)
             close(wd.buffer)
         end
-
     end
 end
 
@@ -477,7 +470,7 @@ function ftp_command(ctxt::ConnContext, cmd::AbstractString)
     resp.bytes_recd = wd.bytes_recd
 
     cmd = split(cmd)
-    if (resp.code == 250 && cmd[1] == "CWD")
+    if resp.code == 250 && cmd[1] == "CWD"
         ctxt.url *= join(cmd[2:end], ' ')
     end
 
