@@ -1,39 +1,43 @@
-# FTPClient
-FTP client based on [LibCURL.jl](https://github.com/JuliaWeb/LibCURL.jl).
+FTPClient.jl
+============
+
+Provides FTP client functionality based on [libcurl](https://github.com/JuliaWeb/LibCURL.jl).
 
 [![Build Status](https://travis-ci.org/invenia/FTPClient.jl.svg?branch=master)](https://travis-ci.org/invenia/FTPClient.jl)
 [![Build status](https://ci.appveyor.com/api/projects/status/sqsge28jvto74nhs/branch/master?svg=true)](https://ci.appveyor.com/project/adrienne-pind-invenia/ftpclient-jl/branch/master)
 [![codecov.io](http://codecov.io/github/invenia/FTPClient.jl/coverage.svg)](http://codecov.io/github/invenia/FTPClient.jl)
 [![Dependency Status](https://dependencyci.com/github/invenia/FTPClient.jl/badge)](https://dependencyci.com/github/invenia/FTPClient.jl)
 
-### Requirement
-
-Tested with julia `Version 0.4.0-dev+6673`
-
 ### Usage
 
 #### FTPC functions
-`ftp_init()` and  `ftp_cleanup()` need to be used once per session.
+
+Note `ftp_init()` and  `ftp_cleanup()` need to be used once per session.
 
 Functions for non-persistent connection:
+
 ```julia
 ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString)
 ftp_put(options::RequestOptions, file_name::AbstractString, file::IO)
 ftp_command(options::RequestOptions, cmd::AbstractString)
 ```
-- These functions all establish a connection, perform the desired operation then close the connection and return a `Response` object. Any data retrieved from server is in `Response.body`.
 
-    ```julia
-    type Response
-        body::IO
-        headers::Vector{AbstractString}
-        code::Int
-        total_time::FloatingPoint
-        bytes_recd::Int
-    end
-    ```
+These functions all establish a connection, perform the desired operation then close the
+connection and return a `Response` object. Any data retrieved from server is in 
+`Response.body`:
 
-Functions for persistent connection:
+```julia
+type Response
+    body::IO
+    headers::Vector{AbstractString}
+    code::Int
+    total_time::FloatingPoint
+    bytes_recd::Int
+end
+```
+
+Functions for persistent connections:
+
 ```julia
 ftp_connect(options::RequestOptions)
 ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString)
@@ -41,41 +45,44 @@ ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO)
 ftp_command(ctxt::ConnContext, cmd::AbstractString)
 ftp_close_connection(ctxt::ConnContext)
 ```
-- These functions all return a `Response` object, except `ftp_close_connection`, which does not return anything. Any data retrieved from server is in `Response.body`.
 
-    ```julia
-    type ConnContext
-        curl::Ptr{CURL}
-        url::AbstractString
-        options::RequestOptions
-    end
-    ```
+These functions all return a `Response` object, except `ftp_close_connection`, which does
+not return anything. Any data retrieved from server is in `Response.body`.
+
+```julia
+type ConnContext
+    curl::Ptr{CURL}
+    url::AbstractString
+    options::RequestOptions
+end
+```
 
 - `url` is of the form "localhost" or "127.0.0.1"
 - `cmd` is of the form "PWD" or "CWD Documents/", and must be a valid FTP command
 - `file_name` is both the name of the file that will be retrieved/uploaded and the name it will be saved as
 - `options` is a `RequestOptions` object
 
-    ```julia
-    type RequestOptions
-        implicit::Bool
-        ssl::Bool
-        verify_peer::Bool
-        active_mode::Bool
-        username::AbstractString
-        password::AbstractString
-        url::AbstractString
-        hostname::AbstractString
-    end
-    ```
+```julia
+type RequestOptions
+    implicit::Bool
+    ssl::Bool
+    verify_peer::Bool
+    active_mode::Bool
+    username::AbstractString
+    password::AbstractString
+    url::AbstractString
+    hostname::AbstractString
+end
+```
 
-    - `implicit`: use implicit security, default is false
-    - `ssl`: use FTPS, default is false
-    - `verify_peer`: verify authenticity of peer's certificate, default is true
-    - `active_mode`: use active mode to establish data connection, default is false
+- `implicit`: use implicit security, default is false
+- `ssl`: use FTPS, default is false
+- `verify_peer`: verify authenticity of peer's certificate, default is true
+- `active_mode`: use active mode to establish data connection, default is false
 
 
 #### FTPObject functions
+
 ```julia
 FTP(;hostname="", implicit=false, ssl=false, verify_peer=true, active_mode=false, username="", password="")
 close(ftp::FTP)
@@ -91,9 +98,11 @@ rmdir(ftp::FTP, dir_name::AbstractString)
 mkdir(ftp::FTP, dir::AbstractString)
 mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
 ```
+
 ### Examples
 
 Using non-persistent connection and FTPS with implicit security:
+
 ```julia
 using FTPClient
 
@@ -117,6 +126,7 @@ ftp_cleanup()
 ```
 
 Using persistent connection and FTPS with explicit security:
+
 ```julia
 using FTPClient
 
@@ -143,6 +153,7 @@ ftp_cleanup()
 ```
 
 Using the FTP object with a persistent connection and FTPS with implicit security:
+
 ```julia
 ftp_init()
 ftp = FTP(hostname="localhost", implicit=true, ssl=true, username="user3", password="2468" )
