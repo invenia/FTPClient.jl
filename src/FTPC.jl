@@ -168,7 +168,7 @@ c_curl_read_cb = cfunction(curl_read_cb, Csize_t, (Ptr{Void}, Csize_t, Csize_t, 
 macro ce_curl(f, args...)
     quote
         cc = CURLE_OK
-        cc = $(esc(f))(ctxt.curl, $(args...))
+        cc = $(esc(f))($(esc(:(ctxt.curl))), $(map(esc, args)...))
 
         if cc != CURLE_OK && cc != CURLE_FTP_COULDNT_RETR_FILE
             throw(FTPClientError("", cc))
