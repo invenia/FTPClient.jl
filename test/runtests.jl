@@ -13,22 +13,26 @@ testdir = "test_dir"
 upload_file = "test_upload.txt"
 download_file = "test_download.txt"
 
-try
-    tempfile(upload_file)
-    tempfile(joinpath(ROOT,download_file))
-    cleanup_file(download_file)
-    cleanup_file(joinpath(ROOT, upload_file))
-    include("ftp_object.jl")
-    include("non_ssl.jl")
-    include("ssl.jl")
+@testset "all_tests" begin
 
-finally
-    # ensure the server is cleaned up if one of the tests fail
-    cleanup_file(upload_file)
-    cleanup_file(joinpath(ROOT, download_file))
+    try
+        tempfile(upload_file)
+        tempfile(joinpath(ROOT,download_file))
+        cleanup_file(download_file)
+        cleanup_file(joinpath(ROOT, upload_file))
+        include("ftp_object.jl")
+        include("non_ssl.jl")
+        include("ssl.jl")
 
-    teardown_server()
-    close(server)
+    finally
+        # ensure the server is cleaned up if one of the tests fail
+        cleanup_file(upload_file)
+        cleanup_file(joinpath(ROOT, download_file))
+
+        teardown_server()
+        close(server)
+    end
+
+    ftp_cleanup()
+
 end
-
-ftp_cleanup()
