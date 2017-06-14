@@ -127,7 +127,7 @@ function readdir(ftp::FTP)
         rethrow()
     end
 
-    @compat dir = split(readstring(resp.body), '\n')
+    dir = split(readstring(resp.body), '\n')
     dir = filter(x -> !isempty(x), dir)
     dir = [join(split(line)[9:end], ' ') for line in dir]
 end
