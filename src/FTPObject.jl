@@ -1,3 +1,6 @@
+# FTP code for when the file transfer is complete.
+const complete_transfer_code = 226
+
 """
     FTP(; kwargs...) -> FTP
 
@@ -107,6 +110,94 @@ function upload(ftp::FTP, local_file::IO, remote_name::AbstractString; mode::FTP
         rethrow()
     end
     return nothing
+end
+
+
+"""
+    upload(
+        ftp::FTP,
+        local_file_paths::Vector{<:AbstractString},
+        ftp_dir<:AbstractString;
+        retry_callback::Function=(count, options) -> (count < 4, options),
+        retry_wait_seconds::Integer = 5
+    )
+
+Uploads the files specified in local_file_paths to the directory specifed by
+ftp_dir. The files will have the same names.
+
+By default, will try to deliver the files 4 times with a 5 second wait in between
+each failed attempt.
+
+You can specify a function for retry_callback to change behaviour. This function must
+take as parameters the number of attempts that have been made so far, and the current
+ftp connection options as a FTPClient.ConnContext type. It must return a boolean
+that is true if another delivery attempt can be made, and a TPClient.ConnContext
+type that is the connection options to use for all future files to be delivered. This
+allows backup ftp directories to be used for example.
+
+# Arguments
+`ftp::FTP`: The FTP to deliver to. See FTPClient.FTP for details.
+`file_paths::Vector{T}`: The file paths to the files we want to deliver.
+`ftp_dir`: The directory on the ftp server where we want to drop the files.
+`retry_callback::Function=(count, options) -> (count < 4, options)`: Function for retrying
+                                                                     when delivery fails.
+`retry_wait_seconds::Integer = 5`: How many seconds to wait in between retries.
+
+# Returns
+- `Array{Bool,1}`: Returns a vector of booleans with true for each successfully delivered
+                   file and false for any that failed to transfer.
+"""
+function upload(
+    ftp::FTP,
+    local_file_paths::Vector{<:AbstractString},
+    ftp_dir::AbstractString;
+    retry_callback::Function=(count, options) -> (count < 4, options),
+    retry_wait_seconds::Integer = 5
+)
+
+    successful_delivery = Vector{Bool}()
+
+    ftp_options = ftp.ctxt
+
+    for single_file in local_file_paths
+        # The location we are going to drop the file in the FTP server
+        server_location = joinpath(ftp_dir, basename(single_file))
+
+        # ftp_put requires an io so open up our file.
+        open(single_file) do single_file_io
+            # Whether or not the current file was successfully delivered to the FTP
+            file_delivery_success = false
+
+            attempts = 1
+            # The loops should break after an appropriate amount of retries.
+            # This way of doing retries makes testing easier.
+            # Defaults to 4 attempts, waiting 5 seconds between each retry.
+            while true
+                try
+                    resp = ftp_put(ftp_options, server_location, single_file_io)
+                    file_delivery_success = resp.code == complete_transfer_code
+                    if file_delivery_success
+                        break
+                    end
+                catch e
+                    warn(e)
+                end
+                sleep(retry_wait_seconds)
+                # It returns ftp_options for testing purposes, where the ftp server
+                # starts not existing then comes into existence during retries.
+                do_retry, ftp_options = retry_callback(attempts, ftp_options)
+                if !do_retry
+                    break
+                end
+                attempts += 1
+            end
+
+            push!(successful_delivery, file_delivery_success)
+
+        end
+    end
+
+    return successful_delivery
 end
 
 
