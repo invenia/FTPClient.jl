@@ -147,7 +147,7 @@ allows backup ftp directories to be used for example.
 - `Array{Bool,1}`: Returns a vector of booleans with true for each successfully delivered
                    file and false for any that failed to transfer.
 """
-function upload(
+@compat function upload(
     ftp::FTP,
     local_file_paths::Vector{<:AbstractString},
     ftp_dir::AbstractString;
