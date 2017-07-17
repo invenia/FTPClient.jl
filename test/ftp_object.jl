@@ -54,10 +54,10 @@ function retry_test(count, options)
     end
 end
 
-# check connection error
-@test_throws FTPClientError FTP(hostname="not a host", username=username(server), password=password(server), ssl=false)
-
-@testset "All Tests" begin
+@testset "conn error" begin
+    # check connection error
+    @test_throws FTPClientError FTP(hostname="not a host", username=username(server), password=password(server), ssl=false)
+end
 
 @testset "object" begin
     # check object
@@ -381,8 +381,6 @@ end
 
     cleanup_file(mv_file)
 end
-
-end # All Tests
 
  # check do (doesn't work)
   # ftp(ssl=false, user=user, pswd=pswd, host=host) do f
