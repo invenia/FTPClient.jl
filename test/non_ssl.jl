@@ -297,8 +297,8 @@ Base.close(ftp)
 buff = IOBuffer()
 msg = "This will go into the message"
 lib_curl_error = 765
-error = FTPClientError(msg, lib_curl_error)
-showerror(buff, error)
+err = FTPClientError(msg, lib_curl_error)
+showerror(buff, err)
 seekstart(buff)
 @test "$msg :: LibCURL error #$lib_curl_error" == readstring(buff)
 
