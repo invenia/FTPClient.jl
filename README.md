@@ -4,7 +4,7 @@ FTPClient.jl
 Provides FTP client functionality based on [libcurl](https://github.com/JuliaWeb/LibCURL.jl).
 
 [![Build Status](https://travis-ci.org/invenia/FTPClient.jl.svg?branch=master)](https://travis-ci.org/invenia/FTPClient.jl)
-[![Build status](https://ci.appveyor.com/api/projects/status/sqsge28jvto74nhs/branch/master?svg=true)](https://ci.appveyor.com/project/adrienne-pind-invenia/ftpclient-jl/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/ko8ama8fh0fgyjvq/branch/master?svg=true)](https://ci.appveyor.com/project/invenia/ftpclient-jl/branch/master)
 [![codecov.io](http://codecov.io/github/invenia/FTPClient.jl/coverage.svg)](http://codecov.io/github/invenia/FTPClient.jl)
 [![Dependency Status](https://dependencyci.com/github/invenia/FTPClient.jl/badge)](https://dependencyci.com/github/invenia/FTPClient.jl)
 
