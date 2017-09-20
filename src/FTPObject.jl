@@ -12,7 +12,7 @@ Create an FTP object.
 * `username::AbstractString=""`: the username used to access the FTP server.
 * `password::AbstractString=""`: the password used to access the FTP server.
 """
-type FTP
+mutable struct FTP
     ctxt::ConnContext
 
     function FTP(;hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,

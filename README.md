@@ -27,7 +27,7 @@ connection and return a `Response` object. Any data retrieved from server is in
 `Response.body`:
 
 ```julia
-type Response
+mutable struct Response
     body::IO
     headers::Vector{AbstractString}
     code::Int
@@ -50,7 +50,7 @@ These functions all return a `Response` object, except `ftp_close_connection`, w
 not return anything. Any data retrieved from server is in `Response.body`.
 
 ```julia
-type ConnContext
+mutable struct ConnContext
     curl::Ptr{CURL}
     url::AbstractString
     options::RequestOptions
@@ -63,7 +63,7 @@ end
 - `options` is a `RequestOptions` object
 
 ```julia
-type RequestOptions
+mutable struct RequestOptions
     implicit::Bool
     ssl::Bool
     verify_peer::Bool

@@ -20,7 +20,7 @@ The options used to connect to an FTP server.
 * `url::AbstractString=""`: the url of the FTP server.
 * `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
 """
-type RequestOptions
+mutable struct RequestOptions
     implicit::Bool
     ssl::Bool
     verify_peer::Bool
@@ -59,7 +59,7 @@ The response returned from a connection to an FTP server.
 * `total_time::Float64`: the time the connection took.
 * `bytes_recd::Int`: the amount of bytes transmitted from the server (the file size in the case of ftp_get).
 """
-type Response
+mutable struct Response
     body::IO
     headers::Array{AbstractString}
     code::UInt
@@ -76,7 +76,7 @@ function show(io::IO, o::Response)
     println(io, "Length of body: ", o.bytes_recd)
 end
 
-type ReadData
+mutable struct ReadData
     src::IO
     offset::Csize_t
     sz::Csize_t
@@ -84,7 +84,7 @@ type ReadData
     ReadData() = new(IOBuffer(), 0, 0)
 end
 
-type WriteData
+mutable struct WriteData
     buffer::IO
     bytes_recd::Int
 
@@ -100,7 +100,7 @@ Keeps track of a persistent FTP connection.
 * `url::AbstractString`: url of the FTP server.
 * `options::RequestOptions`: the options used for the connection.
 """
-type ConnContext
+mutable struct ConnContext
     curl::Ptr{CURL}
     url::AbstractString
     options::RequestOptions

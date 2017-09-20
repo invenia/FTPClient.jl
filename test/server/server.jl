@@ -13,9 +13,9 @@ const SCRIPT = abspath(dirname(@__FILE__), "server.py")
 const CERT = abspath(dirname(@__FILE__), "test.crt")
 const KEY = abspath(dirname(@__FILE__), "test.key")
 
-python = joinpath(Conda.PYTHONDIR, is_windows()? "python.exe" : "python")
+python = joinpath(Conda.PYTHONDIR, is_windows() ? "python.exe" : "python")
 
-type FTPServer
+mutable struct FTPServer
     root::AbstractString
     port::Int
     username::AbstractString
