@@ -16,7 +16,7 @@ function no_unexpected_changes(ftp::FTP, hostname::AbstractString=hostname(serve
 end
 
 function expected_output(active::Bool)
-    mode = active? "active":"passive"
+    mode = active ? "active" : "passive"
     expected = """
         Host:      ftp://$(hostname(server))/
         User:      $(username(server))
