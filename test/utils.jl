@@ -1,4 +1,4 @@
-function is_headers_equal{A<:AbstractString, B<:AbstractString}(original::AbstractArray{A}, expected::AbstractArray{B})
+function is_headers_equal(original::AbstractArray{A}, expected::AbstractArray{B}) where {A<:AbstractString, B<:AbstractString}
     length(original) == length(expected) || return false
     for (a, b) in zip(original, expected)
         is_header_equal(a, b) || return false
