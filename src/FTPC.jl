@@ -1,6 +1,8 @@
+using Compat
 using LibCURL
 
 import Base: ==
+import Compat.Cvoid
 
 ##############################
 # Type definitions
@@ -20,7 +22,7 @@ The options used to connect to an FTP server.
 * `url::AbstractString=""`: the url of the FTP server.
 * `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
 """
-type RequestOptions
+mutable struct RequestOptions
     implicit::Bool
     ssl::Bool
     verify_peer::Bool
@@ -59,7 +61,7 @@ The response returned from a connection to an FTP server.
 * `total_time::Float64`: the time the connection took.
 * `bytes_recd::Int`: the amount of bytes transmitted from the server (the file size in the case of ftp_get).
 """
-type Response
+mutable struct Response
     body::IO
     headers::Array{AbstractString}
     code::UInt
@@ -76,7 +78,7 @@ function show(io::IO, o::Response)
     println(io, "Length of body: ", o.bytes_recd)
 end
 
-type ReadData
+mutable struct ReadData
     src::IO
     offset::Csize_t
     sz::Csize_t
@@ -84,7 +86,7 @@ type ReadData
     ReadData() = new(IOBuffer(), 0, 0)
 end
 
-type WriteData
+mutable struct WriteData
     buffer::IO
     bytes_recd::Int
 
@@ -100,7 +102,7 @@ Keeps track of a persistent FTP connection.
 * `url::AbstractString`: url of the FTP server.
 * `options::RequestOptions`: the options used for the connection.
 """
-type ConnContext
+mutable struct ConnContext
     curl::Ptr{CURL}
     url::AbstractString
     options::RequestOptions
@@ -113,7 +115,7 @@ end
 # Callbacks
 ##############################
 
-function write_file_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Void})
+function write_file_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Cvoid})
     # println("@write_file_cb")
     wd = unsafe_pointer_to_objref(p_wd)
     nbytes = sz * n
@@ -125,9 +127,9 @@ function write_file_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Void
     nbytes::Csize_t
 end
 
-c_write_file_cb = cfunction(write_file_cb, Csize_t, (Ptr{UInt8}, Csize_t, Csize_t, Ptr{Void}))
+c_write_file_cb = cfunction(write_file_cb, Csize_t, Tuple{Ptr{UInt8}, Csize_t, Csize_t, Ptr{Cvoid}})
 
-function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Ptr{Void})
+function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Ptr{Cvoid})
     # println("@header_cb")
     resp = unsafe_pointer_to_objref(p_resp)
     nbytes = sz * n
@@ -140,9 +142,9 @@ function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Pt
     nbytes::Csize_t
 end
 
-c_header_command_cb = cfunction(header_command_cb, Csize_t, (Ptr{UInt8}, Csize_t, Csize_t, Ptr{Void}))
+c_header_command_cb = cfunction(header_command_cb, Csize_t, Tuple{Ptr{UInt8}, Csize_t, Csize_t, Ptr{Cvoid}})
 
-function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_rd::Ptr{Void})
+function curl_read_cb(out::Ptr{Cvoid}, s::Csize_t, n::Csize_t, p_rd::Ptr{Cvoid})
     # println("@curl_read_cb")
     rd = unsafe_pointer_to_objref(p_rd)
     bavail::Csize_t = s * n
@@ -150,7 +152,7 @@ function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_rd::Ptr{Void})
     b2copy = bavail > breq ? breq : bavail
 
     b_read = read(rd.src, UInt8, b2copy)
-    ccall(:memcpy, Ptr{Void}, (Ptr{Void}, Ptr{Void}, UInt), out, b_read, b2copy)
+    ccall(:memcpy, Ptr{Cvoid}, (Ptr{Cvoid}, Ptr{Cvoid}, UInt), out, b_read, b2copy)
 
     rd.offset += b2copy
 
@@ -158,7 +160,7 @@ function curl_read_cb(out::Ptr{Void}, s::Csize_t, n::Csize_t, p_rd::Ptr{Void})
     r::Csize_t
 end
 
-c_curl_read_cb = cfunction(curl_read_cb, Csize_t, (Ptr{Void}, Csize_t, Csize_t, Ptr{Void}))
+c_curl_read_cb = cfunction(curl_read_cb, Csize_t, Tuple{Ptr{Cvoid}, Csize_t, Csize_t, Ptr{Cvoid}})
 
 
 ##############################

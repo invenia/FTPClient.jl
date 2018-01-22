@@ -2,9 +2,9 @@ module FTPClient
 
 import Base: convert, show, open, mkdir, ascii, mv
 import Base: readdir, cd, pwd, rm, close, download
-import Compat: readstring, unsafe_string, unsafe_write
+import Compat: readstring, unsafe_string, unsafe_write, @compat
 
-type FTPClientError <: Exception
+mutable struct FTPClientError <: Exception
     msg::AbstractString
     lib_curl_error::UInt32
 end

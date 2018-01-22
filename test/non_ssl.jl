@@ -192,11 +192,12 @@ function tests_by_mode(active::Bool)
 
 end
 
-
-@testset "non_ssl" begin
+@testset "active_mode" begin
     tests_by_mode(true)
     tests_by_mode(false)
+end
 
+@testset "binary_ascii" begin
     # test binary vs ascii
     is_unix() && (upload_bytes = string("466F6F426172", "0A", "466F6F426172"))
     is_windows() && (upload_bytes = string("466F6F426172", "0D0A", "466F6F426172"))
@@ -294,7 +295,9 @@ end
     @test hex2bytes(upload_bytes) == read(server_byte_file)
     cleanup_file(server_byte_file)
     Base.close(ftp)
+end
 
+@testset "ftp errors" begin
     # check ftp errors
     buff = IOBuffer()
     msg = "This will go into the message"
@@ -307,4 +310,3 @@ end
     options = RequestOptions(ssl=false, active_mode=false, hostname="not a host", username=username(server), password=password(server))
     @test_throws FTPClientError ftp_connect(options)
 end
-
