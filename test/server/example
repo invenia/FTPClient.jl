@@ -1,0 +1,32 @@
+# python server.py user:123:$(pwd) --port 8000
+lftp -c 'open -e "ls" -u "user","123" ftp://127.0.0.1:8000'  # success
+lftp -c 'open -e "set ftp:ssl-force true; set ssl:verify-certificate off; ls" -u "user","123" ftp://127.0.0.1:8000'  # Login failed: ftp:ssl-force is set and server does not support or allow SSL
+lftp -c 'open -e "set ssl:verify-certificate off; ls" -u "user","123" ftps://127.0.0.1:8000'  # Fatal error: SSL_connect: unknown protocol
+
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=false); display(readdir(f)); close(f);  # success
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=false); display(readdir(f)); close(f);  # LibCURL error #64
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=false, verify=false); display(readdir(f)); close(f);  # LibCURL error #64
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=true); display(readdir(f)); close(f);  # hangs
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=true, verify=false); display(readdir(f)); close(f);  # hangs
+
+# python server.py user:123:$(pwd) --port 8000 --tls explicit
+lftp -c 'open -e "ls" -u "user","123" ftp://127.0.0.1:8000'  # success
+lftp -c 'open -e "set ftp:ssl-force true; set ssl:verify-certificate off; ls" -u "user","123" ftp://127.0.0.1:8000'  # success
+lftp -c 'open -e "set ssl:verify-certificate off; ls" -u "user","123" ftps://127.0.0.1:8000'  # Fatal error: SSL_connect: unknown protocol
+
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=false); display(readdir(f)); close(f);  # success
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=false); display(readdir(f)); close(f);  # LibCURL error #60
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=false, verify=false); display(readdir(f)); close(f);  # success
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=true); display(readdir(f)); close(f);  # hangs
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=true, verify=false); display(readdir(f)); close(f);  # hangs
+
+# python server.py user:123:$(pwd) --port 8000 --tls implicit
+lftp -c 'open -e "ls" -u "user","123" ftp://127.0.0.1:8000'  # hangs
+lftp -c 'open -e "set ftp:ssl-force true; set ssl:verify-certificate off; ls" -u "user","123" ftp://127.0.0.1:8000'  # hangs
+lftp -c 'open -e "set ssl:verify-certificate off; ls" -u "user","123" ftps://127.0.0.1:8000'  # success
+
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=false); display(readdir(f)); close(f);  # hangs
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=false); display(readdir(f)); close(f);  # hangs
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=false, verify=false); display(readdir(f)); close(f);  # hangs
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=true); display(readdir(f)); close(f);  # LibCURL error #60
+f = FTP(host="127.0.0.1:8000", user="user", pswd="123", ssl=true, implicit=true, verify=false); display(readdir(f)); close(f);  # success
