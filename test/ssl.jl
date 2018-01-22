@@ -98,5 +98,7 @@ function test_cmd(ctxt::ConnContext)
     @test readstring(resp.body) == ""
 end
 
-ssl_tests(true)
-ssl_tests(false)
+@testset "ssl" begin
+    ssl_tests(true)
+    ssl_tests(false)
+end

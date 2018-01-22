@@ -192,117 +192,121 @@ function tests_by_mode(active::Bool)
 
 end
 
-tests_by_mode(true)
-tests_by_mode(false)
-
-# test binary vs ascii
-is_unix() && (upload_bytes = string("466F6F426172", "0A", "466F6F426172"))
-is_windows() && (upload_bytes = string("466F6F426172", "0D0A", "466F6F426172"))
-
-is_unix() && (download_bytes = string("466F6F426172", "0D0A", "466F6F426172"))
-is_unix() && (download_bytes_ascii = string("466F6F426172", "0A", "0A", "466f6f426172"))
-is_windows() && (download_bytes = string("466F6F426172", "0A", "466F6F426172", "1A1A1A"))
-
-byte_upload_file = "test_upload_byte_file"
-byte_file = "test_byte_file"
-
-open(joinpath(ROOT, byte_file), "w") do fp
-    write(fp, hex2bytes(download_bytes))
+@testset "active_mode" begin
+    tests_by_mode(true)
+    tests_by_mode(false)
 end
 
-# it is not the same file when downloading in ascii mode
-options = RequestOptions(; opts..., ssl=false, active_mode=false)
-resp = ftp_get(options, byte_file; mode=ascii_mode)
-bytes = read(resp.body)
-is_unix() && @test bytes != hex2bytes(download_bytes)
-is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
+@testset "binary_ascii" begin
+    # test binary vs ascii
+    is_unix() && (upload_bytes = string("466F6F426172", "0A", "466F6F426172"))
+    is_windows() && (upload_bytes = string("466F6F426172", "0D0A", "466F6F426172"))
 
-# it is the same file when downloading in binary mode
-resp = ftp_get(options, byte_file)
-bytes = read(resp.body)
-@test bytes == hex2bytes(download_bytes)
+    is_unix() && (download_bytes = string("466F6F426172", "0D0A", "466F6F426172"))
+    is_unix() && (download_bytes_ascii = string("466F6F426172", "0A", "0A", "466f6f426172"))
+    is_windows() && (download_bytes = string("466F6F426172", "0A", "466F6F426172", "1A1A1A"))
 
-# it is not the same file when downloading in ascii mode
-ctxt, resp = ftp_connect(options)
-resp = ftp_get(ctxt, byte_file, mode=ascii_mode)
-bytes = read(resp.body)
-is_unix() && @test bytes != hex2bytes(download_bytes)
-is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
-ftp_close_connection(ctxt)
+    byte_upload_file = "test_upload_byte_file"
+    byte_file = "test_byte_file"
 
-# it is the same file when downloading in binary mode
-ctxt, resp = ftp_connect(options)
-resp = ftp_get(ctxt, byte_file)
-bytes = read(resp.body)
-@test bytes == hex2bytes(download_bytes)
-ftp_close_connection(ctxt)
+    open(joinpath(ROOT, byte_file), "w") do fp
+        write(fp, hex2bytes(download_bytes))
+    end
 
-# it is not the same file when downloading in ascii mode
-ftp = FTP(; opts...)
-buff = download(ftp, byte_file, mode=ascii_mode)
-bytes = read(buff)
-is_unix() && @test bytes != hex2bytes(download_bytes)
-is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
-Base.close(ftp)
+    # it is not the same file when downloading in ascii mode
+    options = RequestOptions(; opts..., ssl=false, active_mode=false)
+    resp = ftp_get(options, byte_file; mode=ascii_mode)
+    bytes = read(resp.body)
+    is_unix() && @test bytes != hex2bytes(download_bytes)
+    is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
 
-# it is the same file when downloading in binary mode
-ftp = FTP(; opts...)
-buff = download(ftp, byte_file)
-bytes = read(buff)
-@test bytes == hex2bytes(download_bytes)
-Base.close(ftp)
+    # it is the same file when downloading in binary mode
+    resp = ftp_get(options, byte_file)
+    bytes = read(resp.body)
+    @test bytes == hex2bytes(download_bytes)
 
-# binary file download using ftp object, start in ascii, and switch to binary, then back
-ftp = FTP(; opts...)
-buff = download(ftp, byte_file, mode=ascii_mode)
-bytes = read(buff)
-is_unix() && @test bytes != hex2bytes(download_bytes)
-is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
-buff = download(ftp, byte_file)
-bytes = read(buff)
-@test bytes == hex2bytes(download_bytes)
-buff = download(ftp, byte_file, mode=ascii_mode)
-bytes = read(buff)
-is_unix() && @test bytes != hex2bytes(download_bytes)
-is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
-Base.close(ftp)
+    # it is not the same file when downloading in ascii mode
+    ctxt, resp = ftp_connect(options)
+    resp = ftp_get(ctxt, byte_file, mode=ascii_mode)
+    bytes = read(resp.body)
+    is_unix() && @test bytes != hex2bytes(download_bytes)
+    is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
+    ftp_close_connection(ctxt)
 
-# upload
-server_byte_file = joinpath(ROOT, byte_upload_file)
-bin_file = IOBuffer(hex2bytes(upload_bytes))
-ftp_put(options, byte_upload_file, bin_file; mode=binary_mode)
-@test isfile(server_byte_file)
-@test hex2bytes(upload_bytes) == read(server_byte_file)
-cleanup_file(server_byte_file)
+    # it is the same file when downloading in binary mode
+    ctxt, resp = ftp_connect(options)
+    resp = ftp_get(ctxt, byte_file)
+    bytes = read(resp.body)
+    @test bytes == hex2bytes(download_bytes)
+    ftp_close_connection(ctxt)
 
-# upload with ctxt
-ctxt, resp = ftp_connect(options)
-bin_file = IOBuffer(hex2bytes(upload_bytes))
-ftp_put(ctxt, byte_upload_file, bin_file)
-@test isfile(server_byte_file)
-@test hex2bytes(upload_bytes) == read(server_byte_file)
-cleanup_file(server_byte_file)
-ftp_close_connection(ctxt)
+    # it is not the same file when downloading in ascii mode
+    ftp = FTP(; opts...)
+    buff = download(ftp, byte_file, mode=ascii_mode)
+    bytes = read(buff)
+    is_unix() && @test bytes != hex2bytes(download_bytes)
+    is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
+    Base.close(ftp)
 
-# ftpObject upload
-ftp = FTP(; opts...)
-bin_file = IOBuffer(hex2bytes(upload_bytes))
-upload(ftp, bin_file, byte_upload_file)
-@test isfile(server_byte_file)
-@test hex2bytes(upload_bytes) == read(server_byte_file)
-cleanup_file(server_byte_file)
-Base.close(ftp)
+    # it is the same file when downloading in binary mode
+    ftp = FTP(; opts...)
+    buff = download(ftp, byte_file)
+    bytes = read(buff)
+    @test bytes == hex2bytes(download_bytes)
+    Base.close(ftp)
 
-# check ftp errors
-buff = IOBuffer()
-msg = "This will go into the message"
-lib_curl_error = 765
-err = FTPClientError(msg, lib_curl_error)
-showerror(buff, err)
-seekstart(buff)
-@test "$msg :: LibCURL error #$lib_curl_error" == readstring(buff)
+    # binary file download using ftp object, start in ascii, and switch to binary, then back
+    ftp = FTP(; opts...)
+    buff = download(ftp, byte_file, mode=ascii_mode)
+    bytes = read(buff)
+    is_unix() && @test bytes != hex2bytes(download_bytes)
+    is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
+    buff = download(ftp, byte_file)
+    bytes = read(buff)
+    @test bytes == hex2bytes(download_bytes)
+    buff = download(ftp, byte_file, mode=ascii_mode)
+    bytes = read(buff)
+    is_unix() && @test bytes != hex2bytes(download_bytes)
+    is_unix() && @test bytes == hex2bytes(download_bytes_ascii)
+    Base.close(ftp)
 
-options = RequestOptions(ssl=false, active_mode=false, hostname="not a host", username=username(server), password=password(server))
-@test_throws FTPClientError ftp_connect(options)
+    # upload
+    server_byte_file = joinpath(ROOT, byte_upload_file)
+    bin_file = IOBuffer(hex2bytes(upload_bytes))
+    ftp_put(options, byte_upload_file, bin_file; mode=binary_mode)
+    @test isfile(server_byte_file)
+    @test hex2bytes(upload_bytes) == read(server_byte_file)
+    cleanup_file(server_byte_file)
 
+    # upload with ctxt
+    ctxt, resp = ftp_connect(options)
+    bin_file = IOBuffer(hex2bytes(upload_bytes))
+    ftp_put(ctxt, byte_upload_file, bin_file)
+    @test isfile(server_byte_file)
+    @test hex2bytes(upload_bytes) == read(server_byte_file)
+    cleanup_file(server_byte_file)
+    ftp_close_connection(ctxt)
 
+    # ftpObject upload
+    ftp = FTP(; opts...)
+    bin_file = IOBuffer(hex2bytes(upload_bytes))
+    upload(ftp, bin_file, byte_upload_file)
+    @test isfile(server_byte_file)
+    @test hex2bytes(upload_bytes) == read(server_byte_file)
+    cleanup_file(server_byte_file)
+    Base.close(ftp)
+end
+
+@testset "ftp errors" begin
+    # check ftp errors
+    buff = IOBuffer()
+    msg = "This will go into the message"
+    lib_curl_error = 765
+    error = FTPClientError(msg, lib_curl_error)
+    showerror(buff, error)
+    seekstart(buff)
+    @test "$msg :: LibCURL error #$lib_curl_error" == readstring(buff)
+
+    options = RequestOptions(ssl=false, active_mode=false, hostname="not a host", username=username(server), password=password(server))
+    @test_throws FTPClientError ftp_connect(options)
+end
