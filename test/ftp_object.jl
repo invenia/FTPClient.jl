@@ -83,7 +83,6 @@ end
     @test readstring(buffer) == readstring(joinpath(ROOT,download_file))
     no_unexpected_changes(ftp)
     close(ftp)
-
 end
 
 @testset "upload" begin
@@ -166,6 +165,7 @@ end
 
 @testset "rmdir" begin
     server_dir = joinpath(ROOT, testdir)
+
     # check rmdir
     ftp = FTP(; opts...)
     mkdir(server_dir)
