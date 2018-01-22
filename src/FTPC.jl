@@ -2,7 +2,7 @@ using Compat
 using LibCURL
 
 import Base: ==
-import Compat.Nothing
+import Compat.Cvoid
 
 ##############################
 # Type definitions
@@ -115,7 +115,7 @@ end
 # Callbacks
 ##############################
 
-function write_file_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Nothing})
+function write_file_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Cvoid})
     # println("@write_file_cb")
     wd = unsafe_pointer_to_objref(p_wd)
     nbytes = sz * n
@@ -127,9 +127,9 @@ function write_file_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Noth
     nbytes::Csize_t
 end
 
-c_write_file_cb = cfunction(write_file_cb, Csize_t, Tuple{Ptr{UInt8}, Csize_t, Csize_t, Ptr{Nothing}})
+c_write_file_cb = cfunction(write_file_cb, Csize_t, Tuple{Ptr{UInt8}, Csize_t, Csize_t, Ptr{Cvoid}})
 
-function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Ptr{Nothing})
+function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Ptr{Cvoid})
     # println("@header_cb")
     resp = unsafe_pointer_to_objref(p_resp)
     nbytes = sz * n
@@ -142,9 +142,9 @@ function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Pt
     nbytes::Csize_t
 end
 
-c_header_command_cb = cfunction(header_command_cb, Csize_t, Tuple{Ptr{UInt8}, Csize_t, Csize_t, Ptr{Nothing}})
+c_header_command_cb = cfunction(header_command_cb, Csize_t, Tuple{Ptr{UInt8}, Csize_t, Csize_t, Ptr{Cvoid}})
 
-function curl_read_cb(out::Ptr{Nothing}, s::Csize_t, n::Csize_t, p_rd::Ptr{Nothing})
+function curl_read_cb(out::Ptr{Cvoid}, s::Csize_t, n::Csize_t, p_rd::Ptr{Cvoid})
     # println("@curl_read_cb")
     rd = unsafe_pointer_to_objref(p_rd)
     bavail::Csize_t = s * n
@@ -152,7 +152,7 @@ function curl_read_cb(out::Ptr{Nothing}, s::Csize_t, n::Csize_t, p_rd::Ptr{Nothi
     b2copy = bavail > breq ? breq : bavail
 
     b_read = read(rd.src, UInt8, b2copy)
-    ccall(:memcpy, Ptr{Nothing}, (Ptr{Nothing}, Ptr{Nothing}, UInt), out, b_read, b2copy)
+    ccall(:memcpy, Ptr{Cvoid}, (Ptr{Cvoid}, Ptr{Cvoid}, UInt), out, b_read, b2copy)
 
     rd.offset += b2copy
 
@@ -160,7 +160,7 @@ function curl_read_cb(out::Ptr{Nothing}, s::Csize_t, n::Csize_t, p_rd::Ptr{Nothi
     r::Csize_t
 end
 
-c_curl_read_cb = cfunction(curl_read_cb, Csize_t, Tuple{Ptr{Nothing}, Csize_t, Csize_t, Ptr{Nothing}})
+c_curl_read_cb = cfunction(curl_read_cb, Csize_t, Tuple{Ptr{Cvoid}, Csize_t, Csize_t, Ptr{Cvoid}})
 
 
 ##############################

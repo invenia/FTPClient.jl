@@ -155,7 +155,7 @@ allows backup ftp directories to be used for example.
     retry_wait_seconds::Integer = 5
 )
 
-    successful_delivery = Vector{Bool}()
+    successful_delivery = Bool[]
 
     ftp_options = ftp.ctxt
 
