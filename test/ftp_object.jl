@@ -66,12 +66,12 @@ end
     close(ftp)
 end
 
-# @testset "connection with url" begin
-#     host = hostname(server)
-#     ftp = FTP(; url="ftp://$host/", opts...)
-#     @test ftp.ctxt.url == "ftp://$host/"
-#     close(ftp)
-# end
+@testset "connection with url" begin
+    host = hostname(server)
+    ftp = FTP(; url="ftp://$host/", opts...)
+    @test ftp.ctxt.url == "ftp://$host/"
+    close(ftp)
+end
 
 @testset "readdir" begin
     # check readdir
