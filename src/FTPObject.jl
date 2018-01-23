@@ -20,10 +20,10 @@ mutable struct FTP
 
     function FTP(;hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
             verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
-            password::AbstractString="")
+            password::AbstractString="", url::AbstractString="")
         options = RequestOptions(implicit=implicit, ssl=ssl,
                     verify_peer=verify_peer, active_mode=active_mode,
-                    username=username, password=password, hostname=hostname)
+                    username=username, password=password, hostname=hostname, url=url)
 
         ctxt = nothing
         try
