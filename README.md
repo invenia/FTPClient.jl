@@ -1,36 +1,43 @@
-# FTPClient
-FTP client based on [LibCURL.jl](https://github.com/JuliaWeb/LibCURL.jl).
+FTPClient.jl
+============
 
-[![Build Status](https://travis-ci.org/invenia/FTPClient.jl.svg?branch=master)](https://travis-ci.org/invenia/FTPClient.jl) [![Build status](https://ci.appveyor.com/api/projects/status/sqsge28jvto74nhs/branch/master?svg=true)](https://ci.appveyor.com/project/adrienne-pind-invenia/ftpclient-jl/branch/master) [![codecov.io](http://codecov.io/github/invenia/FTPClient.jl/coverage.svg)](http://codecov.io/github/invenia/FTPClient.jl)
+Provides FTP client functionality based on [libcurl](https://github.com/JuliaWeb/LibCURL.jl).
 
-### Requirement
-
-Tested with julia `Version 0.4.0-dev+6673`
+[![Build Status](https://travis-ci.org/invenia/FTPClient.jl.svg?branch=master)](https://travis-ci.org/invenia/FTPClient.jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/ko8ama8fh0fgyjvq/branch/master?svg=true)](https://ci.appveyor.com/project/invenia/ftpclient-jl/branch/master)
+[![codecov.io](http://codecov.io/github/invenia/FTPClient.jl/coverage.svg)](http://codecov.io/github/invenia/FTPClient.jl)
+[![Dependency Status](https://dependencyci.com/github/invenia/FTPClient.jl/badge)](https://dependencyci.com/github/invenia/FTPClient.jl)
 
 ### Usage
 
 #### FTPC functions
-`ftp_init()` and  `ftp_cleanup()` need to be used once per session.
+
+Note `ftp_init()` and  `ftp_cleanup()` need to be used once per session.
 
 Functions for non-persistent connection:
+
 ```julia
-ftp_get(file_name::AbstractString, options::RequestOptions, save_path::AbstractString)
-ftp_put(file_name::AbstractString, file::IO, options::RequestOptions)
-ftp_command(cmd::AbstractString, options::RequestOptions)
+ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString)
+ftp_put(options::RequestOptions, file_name::AbstractString, file::IO)
+ftp_command(options::RequestOptions, cmd::AbstractString)
 ```
-- These functions all establish a connection, perform the desired operation then close the connection and return a `Response` object. Any data retrieved from server is in `Response.body`.
 
-    ```julia
-    type Response
-        body::IO
-        headers::Vector{AbstractString}
-        code::Int
-        total_time::FloatingPoint
-        bytes_recd::Int
-    end
-    ```
+These functions all establish a connection, perform the desired operation then close the
+connection and return a `Response` object. Any data retrieved from server is in 
+`Response.body`:
 
-Functions for persistent connection:
+```julia
+mutable struct Response
+    body::IO
+    headers::Vector{AbstractString}
+    code::Int
+    total_time::FloatingPoint
+    bytes_recd::Int
+end
+```
+
+Functions for persistent connections:
+
 ```julia
 ftp_connect(options::RequestOptions)
 ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString)
@@ -38,46 +45,46 @@ ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO)
 ftp_command(ctxt::ConnContext, cmd::AbstractString)
 ftp_close_connection(ctxt::ConnContext)
 ```
-- These functions all return a `Response` object, except `ftp_close_connection`, which does not return anything. Any data retrieved from server is in `Response.body`.
 
-    ```julia
-    type ConnContext
-        curl::Ptr{CURL}
-        url::AbstractString
-        options::RequestOptions
-    end
-    ```
+These functions all return a `Response` object, except `ftp_close_connection`, which does
+not return anything. Any data retrieved from server is in `Response.body`.
+
+```julia
+mutable struct ConnContext
+    curl::Ptr{CURL}
+    url::AbstractString
+    options::RequestOptions
+end
+```
 
 - `url` is of the form "localhost" or "127.0.0.1"
 - `cmd` is of the form "PWD" or "CWD Documents/", and must be a valid FTP command
 - `file_name` is both the name of the file that will be retrieved/uploaded and the name it will be saved as
 - `options` is a `RequestOptions` object
 
-    ```julia
-    type RequestOptions
-        blocking::Bool
-        implicit::Bool
-        ssl::Bool
-        verify_peer::Bool
-        active_mode::Bool
-        headers::Vector{Tuple}
-        username::AbstractString
-        passwd::AbstractString
-        url::AbstractString
-        binary_mode::Bool
-    end
-    ```
-    - `blocking`: default is true
-    - `implicit`: use implicit security, default is false
-    - `ssl`: use FTPS, default is false
-    - `verify_peer`: verify authenticity of peer's certificate, default is true
-    - `active_mode`: use active mode to establish data connection, default is false
-    - `binary_mode`: used to tell the client to download files in binary mode, default is true
+```julia
+mutable struct RequestOptions
+    implicit::Bool
+    ssl::Bool
+    verify_peer::Bool
+    active_mode::Bool
+    username::AbstractString
+    password::AbstractString
+    url::AbstractString
+    hostname::AbstractString
+end
+```
+
+- `implicit`: use implicit security, default is false
+- `ssl`: use FTPS, default is false
+- `verify_peer`: verify authenticity of peer's certificate, default is true
+- `active_mode`: use active mode to establish data connection, default is false
 
 
 #### FTPObject functions
+
 ```julia
-FTP(;host="", block=true, implt=false, ssl=false, ver_peer=true, act_mode=false, user="", pswd="", binary_mode=true)
+FTP(;hostname="", implicit=false, ssl=false, verify_peer=true, active_mode=false, username="", password="")
 close(ftp::FTP)
 download(ftp::FTP, file_name::AbstractString, save_path::AbstractString="")
 upload(ftp::FTP, local_name::AbstractString)
@@ -90,40 +97,41 @@ rm(ftp::FTP, file_name::AbstractString)
 rmdir(ftp::FTP, dir_name::AbstractString)
 mkdir(ftp::FTP, dir::AbstractString)
 mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString)
-binary(ftp::FTP)
-ascii(ftp::FTP)
 ```
+
 ### Examples
 
-Using non-peristent connection and FTPS with implicit security:
+Using non-persistent connection and FTPS with implicit security:
+
 ```julia
 using FTPClient
 
 ftp_init()
-options = RequestOptions(ssl=true, implicit=true, username="user1", passwd="1234", url="localhost")
+options = RequestOptions(ssl=true, implicit=true, username="user1", password="1234", hostname="localhost")
 
-resp = ftp_get("download_file.txt", options)
+resp = ftp_get(options, "download_file.txt")
 io_buffer = resp.body
 
-resp = ftp_get("download_file.txt", options, "Documents/downloaded_file.txt")
+resp = ftp_get(options, "download_file.txt", "Documents/downloaded_file.txt")
 io_stream = resp.body
 
 file = open("upload_file.txt")
-resp = ftp_put("upload_file.txt", file, options)
+resp = ftp_put(options, "upload_file.txt", file)
 close(file)
 
-resp = ftp_command("LIST", options)
+resp = ftp_command(options, "LIST")
 dir = resp.body
 
 ftp_cleanup()
 ```
 
 Using persistent connection and FTPS with explicit security:
+
 ```julia
 using FTPClient
 
 ftp_init()
-options = RequestOptions(ssl=true, username="user2", passwd="5678", url="localhost")
+options = RequestOptions(ssl=true, username="user2", password="5678", url="localhost")
 
 ctxt = ftp_connect(options)
 
@@ -145,9 +153,10 @@ ftp_cleanup()
 ```
 
 Using the FTP object with a persistent connection and FTPS with implicit security:
+
 ```julia
 ftp_init()
-ftp = FTP(host="localhost", implt=true, ssl=true, user="user3", pswd="2468" )
+ftp = FTP(hostname="localhost", implicit=true, ssl=true, username="user3", password="2468" )
 
 dir_list = readdir(ftp)
 cd(ftp, "Documents/School")
@@ -179,10 +188,6 @@ rm(ftp, "upload_buffer.txt")
 mkdir(ftp, "TEMP_DIR")
 rmdir(ftp, "TEMP_DIR")
 
-# set transfer mode to binary or ascii
-binary(ftp)
-ascii(ftp)
-
 close(ftp)
 ftp_cleanup()
 ```
@@ -191,31 +196,11 @@ ftp_cleanup()
 
 `julia --color=yes test/runtests.jl <use_ssl> <use_implicit> <username> <password>`
 
-To set up the mock FTP server
-- Add the [JavaCall.jl](https://github.com/aviks/JavaCall.jl) package with `Pkg.add("JavaCall”)`
-- Add the [FactCheck.jl](https://github.com/JuliaLang/FactCheck.jl) package with `Pkg.add("FactCheck")`, may need to update the package to get most recent version (v0.3.1).
-- Build dependencies via `Pkg.build("FTPClient")`
-
-The mock FTP server does not work with SSL. To run the non-ssl tests and FTPObject tests:
-    `julia --color=yes test/runtests.jl`
-
-The ssl tests can be run if you have a local ftp server set up.
-- To run the tests using implicit security: `julia --color=yes test/runtests.jl true true <username> <password>`
-- To run the tests using explicit security: `julia --color=yes test/runtests.jl true false <username> <password>`
-
-#### 0.5 Issues
-
-[JavaCall.jl is not working in 0.5](https://github.com/aviks/JavaCall.jl/pull/30). If you want to be able to run tests, you need to get JavaCall.jl by running
-```julia
-Pkg.clone("https://github.com/samuel-massinon-invenia/JavaCall.jl.git")
-Pkg.checkout("JavaCall", "pull-request/bf8b4987")
-```
-
 ### Code Coverage
 
-There are parts of the code that are not executed when running the basic test. This is because the Mock Server does not support ssl and we cannot run effective tests for those lines of code.
+There are parts of the code that are not executed when running the basic test. The server is not yet equipped 
+to check for error situations on command.
 
-There are however separate tests for ssl. That requires setting up a local ftp server and following the steps above.
 
 ## Troubleshoot
 
