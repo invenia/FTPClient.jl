@@ -33,7 +33,7 @@ function test_get(headers, opt)
     @test !isfile(local_file)
     resp = ftp_get(opt, local_file)
     @test !isfile(local_file)
-    body = readstring(server_file)
+    body = read(server_file, String)
     test_response(resp, body, 226, headers)
 end
 
@@ -124,7 +124,7 @@ function tests_by_mode(active::Bool)
 
     resp = ftp_get(options, local_file, save_path)
     server_file = joinpath(ROOT, local_file)
-    body = readstring(server_file)
+    body = read(server_file, String)
 
     test_response(resp, 226, headers, save_path, body)
 
@@ -144,7 +144,7 @@ function tests_by_mode(active::Bool)
 
     ctxt, resp = ftp_connect(options)
     directory_name = "test_directory"
-    body = readstring(resp.body)
+    body = read(resp.body, String)
     @test contains(body, download_file)
     @test contains(body, directory_name)
     @test resp.bytes_recd == length(body)
