@@ -385,6 +385,8 @@ end
     expected_output(true)
 
     expected_output(false)
+
+    cleanup_file(mv_file)
 end
 
 
@@ -504,6 +506,8 @@ end
     @testset "mv" begin
         ftp = FTP(; opts...)
         new_file = "test_mv2.txt"
+        tempfile(mv_file)
+        @test isfile(mv_file)
         server_file = joinpath(ROOT, mv_file)
         cp(mv_file, server_file)
 
@@ -524,6 +528,7 @@ end
         server_file = joinpath(ROOT, mv_file)
 
         ftp = FTP(; opts...)
+        @test isfile(mv_file)
         cp(mv_file, server_file)
         @test isfile(server_file)
         test_captured_ouput() do verbose_file
