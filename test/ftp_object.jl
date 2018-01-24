@@ -385,10 +385,217 @@ end
     expected_output(true)
 
     expected_output(false)
-
-    cleanup_file(mv_file)
 end
 
+
+@testset "verbose" begin
+
+    function test_captured_ouput(test::Function)
+        file_name = tempname()
+        ftp_init()
+        try
+            open(file_name, "w") do verbose_file
+                test(verbose_file)
+            end
+            @test length(read(file_name)) > 0
+        finally
+            rm(file_name)
+            ftp_cleanup()
+        end
+    end
+
+    @testset "FTP" begin
+        test_captured_ouput() do verbose_file
+            FTP(; opts..., verbose=verbose_file)
+        end
+    end
+
+    @testset "readdir" begin
+        ftp = FTP(; opts...)
+        test_captured_ouput() do verbose_file
+            readdir(ftp; verbose=verbose_file)
+        end
+        close(ftp)
+    end
+
+    @testset "download" begin
+        ftp = FTP(; opts...)
+        buffer = nothing
+        test_captured_ouput() do verbose_file
+            buffer = download(ftp, download_file; verbose=verbose_file)
+        end
+        @test readstring(buffer) == readstring(joinpath(ROOT,download_file))
+        no_unexpected_changes(ftp)
+        close(ftp)
+    end
+
+    @testset "upload" begin
+        ftp = FTP(; opts...)
+        local_file = upload_file
+        server_file = joinpath(ROOT, local_file)
+        tempfile(local_file)
+        @test isfile(local_file)
+        @test !isfile(server_file)
+        test_captured_ouput() do verbose_file
+            upload(ftp, upload_file; verbose=verbose_file)
+        end
+        @test isfile(server_file)
+        @test readstring(server_file) == readstring(local_file)
+
+        no_unexpected_changes(ftp)
+        close(ftp)
+        cleanup_file(server_file)
+    end
+
+    @testset "mkdir" begin
+        ftp = FTP(; opts...)
+        server_dir = joinpath(ROOT, testdir)
+        cleanup_dir(server_dir)
+        @test !isdir(server_dir)
+
+        test_captured_ouput() do verbose_file
+            resp = mkdir(ftp, testdir; verbose=verbose_file)
+        end
+        @test isdir(server_dir)
+        no_unexpected_changes(ftp)
+        cleanup_dir(server_dir)
+        close(ftp)
+    end
+
+    @testset "cd" begin
+        server_dir = joinpath(ROOT, testdir)
+        host = hostname(server)
+
+        ftp = FTP(; opts...)
+        mkdir(server_dir)
+        test_captured_ouput() do verbose_file
+            cd(ftp, testdir; verbose=verbose_file)
+        end
+        no_unexpected_changes(ftp, "$host/$testdir")
+        cleanup_dir(server_dir)
+        close(ftp)
+    end
+
+    @testset "rmdir" begin
+        server_dir = joinpath(ROOT, testdir)
+
+        ftp = FTP(; opts...)
+        mkdir(server_dir)
+        @test isdir(server_dir)
+        test_captured_ouput() do verbose_file
+            rmdir(ftp, testdir; verbose=verbose_file)
+        end
+        @test !isdir(server_dir)
+        no_unexpected_changes(ftp)
+        close(ftp)
+    end
+
+    @testset "pwd" begin
+        ftp = FTP(; opts...)
+        path = nothing
+        test_captured_ouput() do verbose_file
+            path = pwd(ftp; verbose=verbose_file)
+        end
+        @test path == "/"
+        no_unexpected_changes(ftp)
+        close(ftp)
+    end
+
+    @testset "mv" begin
+        ftp = FTP(; opts...)
+        new_file = "test_mv2.txt"
+        server_file = joinpath(ROOT, mv_file)
+        cp(mv_file, server_file)
+
+        server_new_file = joinpath(ROOT, new_file)
+        @test isfile(server_file)
+
+        test_captured_ouput() do verbose_file
+            mv(ftp, mv_file, new_file; verbose=verbose_file)
+        end
+        @test !isfile(server_file)
+        @test isfile(server_new_file)
+        @test readstring(server_new_file) == readstring(mv_file)
+        no_unexpected_changes(ftp)
+        close(ftp)
+    end
+
+    @testset "rm" begin
+        server_file = joinpath(ROOT, mv_file)
+
+        ftp = FTP(; opts...)
+        cp(mv_file, server_file)
+        @test isfile(server_file)
+        test_captured_ouput() do verbose_file
+            rm(ftp, mv_file; verbose=verbose_file)
+        end
+        @test !isfile(server_file)
+        no_unexpected_changes(ftp)
+        close(ftp)
+
+        cleanup_file(mv_file)
+    end
+
+    @testset "upload" begin
+        @testset "uploading a file with only the local file name" begin
+            ftp = FTP(; opts...)
+            server_file = joinpath(ROOT, upload_file)
+            @test isfile(upload_file)
+            @test !isfile(server_file)
+            test_captured_ouput() do verbose_file
+                resp = upload(ftp, upload_file; verbose=verbose_file)
+            end
+
+            @test isfile(server_file)
+            @test readstring(server_file) == readstring(upload_file)
+            no_unexpected_changes(ftp)
+            cleanup_file(server_file)
+            close(ftp)
+        end
+        @testset "uploading a file with remote local file name" begin
+            ftp = FTP(; opts...)
+            server_file= joinpath(ROOT, "some name")
+            @test !isfile(server_file)
+            test_captured_ouput() do verbose_file
+                resp = upload(ftp, upload_file, "some name"; verbose=verbose_file)
+            end
+            @test isfile(server_file)
+            @test readstring(server_file) == readstring(upload_file)
+            no_unexpected_changes(ftp)
+            cleanup_file(server_file)
+            close(ftp)
+        end
+    end
+
+    @testset "verbose twice" begin
+        ftp = FTP(; opts...)
+        test_captured_ouput() do verbose_file
+            buff = download(ftp, download_file; verbose=verbose_file)
+            first_length = length(read(verbose_file.name[7:end-1]))
+            @test first_length > 0
+            path = pwd(ftp; verbose=verbose_file)
+            second_length = length(read(verbose_file.name[7:end-1]))
+            @test second_length > first_length
+        end
+        test_captured_ouput() do verbose_file
+            path = pwd(ftp; verbose=verbose_file)
+            first_length = length(read(verbose_file.name[7:end-1]))
+            @test first_length > 0
+            buff = download(ftp, download_file; verbose=verbose_file)
+            path = pwd(ftp; verbose=verbose_file)
+            second_length = length(read(verbose_file.name[7:end-1]))
+            @test second_length > first_length
+        end
+    end
+
+    @testset "ftp open do end" begin
+        test_captured_ouput() do verbose_file
+            ftp(; opts..., verbose=verbose_file) do ftp
+            end
+        end
+    end
+
+end
  # check do (doesn't work)
   # ftp(ssl=false, user=user, pswd=pswd, host=host) do f
   # buff = download(f, file_name)
