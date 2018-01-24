@@ -32,9 +32,12 @@ mutable struct RequestOptions
     url::AbstractString
     hostname::AbstractString
 
-    function RequestOptions(;implicit::Bool=false, ssl::Bool=false,
-            verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
-            password::AbstractString="", url::AbstractString="", hostname::AbstractString="localhost")
+    function RequestOptions(;
+        implicit::Bool=false, ssl::Bool=false,
+        verify_peer::Bool=true, active_mode::Bool=false,
+        username::AbstractString="", password::AbstractString="",
+        url::AbstractString="", hostname::AbstractString="localhost",
+    )
 
         if isempty(url)
             if implicit
@@ -59,7 +62,8 @@ The response returned from a connection to an FTP server.
 * `headers::Array{AbstractString}`: the header responses from the server.
 * `code::UInt`: the last header response code from the server.
 * `total_time::Float64`: the time the connection took.
-* `bytes_recd::Int`: the amount of bytes transmitted from the server (the file size in the case of ftp_get).
+* `bytes_recd::Int`: the amount of bytes transmitted from the server (the file size in the
+    case of ftp_get).
 """
 mutable struct Response
     body::IO
@@ -161,6 +165,7 @@ function curl_read_cb(out::Ptr{Cvoid}, s::Csize_t, n::Csize_t, p_rd::Ptr{Cvoid})
 end
 
 c_curl_read_cb = cfunction(curl_read_cb, Csize_t, Tuple{Ptr{Cvoid}, Csize_t, Csize_t, Ptr{Cvoid}})
+
 
 
 ##############################
@@ -265,17 +270,33 @@ ftp_cleanup() = curl_global_cleanup()
 ##############################
 
 """
-    ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
+    ftp_get(
+        options::RequestOptions,
+        file_name::AbstractString,
+        save_path::AbstractString="";
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
-Download a file with a non-persistent connection. Returns a Response.
+Download a file with a non-persistent connection. Returns a `Response`.
 
 # Arguments
-* `options::RequestOptions`: the connection options. See RequestOptions for details.
+* `options::RequestOptions`: the connection options. See `RequestOptions` for details.
 * `file_name::AbstractString`: the path to the file on the server.
-* `save_path::AbstractString=""`: if not specified the file is written to the Response body.
-* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
+* `save_path::AbstractString=""`: if not specified the file is written to the `Response`
+    body.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII
+    format.
+* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
+    `Bool`, if true output is written to STDERR.
 """
-function ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
+function ftp_get(
+    options::RequestOptions,
+    file_name::AbstractString,
+    save_path::AbstractString="";
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     ctxt = setup_easy_handle(options)
     try
         return ftp_get(ctxt, file_name, save_path; mode=mode, verbose=verbose)
@@ -285,17 +306,34 @@ function ftp_get(options::RequestOptions, file_name::AbstractString, save_path::
 end
 
 """
-    ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
+    ftp_get(
+        ctxt::ConnContext,
+        file_name::AbstractString,
+        save_path::AbstractString="";
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
-Download a file with a persistent connection. Returns a Response.
+Download a file with a persistent connection. Returns a `Response`.
 
 # Arguments
-* `ctxt::ConnContext`: encompases the connection options defined via ftp_connect. See RequestOptions for details.
+* `ctxt::ConnContext`: encompases the connection options defined via ftp_connect. See
+    `RequestOptions` for details.
 * `file_name::AbstractString`: the path to the file on the server.
-* `save_path::AbstractString=""`: if not specified the file is written to the Response body.
-* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
+* `save_path::AbstractString=""`: if not specified the file is written to the `Response`
+    body.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or
+    ASCII format.
+* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
+    `Bool`, if true output is written to STDERR.
 """
-function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
+function ftp_get(
+    ctxt::ConnContext,
+    file_name::AbstractString,
+    save_path::AbstractString="";
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     wd = WriteData()
 
     if !isempty(save_path)
@@ -349,17 +387,32 @@ end
 ##############################
 
 """
-    ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
+    ftp_put(
+        options::RequestOptions,
+        file_name::AbstractString,
+        file::IO;
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
 Upload file with non-persistent connection. Returns a Response.
 
 # Arguments
-* `options::RequestOptions`: the connection options. See RequestOptions for details.
+* `options::RequestOptions`: the connection options. See `RequestOptions` for details.
 * `file_name::AbstractString`: the path to the file on the server.
 * `file::IO`: what is being written to the server.
-* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or
+    ASCII format.
+* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
+    `Bool`, if true output is written to STDERR.
 """
-function ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
+function ftp_put(
+    options::RequestOptions,
+    file_name::AbstractString,
+    file::IO;
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     ctxt = setup_easy_handle(options)
     try
         return ftp_put(ctxt, file_name, file; mode=mode, verbose=verbose)
@@ -369,17 +422,33 @@ function ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; m
 end
 
 """
-    ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
+    ftp_put(
+        ctxt::ConnContext,
+        file_name::AbstractString,
+        file::IO;
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
-Upload file with persistent connection. Returns a Response.
+Upload file with persistent connection. Returns a `Response`.
 
 # Arguments
-* `ctxt::ConnContext`: encompases the connection options defined via ftp_connect. See RequestOptions for details.
+* `ctxt::ConnContext`: encompases the connection options defined via ftp_connect. See
+    `RequestOptions` for details.
 * `file_name::AbstractString`: the path to the file on the server.
 * `file::IO`: what is being written to the server.
-* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or
+    ASCII format.
+* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
+    `Bool`, if true output is written to STDERR.
 """
-function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
+function ftp_put(
+    ctxt::ConnContext,
+    file_name::AbstractString,
+    file::IO;
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     rd = ReadData()
 
     rd.src = file
@@ -419,11 +488,19 @@ end
 ##############################
 
 """
-    ftp_command(options::RequestOptions, cmd::AbstractString)
+    ftp_command(
+        options::RequestOptions,
+        cmd::AbstractString;
+        verbose::Union{Bool,IOStream}=false,
+    )
 
-Pass FTP command with non-persistent connection. Returns a Response.
+Pass FTP command with non-persistent connection. Returns a `Response`.
 """
-function ftp_command(options::RequestOptions, cmd::AbstractString; verbose::Union{Bool,IOStream}=false)
+function ftp_command(
+    options::RequestOptions,
+    cmd::AbstractString;
+    verbose::Union{Bool,IOStream}=false,
+)
     ctxt = setup_easy_handle(options)
     try
         return ftp_command(ctxt, cmd; verbose=verbose)
@@ -433,11 +510,19 @@ function ftp_command(options::RequestOptions, cmd::AbstractString; verbose::Unio
 end
 
 """
-    ftp_command(ctxt::ConnContext, cmd::AbstractString)
+    ftp_command(
+        ctxt::ConnContext,
+        cmd::AbstractString;
+        verbose::Union{Bool,IOStream}=false,
+    )
 
-Pass FTP command with persistent connection. Returns a Response.
+Pass FTP command with persistent connection. Returns a `Response`.
 """
-function ftp_command(ctxt::ConnContext, cmd::AbstractString; verbose::Union{Bool,IOStream}=false)
+function ftp_command(
+    ctxt::ConnContext,
+    cmd::AbstractString;
+    verbose::Union{Bool,IOStream}=false,
+)
     wd = WriteData()
     p_wd = pointer_from_objref(wd)
 
@@ -465,9 +550,9 @@ end
 ##############################
 
 """
-    ftp_connect(options::RequestOptions)
+    ftp_connect(options::RequestOptions; verbose::Union{Bool,IOStream}=false)
 
-Establish connection to FTP server. Returns a ConnContext and a Response.
+Establish connection to FTP server. Returns a `ConnContext` and a `Response`.
 """
 function ftp_connect(options::RequestOptions; verbose::Union{Bool,IOStream}=false)
     ctxt = setup_easy_handle(options)

@@ -570,7 +570,22 @@ end
             cleanup_file(server_file)
             close(ftp)
         end
+        @testset "upload with retry single file" begin
+            ftp = FTP(; opts...)
+            server_file= joinpath(ROOT, "test_upload.txt")
+            @test !isfile(server_file)
+            test_captured_ouput() do verbose_file
+                resp = upload(ftp, [upload_file], "/"; verbose=verbose_file)
+                @test resp == [true]
+            end
+            @test isfile(server_file)
+            @test readstring(server_file) == readstring(upload_file)
+            no_unexpected_changes(ftp)
+            cleanup_file(server_file)
+            close(ftp)
+        end
     end
+
 
     @testset "verbose twice" begin
         ftp = FTP(; opts...)

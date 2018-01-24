@@ -14,18 +14,23 @@ Create an FTP object.
 * `active_mode::Bool=false`: use active mode to establish data connection.
 * `username::AbstractString=""`: the username used to access the FTP server.
 * `password::AbstractString=""`: the password used to access the FTP server.
-* `verbose::Union{Bool,IOStream}=false`: false or IOStream to capture LibCurl verbose output.
+* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
+    `Bool`, if true output is written to STDERR.
 """
 mutable struct FTP
     ctxt::ConnContext
 
-    function FTP(;hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
-            verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
-            password::AbstractString="", url::AbstractString="",
-            verbose::Union{Bool,IOStream}=false)
-        options = RequestOptions(implicit=implicit, ssl=ssl,
-                    verify_peer=verify_peer, active_mode=active_mode,
-                    username=username, password=password, hostname=hostname, url=url)
+    function FTP(;
+        hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
+        verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
+        password::AbstractString="", url::AbstractString="",
+        verbose::Union{Bool,IOStream}=false,
+    )
+        options = RequestOptions(
+            implicit=implicit, ssl=ssl,
+            verify_peer=verify_peer, active_mode=active_mode,
+            username=username, password=password, hostname=hostname, url=url
+        )
 
         ctxt = nothing
         try
@@ -59,12 +64,24 @@ function close(ftp::FTP)
 end
 
 """
-    download(ftp::FTP, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode; verbose::Union{Bool,IOStream}=false)
+    download(
+        ftp::FTP,
+        file_name::AbstractString,
+        save_path::AbstractString="";
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
 Download the file "file_name" from FTP server and return IOStream.
 If "save_path" is not specified, contents are written to and returned as an IOBuffer.
 """
-function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
+function download(
+    ftp::FTP,
+    file_name::AbstractString,
+    save_path::AbstractString="";
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     resp = nothing
     try
         resp = ftp_get(ftp.ctxt, file_name, save_path; mode=mode, verbose=verbose)
@@ -78,31 +95,65 @@ function download(ftp::FTP, file_name::AbstractString, save_path::AbstractString
 end
 
 """
-    upload(ftp::FTP, local_name::AbstractString; mode::FTP_MODE=binary_mode; verbose::Union{Bool,IOStream}=false)
+    upload(
+        ftp::FTP,
+        local_name::AbstractString;
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
 Upload the file "local_name" to the FTP server and save as "local_name".
 """
-function upload(ftp::FTP, local_name::AbstractString; mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
+function upload(
+    ftp::FTP,
+    local_name::AbstractString;
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     return upload(ftp, local_name, local_name; mode=mode, verbose=verbose)
 end
 
 """
-    upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString; mode::FTP_MODE=binary_mode; verbose::Union{Bool,IOStream}=false)
+    upload(
+        ftp::FTP,
+        local_name::AbstractString,
+        remote_name::AbstractString;
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
 Upload the file "local_name" to the FTP server and save as "remote_name".
 """
-function upload(ftp::FTP, local_name::AbstractString, remote_name::AbstractString; mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
+function upload(
+    ftp::FTP,
+    local_name::AbstractString,
+    remote_name::AbstractString;
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     open(local_name) do local_file
         return upload(ftp, local_file, remote_name; mode=mode, verbose=verbose)
     end
 end
 
 """
-    upload(ftp::FTP, local_file::IO, remote_name::AbstractString; mode::FTP_MODE=binary_mode; verbose::Union{Bool,IOStream}=false)
+    upload(
+        ftp::FTP,
+        local_file::IO,
+        remote_name::AbstractString;
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
 Upload IO object "local_file" to the FTP server and save as "remote_name".
 """
-function upload(ftp::FTP, local_file::IO, remote_name::AbstractString; mode::FTP_MODE=binary_mode, verbose::Union{Bool,IOStream}=false)
+function upload(
+    ftp::FTP,
+    local_file::IO,
+    remote_name::AbstractString;
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     try
         ftp_put(ftp.ctxt, remote_name, local_file; mode=mode, verbose=verbose)
     catch err
@@ -121,7 +172,8 @@ end
         local_file_paths::Vector{<:AbstractString},
         ftp_dir<:AbstractString;
         retry_callback::Function=(count, options) -> (count < 4, options),
-        retry_wait_seconds::Integer = 5
+        retry_wait_seconds::Integer = 5,
+        verbose::Union{Bool,IOStream}=false,
     )
 
 Uploads the files specified in local_file_paths to the directory specifed by
@@ -142,8 +194,10 @@ allows backup ftp directories to be used for example.
 `file_paths::Vector{T}`: The file paths to the files we want to deliver.
 `ftp_dir`: The directory on the ftp server where we want to drop the files.
 `retry_callback::Function=(count, options) -> (count < 4, options)`: Function for retrying
-                                                                     when delivery fails.
+    when delivery fails.
 `retry_wait_seconds::Integer = 5`: How many seconds to wait in between retries.
+`verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
+    `Bool`, if true output is written to STDERR.
 
 # Returns
 - `Array{Bool,1}`: Returns a vector of booleans with true for each successfully delivered
@@ -154,7 +208,8 @@ function upload(
     local_file_paths::Vector{<:AbstractString},
     ftp_dir::AbstractString;
     retry_callback::Function=(count, options) -> (count < 4, options),
-    retry_wait_seconds::Integer = 5
+    retry_wait_seconds::Integer = 5,
+    verbose::Union{Bool,IOStream}=false,
 )
 
     successful_delivery = Bool[]
@@ -176,7 +231,9 @@ function upload(
             # Defaults to 4 attempts, waiting 5 seconds between each retry.
             while true
                 try
-                    resp = ftp_put(ftp_options, server_location, single_file_io)
+                    resp = ftp_put(
+                        ftp_options, server_location, single_file_io; verbose=verbose
+                    )
                     file_delivery_success = resp.code == complete_transfer_code
                     if file_delivery_success
                         break
@@ -303,11 +360,21 @@ end
 
 
 """
-    mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString; verbose::Union{Bool,IOStream}=false)
+    mv(
+        ftp::FTP,
+        file_name::AbstractString,
+        new_name::AbstractString;
+        verbose::Union{Bool,IOStream}=false,
+    )
 
 Move (rename) file "file_name" to "new_name" on FTP server.
 """
-function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString; verbose::Union{Bool,IOStream}=false)
+function mv(
+    ftp::FTP,
+    file_name::AbstractString,
+    new_name::AbstractString;
+    verbose::Union{Bool,IOStream}=false,
+)
     resp = ftp_command(ftp.ctxt, "RNFR $file_name"; verbose=verbose)
 
     if resp.code != 350
@@ -322,17 +389,21 @@ function mv(ftp::FTP, file_name::AbstractString, new_name::AbstractString; verbo
 end
 
 """
-    ftp(code::Function;
-    hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
-    verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="", password::AbstractString="",
-    verbose::Union{Bool,IOStream}=false)
+    ftp(
+        code::Function;
+        hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
+        verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
+        password::AbstractString="", verbose::Union{Bool,IOStream}=false,
+    )
 
 Execute Function "code" on FTP server.
 """
-function ftp(code::Function;
+function ftp(
+    code::Function;
     hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
-    verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="", password::AbstractString="",
-    verbose::Union{Bool,IOStream}=false)
+    verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
+    password::AbstractString="", verbose::Union{Bool,IOStream}=false,
+)
     ftp_init()
     ftp_client = FTP(
         hostname=hostname, implicit=implicit, ssl=ssl, verify_peer=verify_peer,
