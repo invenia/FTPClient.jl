@@ -515,6 +515,7 @@ end
         @test isfile(server_file)
 
         test_captured_ouput() do verbose_file
+            @test isfile(mv_file)
             mv(ftp, mv_file, new_file; verbose=verbose_file)
         end
         @test !isfile(server_file)
