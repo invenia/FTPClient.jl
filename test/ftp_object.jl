@@ -624,6 +624,7 @@ end
                 println("str = $(length(str))")
 
                 @test position(io) == first_pos + length(str)
+                path = pwd(ftp)
 
                 path = pwd(ftp; verbose=io)
                 second_pos = position(io)
