@@ -208,7 +208,7 @@ function upload(
     local_file_paths::Vector{<:AbstractString},
     ftp_dir::AbstractString;
     retry_callback::Function=(count, options) -> (count < 4, options),
-    retry_wait_seconds::Integer = 5,
+    retry_wait_seconds::Integer=5,
     verbose::Union{Bool,IOStream}=false,
 )
 
