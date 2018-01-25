@@ -601,6 +601,14 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
             # flush the IOStream before making a duplicate Libc.File that will
             # capture the verbose output
             flush(verbose)
+
+            curr_pos = position(verbose)
+            println("verbose position start = $curr_pos")
+            seekstart(verbose)
+            println(readstring(verbose))
+            seek(verbose, curr_pos)
+            println()
+
             libc_file = Libc.FILE(verbose)
 
             @ce_curl curl_easy_setopt CURLOPT_STDERR libc_file.ptr
