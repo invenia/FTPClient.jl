@@ -616,8 +616,11 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
         if isa(libc_file, Libc.FILE)
             # update the IOStreams position to the end of the content written to
             # the duplicate file
+            println("verbose position before = $(position(verbose))")
+            println("libc_file position = $(position(libc_file))")
             seek(verbose, position(libc_file))
             close(libc_file)
+            println("verbose position after = $(position(verbose))\n")
 
             @ce_curl curl_easy_setopt CURLOPT_STDERR Libc.FILE(RawFD(2), "w").ptr
         end
