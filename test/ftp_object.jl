@@ -392,30 +392,29 @@ end
 
 @testset "verbose" begin
 
-    function test_captured_ouput(test::Function)
-        file_name = tempname()
+    function test_captured_ouput(func::Function)
+        temp_file_path, io = mktemp()
         ftp_init()
         try
-            open(file_name, "w") do verbose_file
-                test(verbose_file)
-            end
-            @test length(read(file_name)) > 0
+            func(io)
+            close(io)
+            @test filesize(temp_file_path) > 0
         finally
-            rm(file_name)
+            rm(temp_file_path)
             ftp_cleanup()
         end
     end
 
     @testset "FTP" begin
-        test_captured_ouput() do verbose_file
-            FTP(; opts..., verbose=verbose_file)
+        test_captured_ouput() do io
+            FTP(; opts..., verbose=io)
         end
     end
 
     @testset "readdir" begin
         ftp = FTP(; opts...)
-        test_captured_ouput() do verbose_file
-            readdir(ftp; verbose=verbose_file)
+        test_captured_ouput() do io
+            readdir(ftp; verbose=io)
         end
         close(ftp)
     end
@@ -423,8 +422,8 @@ end
     @testset "download" begin
         ftp = FTP(; opts...)
         buffer = nothing
-        test_captured_ouput() do verbose_file
-            buffer = download(ftp, download_file; verbose=verbose_file)
+        test_captured_ouput() do io
+            buffer = download(ftp, download_file; verbose=io)
         end
         @test readstring(buffer) == readstring(joinpath(ROOT,download_file))
         no_unexpected_changes(ftp)
@@ -438,8 +437,8 @@ end
         tempfile(local_file)
         @test isfile(local_file)
         @test !isfile(server_file)
-        test_captured_ouput() do verbose_file
-            upload(ftp, upload_file; verbose=verbose_file)
+        test_captured_ouput() do io
+            upload(ftp, upload_file; verbose=io)
         end
         @test isfile(server_file)
         @test readstring(server_file) == readstring(local_file)
@@ -455,8 +454,8 @@ end
         cleanup_dir(server_dir)
         @test !isdir(server_dir)
 
-        test_captured_ouput() do verbose_file
-            resp = mkdir(ftp, testdir; verbose=verbose_file)
+        test_captured_ouput() do io
+            resp = mkdir(ftp, testdir; verbose=io)
         end
         @test isdir(server_dir)
         no_unexpected_changes(ftp)
@@ -470,8 +469,8 @@ end
 
         ftp = FTP(; opts...)
         mkdir(server_dir)
-        test_captured_ouput() do verbose_file
-            cd(ftp, testdir; verbose=verbose_file)
+        test_captured_ouput() do io
+            cd(ftp, testdir; verbose=io)
         end
         no_unexpected_changes(ftp, "$host/$testdir")
         cleanup_dir(server_dir)
@@ -484,8 +483,8 @@ end
         ftp = FTP(; opts...)
         mkdir(server_dir)
         @test isdir(server_dir)
-        test_captured_ouput() do verbose_file
-            rmdir(ftp, testdir; verbose=verbose_file)
+        test_captured_ouput() do io
+            rmdir(ftp, testdir; verbose=io)
         end
         @test !isdir(server_dir)
         no_unexpected_changes(ftp)
@@ -494,11 +493,10 @@ end
 
     @testset "pwd" begin
         ftp = FTP(; opts...)
-        path = nothing
-        test_captured_ouput() do verbose_file
-            path = pwd(ftp; verbose=verbose_file)
+        test_captured_ouput() do io
+            dir = pwd(ftp; verbose=io)
+            @test dir == "/"
         end
-        @test path == "/"
         no_unexpected_changes(ftp)
         close(ftp)
     end
@@ -506,17 +504,19 @@ end
     @testset "mv" begin
         ftp = FTP(; opts...)
         new_file = "test_mv2.txt"
+
         tempfile(mv_file)
         @test isfile(mv_file)
+
         server_file = joinpath(ROOT, mv_file)
         cp(mv_file, server_file)
-
-        server_new_file = joinpath(ROOT, new_file)
         @test isfile(server_file)
 
-        test_captured_ouput() do verbose_file
+        server_new_file = joinpath(ROOT, new_file)
+
+        test_captured_ouput() do io
             @test isfile(mv_file)
-            mv(ftp, mv_file, new_file; verbose=verbose_file)
+            mv(ftp, mv_file, new_file; verbose=io)
         end
         @test !isfile(server_file)
         @test isfile(server_new_file)
@@ -532,8 +532,8 @@ end
         @test isfile(mv_file)
         cp(mv_file, server_file)
         @test isfile(server_file)
-        test_captured_ouput() do verbose_file
-            rm(ftp, mv_file; verbose=verbose_file)
+        test_captured_ouput() do io
+            rm(ftp, mv_file; verbose=io)
         end
         @test !isfile(server_file)
         no_unexpected_changes(ftp)
@@ -548,8 +548,8 @@ end
             server_file = joinpath(ROOT, upload_file)
             @test isfile(upload_file)
             @test !isfile(server_file)
-            test_captured_ouput() do verbose_file
-                resp = upload(ftp, upload_file; verbose=verbose_file)
+            test_captured_ouput() do io
+                resp = upload(ftp, upload_file; verbose=io)
             end
 
             @test isfile(server_file)
@@ -562,8 +562,8 @@ end
             ftp = FTP(; opts...)
             server_file= joinpath(ROOT, "some name")
             @test !isfile(server_file)
-            test_captured_ouput() do verbose_file
-                resp = upload(ftp, upload_file, "some name"; verbose=verbose_file)
+            test_captured_ouput() do io
+                resp = upload(ftp, upload_file, "some name"; verbose=io)
             end
             @test isfile(server_file)
             @test readstring(server_file) == readstring(upload_file)
@@ -575,8 +575,8 @@ end
             ftp = FTP(; opts...)
             server_file= joinpath(ROOT, "test_upload.txt")
             @test !isfile(server_file)
-            test_captured_ouput() do verbose_file
-                resp = upload(ftp, [upload_file], "/"; verbose=verbose_file)
+            test_captured_ouput() do io
+                resp = upload(ftp, [upload_file], "/"; verbose=io)
                 @test resp == [true]
             end
             @test isfile(server_file)
@@ -587,31 +587,53 @@ end
         end
     end
 
-
-    @testset "verbose twice" begin
+    @testset "verbose multiple commands" begin
         ftp = FTP(; opts...)
-        test_captured_ouput() do verbose_file
-            buff = download(ftp, download_file; verbose=verbose_file)
-            first_length = length(read(verbose_file.name[7:end-1]))
-            @test first_length > 0
-            path = pwd(ftp; verbose=verbose_file)
-            second_length = length(read(verbose_file.name[7:end-1]))
-            @test second_length > first_length
+        @testset "two commands" begin
+            test_captured_ouput() do io
+                buff = download(ftp, download_file; verbose=io)
+                first_pos = position(io)
+                @test first_pos > 0
+
+                path = pwd(ftp; verbose=io)
+                second_pos = position(io)
+                @test second_pos > first_pos
+            end
         end
-        test_captured_ouput() do verbose_file
-            path = pwd(ftp; verbose=verbose_file)
-            first_length = length(read(verbose_file.name[7:end-1]))
-            @test first_length > 0
-            buff = download(ftp, download_file; verbose=verbose_file)
-            path = pwd(ftp; verbose=verbose_file)
-            second_length = length(read(verbose_file.name[7:end-1]))
-            @test second_length > first_length
+        @testset "three commands" begin
+            test_captured_ouput() do io
+                path = pwd(ftp; verbose=io)
+                first_pos = position(io)
+                @test first_pos > 0
+
+                buff = download(ftp, download_file; verbose=io)
+                path = pwd(ftp; verbose=io)
+                second_pos = position(io)
+                @test second_pos > first_pos
+            end
+        end
+        @testset "write to stream between FTP commands" begin
+            test_captured_ouput() do io
+                path = pwd(ftp; verbose=io)
+                first_pos = position(io)
+                @test first_pos > 0
+
+                str = "ABC\n"
+                write(io, str)
+
+                @test position(io) == first_pos + length(str)
+
+                path = pwd(ftp; verbose=io)
+                second_pos = position(io)
+
+                @test second_pos == first_pos * 2 + length(str)
+            end
         end
     end
 
     @testset "ftp open do end" begin
-        test_captured_ouput() do verbose_file
-            ftp(; opts..., verbose=verbose_file) do ftp
+        test_captured_ouput() do io
+            ftp(; opts..., verbose=io) do ftp
             end
         end
     end
@@ -623,4 +645,3 @@ end
   # @test readstring(buff) == file_contents
   # no_unexpected_changes(f)
   # end
-

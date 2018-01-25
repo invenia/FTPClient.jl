@@ -598,9 +598,10 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
         @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
         if isa(verbose, IOStream)
 
-            # This opens the file with a different stream so that when we close it (below)
-            # it won't close the original one.
-            libc_file = Libc.FILE(Libc.dup(RawFD(fd(verbose))), "a")
+            # flush the IOStream before making a duplicate Libc.File that will
+            # capture the verbose output
+            flush(verbose)
+            libc_file = Libc.FILE(verbose)
 
             @ce_curl curl_easy_setopt CURLOPT_STDERR libc_file.ptr
         end
@@ -613,7 +614,11 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
         process_response(ctxt, resp)
     finally
         if isa(libc_file, Libc.FILE)
+            # update the IOStreams position to the end of the content written to
+            # the duplicate file
+            seek(verbose, position(libc_file))
             close(libc_file)
+
             @ce_curl curl_easy_setopt CURLOPT_STDERR Libc.FILE(RawFD(2), "w").ptr
         end
     end
