@@ -614,17 +614,22 @@ end
         end
         @testset "write to stream between FTP commands" begin
             test_captured_ouput() do io
-                path = pwd(ftp; verbose=true)
+                path = pwd(ftp; verbose=io)
                 first_pos = position(io)
                 @test first_pos > 0
+                println("first_pos = $first_pos")
 
                 str = "ABC"
                 write(io, str)
+                println("str = $(length(str))")
 
                 @test position(io) == first_pos + length(str)
 
-                path = pwd(ftp; verbose=true)
+                path = pwd(ftp; verbose=io)
                 second_pos = position(io)
+                println("second_pos = $second_pos\n\n")
+                seek(io, 0)
+                println(readstring(io))
                 @test second_pos == first_pos * 2 + length(str)
             end
         end
