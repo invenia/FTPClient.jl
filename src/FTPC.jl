@@ -604,10 +604,10 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
 
             curr_pos = position(verbose)
             println("verbose position start = $curr_pos")
-            seekstart(verbose)
-            println(readstring(verbose))
-            seek(verbose, curr_pos)
-            println()
+            # seekstart(verbose)
+            # println(readstring(verbose))
+            # seek(verbose, curr_pos)
+            # println()
 
             libc_file = Libc.FILE(verbose)
 
