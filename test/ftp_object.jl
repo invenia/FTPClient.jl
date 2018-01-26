@@ -405,255 +405,237 @@ end
         end
     end
 
-    # @testset "FTP" begin
-    #     test_captured_ouput() do io
-    #         FTP(; opts..., verbose=io)
-    #     end
-    # end
+    @testset "FTP" begin
+        test_captured_ouput() do io
+            FTP(; opts..., verbose=io)
+        end
+    end
 
-    # @testset "readdir" begin
-    #     ftp = FTP(; opts...)
-    #     test_captured_ouput() do io
-    #         readdir(ftp; verbose=io)
-    #     end
-    #     close(ftp)
-    # end
+    @testset "readdir" begin
+        ftp = FTP(; opts...)
+        test_captured_ouput() do io
+            readdir(ftp; verbose=io)
+        end
+        close(ftp)
+    end
 
-    # @testset "download" begin
-    #     ftp = FTP(; opts...)
-    #     buffer = nothing
-    #     test_captured_ouput() do io
-    #         buffer = download(ftp, download_file; verbose=io)
-    #     end
-    #     @test readstring(buffer) == readstring(joinpath(ROOT,download_file))
-    #     no_unexpected_changes(ftp)
-    #     close(ftp)
-    # end
+    @testset "download" begin
+        ftp = FTP(; opts...)
+        buffer = nothing
+        test_captured_ouput() do io
+            buffer = download(ftp, download_file; verbose=io)
+        end
+        @test readstring(buffer) == readstring(joinpath(ROOT,download_file))
+        no_unexpected_changes(ftp)
+        close(ftp)
+    end
 
-    # @testset "upload" begin
-    #     ftp = FTP(; opts...)
-    #     local_file = upload_file
-    #     server_file = joinpath(ROOT, local_file)
-    #     tempfile(local_file)
-    #     @test isfile(local_file)
-    #     @test !isfile(server_file)
-    #     test_captured_ouput() do io
-    #         upload(ftp, upload_file; verbose=io)
-    #     end
-    #     @test isfile(server_file)
-    #     @test readstring(server_file) == readstring(local_file)
+    @testset "upload" begin
+        ftp = FTP(; opts...)
+        local_file = upload_file
+        server_file = joinpath(ROOT, local_file)
+        tempfile(local_file)
+        @test isfile(local_file)
+        @test !isfile(server_file)
+        test_captured_ouput() do io
+            upload(ftp, upload_file; verbose=io)
+        end
+        @test isfile(server_file)
+        @test readstring(server_file) == readstring(local_file)
 
-    #     no_unexpected_changes(ftp)
-    #     close(ftp)
-    #     cleanup_file(server_file)
-    # end
+        no_unexpected_changes(ftp)
+        close(ftp)
+        cleanup_file(server_file)
+    end
 
-    # @testset "mkdir" begin
-    #     ftp = FTP(; opts...)
-    #     server_dir = joinpath(ROOT, testdir)
-    #     cleanup_dir(server_dir)
-    #     @test !isdir(server_dir)
+    @testset "mkdir" begin
+        ftp = FTP(; opts...)
+        server_dir = joinpath(ROOT, testdir)
+        cleanup_dir(server_dir)
+        @test !isdir(server_dir)
 
-    #     test_captured_ouput() do io
-    #         resp = mkdir(ftp, testdir; verbose=io)
-    #     end
-    #     @test isdir(server_dir)
-    #     no_unexpected_changes(ftp)
-    #     cleanup_dir(server_dir)
-    #     close(ftp)
-    # end
+        test_captured_ouput() do io
+            resp = mkdir(ftp, testdir; verbose=io)
+        end
+        @test isdir(server_dir)
+        no_unexpected_changes(ftp)
+        cleanup_dir(server_dir)
+        close(ftp)
+    end
 
-    # @testset "cd" begin
-    #     server_dir = joinpath(ROOT, testdir)
-    #     host = hostname(server)
+    @testset "cd" begin
+        server_dir = joinpath(ROOT, testdir)
+        host = hostname(server)
 
-    #     ftp = FTP(; opts...)
-    #     mkdir(server_dir)
-    #     test_captured_ouput() do io
-    #         cd(ftp, testdir; verbose=io)
-    #     end
-    #     no_unexpected_changes(ftp, "$host/$testdir")
-    #     cleanup_dir(server_dir)
-    #     close(ftp)
-    # end
+        ftp = FTP(; opts...)
+        mkdir(server_dir)
+        test_captured_ouput() do io
+            cd(ftp, testdir; verbose=io)
+        end
+        no_unexpected_changes(ftp, "$host/$testdir")
+        cleanup_dir(server_dir)
+        close(ftp)
+    end
 
-    # @testset "rmdir" begin
-    #     server_dir = joinpath(ROOT, testdir)
+    @testset "rmdir" begin
+        server_dir = joinpath(ROOT, testdir)
 
-    #     ftp = FTP(; opts...)
-    #     mkdir(server_dir)
-    #     @test isdir(server_dir)
-    #     test_captured_ouput() do io
-    #         rmdir(ftp, testdir; verbose=io)
-    #     end
-    #     @test !isdir(server_dir)
-    #     no_unexpected_changes(ftp)
-    #     close(ftp)
-    # end
+        ftp = FTP(; opts...)
+        mkdir(server_dir)
+        @test isdir(server_dir)
+        test_captured_ouput() do io
+            rmdir(ftp, testdir; verbose=io)
+        end
+        @test !isdir(server_dir)
+        no_unexpected_changes(ftp)
+        close(ftp)
+    end
 
-    # @testset "pwd" begin
-    #     ftp = FTP(; opts...)
-    #     test_captured_ouput() do io
-    #         dir = pwd(ftp; verbose=io)
-    #         @test dir == "/"
-    #     end
-    #     no_unexpected_changes(ftp)
-    #     close(ftp)
-    # end
+    @testset "pwd" begin
+        ftp = FTP(; opts...)
+        test_captured_ouput() do io
+            dir = pwd(ftp; verbose=io)
+            @test dir == "/"
+        end
+        no_unexpected_changes(ftp)
+        close(ftp)
+    end
 
-    # @testset "mv" begin
-    #     ftp = FTP(; opts...)
-    #     new_file = "test_mv2.txt"
+    @testset "mv" begin
+        ftp = FTP(; opts...)
+        new_file = "test_mv2.txt"
 
-    #     tempfile(mv_file)
-    #     @test isfile(mv_file)
+        tempfile(mv_file)
+        @test isfile(mv_file)
 
-    #     server_file = joinpath(ROOT, mv_file)
-    #     cp(mv_file, server_file)
-    #     @test isfile(server_file)
+        server_file = joinpath(ROOT, mv_file)
+        cp(mv_file, server_file)
+        @test isfile(server_file)
 
-    #     server_new_file = joinpath(ROOT, new_file)
+        server_new_file = joinpath(ROOT, new_file)
 
-    #     test_captured_ouput() do io
-    #         @test isfile(mv_file)
-    #         mv(ftp, mv_file, new_file; verbose=io)
-    #     end
-    #     @test !isfile(server_file)
-    #     @test isfile(server_new_file)
-    #     @test readstring(server_new_file) == readstring(mv_file)
-    #     no_unexpected_changes(ftp)
-    #     close(ftp)
-    # end
+        test_captured_ouput() do io
+            @test isfile(mv_file)
+            mv(ftp, mv_file, new_file; verbose=io)
+        end
+        @test !isfile(server_file)
+        @test isfile(server_new_file)
+        @test readstring(server_new_file) == readstring(mv_file)
+        no_unexpected_changes(ftp)
+        close(ftp)
+    end
 
-    # @testset "rm" begin
-    #     server_file = joinpath(ROOT, mv_file)
+    @testset "rm" begin
+        server_file = joinpath(ROOT, mv_file)
 
-    #     ftp = FTP(; opts...)
-    #     @test isfile(mv_file)
-    #     cp(mv_file, server_file)
-    #     @test isfile(server_file)
-    #     test_captured_ouput() do io
-    #         rm(ftp, mv_file; verbose=io)
-    #     end
-    #     @test !isfile(server_file)
-    #     no_unexpected_changes(ftp)
-    #     close(ftp)
+        ftp = FTP(; opts...)
+        @test isfile(mv_file)
+        cp(mv_file, server_file)
+        @test isfile(server_file)
+        test_captured_ouput() do io
+            rm(ftp, mv_file; verbose=io)
+        end
+        @test !isfile(server_file)
+        no_unexpected_changes(ftp)
+        close(ftp)
 
-    #     cleanup_file(mv_file)
-    # end
+        cleanup_file(mv_file)
+    end
 
-    # @testset "upload" begin
-    #     @testset "uploading a file with only the local file name" begin
-    #         ftp = FTP(; opts...)
-    #         server_file = joinpath(ROOT, upload_file)
-    #         @test isfile(upload_file)
-    #         @test !isfile(server_file)
-    #         test_captured_ouput() do io
-    #             resp = upload(ftp, upload_file; verbose=io)
-    #         end
+    @testset "upload" begin
+        @testset "uploading a file with only the local file name" begin
+            ftp = FTP(; opts...)
+            server_file = joinpath(ROOT, upload_file)
+            @test isfile(upload_file)
+            @test !isfile(server_file)
+            test_captured_ouput() do io
+                resp = upload(ftp, upload_file; verbose=io)
+            end
 
-    #         @test isfile(server_file)
-    #         @test readstring(server_file) == readstring(upload_file)
-    #         no_unexpected_changes(ftp)
-    #         cleanup_file(server_file)
-    #         close(ftp)
-    #     end
-    #     @testset "uploading a file with remote local file name" begin
-    #         ftp = FTP(; opts...)
-    #         server_file= joinpath(ROOT, "some name")
-    #         @test !isfile(server_file)
-    #         test_captured_ouput() do io
-    #             resp = upload(ftp, upload_file, "some name"; verbose=io)
-    #         end
-    #         @test isfile(server_file)
-    #         @test readstring(server_file) == readstring(upload_file)
-    #         no_unexpected_changes(ftp)
-    #         cleanup_file(server_file)
-    #         close(ftp)
-    #     end
-    #     @testset "upload with retry single file" begin
-    #         ftp = FTP(; opts...)
-    #         server_file= joinpath(ROOT, "test_upload.txt")
-    #         @test !isfile(server_file)
-    #         test_captured_ouput() do io
-    #             resp = upload(ftp, [upload_file], "/"; verbose=io)
-    #             @test resp == [true]
-    #         end
-    #         @test isfile(server_file)
-    #         @test readstring(server_file) == readstring(upload_file)
-    #         no_unexpected_changes(ftp)
-    #         cleanup_file(server_file)
-    #         close(ftp)
-    #     end
-    # end
+            @test isfile(server_file)
+            @test readstring(server_file) == readstring(upload_file)
+            no_unexpected_changes(ftp)
+            cleanup_file(server_file)
+            close(ftp)
+        end
+        @testset "uploading a file with remote local file name" begin
+            ftp = FTP(; opts...)
+            server_file= joinpath(ROOT, "some name")
+            @test !isfile(server_file)
+            test_captured_ouput() do io
+                resp = upload(ftp, upload_file, "some name"; verbose=io)
+            end
+            @test isfile(server_file)
+            @test readstring(server_file) == readstring(upload_file)
+            no_unexpected_changes(ftp)
+            cleanup_file(server_file)
+            close(ftp)
+        end
+        @testset "upload with retry single file" begin
+            ftp = FTP(; opts...)
+            server_file= joinpath(ROOT, "test_upload.txt")
+            @test !isfile(server_file)
+            test_captured_ouput() do io
+                resp = upload(ftp, [upload_file], "/"; verbose=io)
+                @test resp == [true]
+            end
+            @test isfile(server_file)
+            @test readstring(server_file) == readstring(upload_file)
+            no_unexpected_changes(ftp)
+            cleanup_file(server_file)
+            close(ftp)
+        end
+    end
 
     @testset "verbose multiple commands" begin
         ftp = FTP(; opts...)
-        # @testset "two commands" begin
-        #     test_captured_ouput() do io
-        #         buff = download(ftp, download_file; verbose=io)
-        #         first_pos = position(io)
-        #         @test first_pos > 0
+        @testset "two commands" begin
+            test_captured_ouput() do io
+                path = pwd(ftp; verbose=io)
+                first_pos = position(io)
+                @test first_pos > 0
 
-        #         path = pwd(ftp; verbose=io)
-        #         second_pos = position(io)
-        #         @test second_pos > first_pos
-        #     end
-        # end
-        # @testset "three commands" begin
-        #     test_captured_ouput() do io
-        #         path = pwd(ftp; verbose=io)
-        #         first_pos = position(io)
-        #         @test first_pos > 0
+                path = pwd(ftp; verbose=io)
+                second_pos = position(io)
+                @test second_pos == first_pos * 2
+            end
+        end
+        @testset "mix verbose and non-verbose calls" begin
+            test_captured_ouput() do io
+                path = pwd(ftp; verbose=io)
+                first_pos = position(io)
+                @test first_pos > 0
 
-        #         buff = download(ftp, download_file; verbose=io)
-        #         path = pwd(ftp; verbose=io)
-        #         second_pos = position(io)
-        #         @test second_pos > first_pos
-        #     end
-        # end
+                path = pwd(ftp)
+
+                path = pwd(ftp; verbose=io)
+                second_pos = position(io)
+                @test second_pos == first_pos * 2
+            end
+        end
         @testset "write to stream between FTP commands" begin
             test_captured_ouput() do io
                 path = pwd(ftp; verbose=io)
                 first_pos = position(io)
                 @test first_pos > 0
-                println("first_pos = $first_pos")
 
                 str = "ABC"
                 write(io, str)
-                println("str = $(length(str))")
-
                 @test position(io) == first_pos + length(str)
-                # path = pwd(ftp)
 
                 path = pwd(ftp; verbose=io)
                 second_pos = position(io)
-                println("second_pos = $second_pos\n\n")
-                seekstart(io)
-                content = readstring(io)
-                println(content)
-                println("Content length $(length(content))\nIO position $(position(io))\n")
-
-                # seek(io, second_pos + 3)
-                # write(io, "END")
-                # flush(io)
-
-                # seekstart(io)
-                # content = readstring(io)
-                # println(content)
-                # println("Content length $(length(content))\nIO position end $(position(io))\n")
-
                 @test second_pos == first_pos * 2 + length(str)
             end
         end
     end
 
-    # @testset "ftp open do end" begin
-    #     test_captured_ouput() do io
-    #         ftp(; opts..., verbose=io) do ftp
-    #         end
-    #     end
-    # end
+    @testset "ftp open do end" begin
+        test_captured_ouput() do io
+            ftp(; opts..., verbose=io) do ftp
+            end
+        end
+    end
 
 end
  # check do (doesn't work)

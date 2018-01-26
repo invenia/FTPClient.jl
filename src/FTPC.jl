@@ -598,17 +598,9 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
         @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
         if isa(verbose, IOStream)
 
-            # flush the IOStream before making a duplicate Libc.File that will
-            # capture the verbose output
+            # flush the IOStream before making a duplicate Libc.FILE that will
+            # capture the verbose
             flush(verbose)
-
-            curr_pos = position(verbose)
-            println("verbose position start = $curr_pos")
-            # seekstart(verbose)
-            # println(readstring(verbose))
-            # seek(verbose, curr_pos)
-            # println()
-
             libc_file = Libc.FILE(verbose)
 
             @ce_curl curl_easy_setopt CURLOPT_STDERR libc_file.ptr
@@ -622,18 +614,12 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
         process_response(ctxt, resp)
     finally
         if isa(libc_file, Libc.FILE)
-            # update the IOStreams position to the end of the content written to
-            # the duplicate file
-            println("verbose position before = $(position(verbose))")
-            println("libc_file position = $(position(libc_file))")
+            # Need to flush the Libc.FILE to make sure content is written, closing the
+            # Libc.FILE does not reliably do this. Then update the IOStream pointer to
+            # point to the same position so that data can be appended to the stream.
             ccall(:fflush, Cvoid, (Ptr{Cvoid},), libc_file.ptr)
             seek(verbose, position(libc_file))
-
             close(libc_file)
-            # write(verbose, "\n")
-            # flush(verbose)
-
-            println("verbose position after = $(position(verbose))\n")
 
             @ce_curl curl_easy_setopt CURLOPT_STDERR Libc.FILE(RawFD(2), "w").ptr
         end
