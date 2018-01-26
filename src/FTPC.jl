@@ -628,7 +628,7 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
             println("libc_file position = $(position(libc_file))")
             seek(verbose, position(libc_file))
             close(libc_file)
-            write(verbose, "")
+            write(verbose, "\n")
             flush(verbose)
 
             println("verbose position after = $(position(verbose))\n")
