@@ -626,12 +626,19 @@ end
                 @test position(io) == first_pos + length(str)
                 # path = pwd(ftp)
 
-                flush(io)
                 path = pwd(ftp; verbose=io)
                 second_pos = position(io)
                 println("second_pos = $second_pos\n\n")
-                seek(io, 0)
+                seekstart(io)
                 println(readstring(io))
+                println("IO position $(position(io))\n")
+                seek(io, second_pos + 3)
+                write(io, "END")
+
+                seekstart(io)
+                println(readstring(io))
+                println("IO position end $(position(io))\n")
+
                 @test second_pos == first_pos * 2 + length(str)
             end
         end
