@@ -630,15 +630,17 @@ end
                 second_pos = position(io)
                 println("second_pos = $second_pos\n\n")
                 seekstart(io)
-                println(readstring(io))
-                println("IO position $(position(io))\n")
-                seek(io, second_pos + 3)
+                content = readstring(io)
+                println(content)
+                println("Content length $(length(content))\nIO position $(position(io))\n")
+                # seek(io, second_pos + 3)
                 write(io, "END")
                 flush(io)
 
                 seekstart(io)
-                println(readstring(io))
-                println("IO position end $(position(io))\n")
+                content = readstring(io)
+                println(content)
+                println("Content length $(length(content))\nIO position end $(position(io))\n")
 
                 @test second_pos == first_pos * 2 + length(str)
             end
