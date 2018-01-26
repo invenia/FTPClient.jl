@@ -627,9 +627,10 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
             println("verbose position before = $(position(verbose))")
             println("libc_file position = $(position(libc_file))")
             seek(verbose, position(libc_file))
-            write(verbose, "XYZ")
-            flush(verbose)
             close(libc_file)
+            write(verbose, "")
+            flush(verbose)
+
             println("verbose position after = $(position(verbose))\n")
 
             @ce_curl curl_easy_setopt CURLOPT_STDERR Libc.FILE(RawFD(2), "w").ptr
