@@ -626,7 +626,7 @@ end
                 @test position(io) == first_pos + length(str)
                 # path = pwd(ftp)
 
-                flush(verbose)
+                flush(io)
                 path = pwd(ftp; verbose=io)
                 second_pos = position(io)
                 println("second_pos = $second_pos\n\n")
