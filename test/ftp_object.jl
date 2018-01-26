@@ -634,6 +634,7 @@ end
                 println("IO position $(position(io))\n")
                 seek(io, second_pos + 3)
                 write(io, "END")
+                flush(io)
 
                 seekstart(io)
                 println(readstring(io))
