@@ -630,8 +630,8 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
             ccall(:fflush, Cvoid, (Ptr{Cvoid},), libc_file.ptr)
 
             close(libc_file)
-            write(verbose, "\n")
-            flush(verbose)
+            # write(verbose, "\n")
+            # flush(verbose)
 
             println("verbose position after = $(position(verbose))\n")
 

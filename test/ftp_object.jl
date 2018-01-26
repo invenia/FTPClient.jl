@@ -633,14 +633,15 @@ end
                 content = readstring(io)
                 println(content)
                 println("Content length $(length(content))\nIO position $(position(io))\n")
-                # seek(io, second_pos + 3)
-                write(io, "END")
-                flush(io)
 
-                seekstart(io)
-                content = readstring(io)
-                println(content)
-                println("Content length $(length(content))\nIO position end $(position(io))\n")
+                # seek(io, second_pos + 3)
+                # write(io, "END")
+                # flush(io)
+
+                # seekstart(io)
+                # content = readstring(io)
+                # println(content)
+                # println("Content length $(length(content))\nIO position end $(position(io))\n")
 
                 @test second_pos == first_pos * 2 + length(str)
             end
