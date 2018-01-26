@@ -626,8 +626,8 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
             # the duplicate file
             println("verbose position before = $(position(verbose))")
             println("libc_file position = $(position(libc_file))")
-            seek(verbose, position(libc_file))
             ccall(:fflush, Cvoid, (Ptr{Cvoid},), libc_file.ptr)
+            seek(verbose, position(libc_file))
 
             close(libc_file)
             # write(verbose, "\n")
