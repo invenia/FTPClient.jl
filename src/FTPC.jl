@@ -32,9 +32,12 @@ mutable struct RequestOptions
     url::AbstractString
     hostname::AbstractString
 
-    function RequestOptions(;implicit::Bool=false, ssl::Bool=false,
-            verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
-            password::AbstractString="", url::AbstractString="", hostname::AbstractString="localhost")
+    function RequestOptions(;
+        implicit::Bool=false, ssl::Bool=false,
+        verify_peer::Bool=true, active_mode::Bool=false,
+        username::AbstractString="", password::AbstractString="",
+        url::AbstractString="", hostname::AbstractString="localhost",
+    )
 
         if isempty(url)
             if implicit
@@ -59,7 +62,8 @@ The response returned from a connection to an FTP server.
 * `headers::Array{AbstractString}`: the header responses from the server.
 * `code::UInt`: the last header response code from the server.
 * `total_time::Float64`: the time the connection took.
-* `bytes_recd::Int`: the amount of bytes transmitted from the server (the file size in the case of ftp_get).
+* `bytes_recd::Int`: the amount of bytes transmitted from the server (the file size in the
+    case of ftp_get).
 """
 mutable struct Response
     body::IO
@@ -161,6 +165,7 @@ function curl_read_cb(out::Ptr{Cvoid}, s::Csize_t, n::Csize_t, p_rd::Ptr{Cvoid})
 end
 
 c_curl_read_cb = cfunction(curl_read_cb, Csize_t, Tuple{Ptr{Cvoid}, Csize_t, Csize_t, Ptr{Cvoid}})
+
 
 
 ##############################
@@ -265,38 +270,70 @@ ftp_cleanup() = curl_global_cleanup()
 ##############################
 
 """
-    ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
+    ftp_get(
+        options::RequestOptions,
+        file_name::AbstractString,
+        save_path::AbstractString="";
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
-Download a file with a non-persistent connection. Returns a Response.
+Download a file with a non-persistent connection. Returns a `Response`.
 
 # Arguments
-* `options::RequestOptions`: the connection options. See RequestOptions for details.
+* `options::RequestOptions`: the connection options. See `RequestOptions` for details.
 * `file_name::AbstractString`: the path to the file on the server.
-* `save_path::AbstractString=""`: if not specified the file is written to the Response body.
-* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
+* `save_path::AbstractString=""`: if not specified the file is written to the `Response`
+    body.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII
+    format.
+* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
+    `Bool`, if true output is written to STDERR.
 """
-function ftp_get(options::RequestOptions, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
+function ftp_get(
+    options::RequestOptions,
+    file_name::AbstractString,
+    save_path::AbstractString="";
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     ctxt = setup_easy_handle(options)
     try
-        return ftp_get(ctxt, file_name, save_path; mode=mode)
+        return ftp_get(ctxt, file_name, save_path; mode=mode, verbose=verbose)
     finally
         cleanup_easy_context(ctxt)
     end
 end
 
 """
-    ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
+    ftp_get(
+        ctxt::ConnContext,
+        file_name::AbstractString,
+        save_path::AbstractString="";
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
-Download a file with a persistent connection. Returns a Response.
+Download a file with a persistent connection. Returns a `Response`.
 
 # Arguments
-* `ctxt::ConnContext`: encompases the connection options defined via ftp_connect. See RequestOptions for details.
+* `ctxt::ConnContext`: encompases the connection options defined via ftp_connect. See
+    `RequestOptions` for details.
 * `file_name::AbstractString`: the path to the file on the server.
-* `save_path::AbstractString=""`: if not specified the file is written to the Response body.
-* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
+* `save_path::AbstractString=""`: if not specified the file is written to the `Response`
+    body.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or
+    ASCII format.
+* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
+    `Bool`, if true output is written to STDERR.
 """
-function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::AbstractString=""; mode::FTP_MODE=binary_mode)
-    resp = Response()
+function ftp_get(
+    ctxt::ConnContext,
+    file_name::AbstractString,
+    save_path::AbstractString="";
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     wd = WriteData()
 
     if !isempty(save_path)
@@ -305,7 +342,6 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
 
     try
         p_wd = pointer_from_objref(wd)
-        p_resp = pointer_from_objref(resp)
 
         # Force active mode
         #@ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPSV 0
@@ -314,9 +350,6 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
 
         @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
         @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
-
-        @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
-        @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
         @ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(1)
 
@@ -327,8 +360,7 @@ function ftp_get(ctxt::ConnContext, file_name::AbstractString, save_path::Abstra
             @ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=a"
         end
 
-        @ce_curl curl_easy_perform
-        process_response(ctxt, resp)
+        resp = ftp_perform(ctxt, verbose)
 
         if isopen(wd.buffer)
             seekstart(wd.buffer)
@@ -355,38 +387,68 @@ end
 ##############################
 
 """
-    ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
+    ftp_put(
+        options::RequestOptions,
+        file_name::AbstractString,
+        file::IO;
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
 Upload file with non-persistent connection. Returns a Response.
 
 # Arguments
-* `options::RequestOptions`: the connection options. See RequestOptions for details.
+* `options::RequestOptions`: the connection options. See `RequestOptions` for details.
 * `file_name::AbstractString`: the path to the file on the server.
 * `file::IO`: what is being written to the server.
-* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or
+    ASCII format.
+* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
+    `Bool`, if true output is written to STDERR.
 """
-function ftp_put(options::RequestOptions, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
+function ftp_put(
+    options::RequestOptions,
+    file_name::AbstractString,
+    file::IO;
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     ctxt = setup_easy_handle(options)
     try
-        return ftp_put(ctxt, file_name, file; mode=mode)
+        return ftp_put(ctxt, file_name, file; mode=mode, verbose=verbose)
     finally
         cleanup_easy_context(ctxt)
     end
 end
 
 """
-    ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
+    ftp_put(
+        ctxt::ConnContext,
+        file_name::AbstractString,
+        file::IO;
+        mode::FTP_MODE=binary_mode,
+        verbose::Union{Bool,IOStream}=false,
+    )
 
-Upload file with persistent connection. Returns a Response.
+Upload file with persistent connection. Returns a `Response`.
 
 # Arguments
-* `ctxt::ConnContext`: encompases the connection options defined via ftp_connect. See RequestOptions for details.
+* `ctxt::ConnContext`: encompases the connection options defined via ftp_connect. See
+    `RequestOptions` for details.
 * `file_name::AbstractString`: the path to the file on the server.
 * `file::IO`: what is being written to the server.
-* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or ASCII format.
+* `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or
+    ASCII format.
+* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
+    `Bool`, if true output is written to STDERR.
 """
-function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::FTP_MODE=binary_mode)
-    resp = Response()
+function ftp_put(
+    ctxt::ConnContext,
+    file_name::AbstractString,
+    file::IO;
+    mode::FTP_MODE=binary_mode,
+    verbose::Union{Bool,IOStream}=false,
+)
     rd = ReadData()
 
     rd.src = file
@@ -395,14 +457,10 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
     seekstart(file)
 
     p_rd = pointer_from_objref(rd)
-    p_resp = pointer_from_objref(resp)
 
     @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
     @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
     @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
-
-    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
-    @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
     @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url * file_name
 
@@ -414,8 +472,7 @@ function ftp_put(ctxt::ConnContext, file_name::AbstractString, file::IO; mode::F
 
     @ce_curl curl_easy_setopt CURLOPT_INFILESIZE Int64(rd.sz)
 
-    @ce_curl curl_easy_perform
-    process_response(ctxt, resp)
+    resp = ftp_perform(ctxt, verbose)
 
     # resest handle defaults
     @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
@@ -431,42 +488,50 @@ end
 ##############################
 
 """
-    ftp_command(options::RequestOptions, cmd::AbstractString)
+    ftp_command(
+        options::RequestOptions,
+        cmd::AbstractString;
+        verbose::Union{Bool,IOStream}=false,
+    )
 
-Pass FTP command with non-persistent connection. Returns a Response.
+Pass FTP command with non-persistent connection. Returns a `Response`.
 """
-function ftp_command(options::RequestOptions, cmd::AbstractString)
+function ftp_command(
+    options::RequestOptions,
+    cmd::AbstractString;
+    verbose::Union{Bool,IOStream}=false,
+)
     ctxt = setup_easy_handle(options)
     try
-        return ftp_command(ctxt, cmd)
+        return ftp_command(ctxt, cmd; verbose=verbose)
     finally
         cleanup_easy_context(ctxt)
     end
 end
 
 """
-    ftp_command(ctxt::ConnContext, cmd::AbstractString)
+    ftp_command(
+        ctxt::ConnContext,
+        cmd::AbstractString;
+        verbose::Union{Bool,IOStream}=false,
+    )
 
-Pass FTP command with persistent connection. Returns a Response.
+Pass FTP command with persistent connection. Returns a `Response`.
 """
-function ftp_command(ctxt::ConnContext, cmd::AbstractString)
-    resp = Response()
+function ftp_command(
+    ctxt::ConnContext,
+    cmd::AbstractString;
+    verbose::Union{Bool,IOStream}=false,
+)
     wd = WriteData()
     p_wd = pointer_from_objref(wd)
 
-    resp = Response()
-    p_resp = pointer_from_objref(resp)
+    @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
 
     @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
     @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
-    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
-    @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
-
-    @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
-
-    @ce_curl curl_easy_perform
-    process_response(ctxt, resp)
+    resp = ftp_perform(ctxt, verbose)
 
     resp.body = seekstart(wd.buffer)
     resp.bytes_recd = wd.bytes_recd
@@ -485,15 +550,15 @@ end
 ##############################
 
 """
-    ftp_connect(options::RequestOptions)
+    ftp_connect(options::RequestOptions; verbose::Union{Bool,IOStream}=false)
 
-Establish connection to FTP server. Returns a ConnContext and a Response.
+Establish connection to FTP server. Returns a `ConnContext` and a `Response`.
 """
-function ftp_connect(options::RequestOptions)
+function ftp_connect(options::RequestOptions; verbose::Union{Bool,IOStream}=false)
     ctxt = setup_easy_handle(options)
     try
         # ping the server
-        resp = ftp_command(ctxt, "LIST")
+        resp = ftp_command(ctxt, "LIST"; verbose=verbose)
 
         return ctxt, resp
     catch
@@ -516,6 +581,52 @@ function ftp_close_connection(ctxt::ConnContext)
     cleanup_easy_context(ctxt)
 end
 
+
+##############################
+# PERFORM
+##############################
+
+function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
+    resp = Response()
+    p_resp = pointer_from_objref(resp)
+
+    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
+    @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
+
+    libc_file = nothing
+    if verbose != false
+        @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
+        if isa(verbose, IOStream)
+
+            # flush the IOStream before making a duplicate Libc.FILE that will
+            # capture the verbose
+            flush(verbose)
+            libc_file = Libc.FILE(verbose)
+
+            @ce_curl curl_easy_setopt CURLOPT_STDERR libc_file.ptr
+        end
+    else
+        @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(0)
+    end
+
+    try
+        @ce_curl curl_easy_perform
+        process_response(ctxt, resp)
+    finally
+        if isa(libc_file, Libc.FILE)
+            # Need to flush the Libc.FILE to make sure content is written, closing the
+            # Libc.FILE does not reliably do this. Then update the IOStream pointer to
+            # point to the same position so that data can be appended to the stream.
+            ccall(:fflush, Cvoid, (Ptr{Cvoid},), libc_file.ptr)
+            seek(verbose, position(libc_file))
+            close(libc_file)
+
+            @ce_curl curl_easy_setopt CURLOPT_STDERR Libc.FILE(RawFD(2), "w").ptr
+        end
+    end
+
+    return resp
+end
 
 ##############################
 # ISEQUAL
