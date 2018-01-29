@@ -508,19 +508,15 @@ end
 
         tempfile(mv_file)
         @test isfile(mv_file)
-        @show readdir(ftp)
 
         server_file = joinpath(ROOT, mv_file)
         cp(mv_file, server_file)
         @test isfile(server_file)
 
-        @show readdir(ftp)
-
         server_new_file = joinpath(ROOT, new_file)
         # remove the new file if it already exists
         # on windows trying to overwrite the file will cause an error to be thrown
         isfile(server_new_file) && rm(server_new_file)
-        @show readdir(ftp)
 
         test_captured_ouput() do io
             mv(ftp, mv_file, new_file; verbose=io)
@@ -530,7 +526,6 @@ end
         @test isfile(server_new_file)
         @test readstring(server_new_file) == readstring(mv_file)
         no_unexpected_changes(ftp)
-        @show readdir(ftp)
         close(ftp)
 
         cleanup_file(server_new_file)
@@ -538,7 +533,6 @@ end
     end
 
     @testset "rm" begin
-        println("\n")
         ftp = FTP(; opts...)
 
         tempfile(mv_file)
@@ -552,13 +546,10 @@ end
         @test isfile(server_file)
 
         test_captured_ouput() do io
-            @show readdir(ftp)
             rm(ftp, mv_file; verbose=io)
         end
         @test !isfile(server_file)
         no_unexpected_changes(ftp)
-
-        @show readdir(ftp)
         close(ftp)
 
         cleanup_file(mv_file)
