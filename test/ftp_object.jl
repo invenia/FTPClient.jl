@@ -400,6 +400,7 @@ end
             close(io)
             @test filesize(temp_file_path) > 0
         finally
+            close(io)
             isfile(temp_file_path) && rm(temp_file_path)
             ftp_cleanup()
         end
