@@ -131,8 +131,6 @@ function write_file_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_wd::Ptr{Cvoi
     nbytes::Csize_t
 end
 
-c_write_file_cb = cfunction(write_file_cb, Csize_t, Tuple{Ptr{UInt8}, Csize_t, Csize_t, Ptr{Cvoid}})
-
 function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Ptr{Cvoid})
     # println("@header_cb")
     resp = unsafe_pointer_to_objref(p_resp)
@@ -145,8 +143,6 @@ function header_command_cb(buff::Ptr{UInt8}, sz::Csize_t, n::Csize_t, p_resp::Pt
 
     nbytes::Csize_t
 end
-
-c_header_command_cb = cfunction(header_command_cb, Csize_t, Tuple{Ptr{UInt8}, Csize_t, Csize_t, Ptr{Cvoid}})
 
 function curl_read_cb(out::Ptr{Cvoid}, s::Csize_t, n::Csize_t, p_rd::Ptr{Cvoid})
     # println("@curl_read_cb")
@@ -163,9 +159,6 @@ function curl_read_cb(out::Ptr{Cvoid}, s::Csize_t, n::Csize_t, p_rd::Ptr{Cvoid})
     r = convert(Csize_t, b2copy)
     r::Csize_t
 end
-
-c_curl_read_cb = cfunction(curl_read_cb, Csize_t, Tuple{Ptr{Cvoid}, Csize_t, Csize_t, Ptr{Cvoid}})
-
 
 
 ##############################

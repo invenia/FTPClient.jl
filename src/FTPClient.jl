@@ -1,4 +1,4 @@
-__precompile__(true)
+__precompile__()
 
 module FTPClient
 
@@ -37,6 +37,13 @@ export RequestOptions,
 
 include("FTPC.jl")
 include("FTPObject.jl")
+
+function __init__()
+    global c_write_file_cb = cfunction(write_file_cb, Csize_t, Tuple{Ptr{UInt8}, Csize_t, Csize_t, Ptr{Cvoid}})
+    global c_header_command_cb = cfunction(header_command_cb, Csize_t, Tuple{Ptr{UInt8}, Csize_t, Csize_t, Ptr{Cvoid}})
+    global c_curl_read_cb = cfunction(curl_read_cb, Csize_t, Tuple{Ptr{Cvoid}, Csize_t, Csize_t, Ptr{Cvoid}})
+end
+
 
 end
 
