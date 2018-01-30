@@ -1,3 +1,5 @@
+__precompile__(true)
+
 module FTPClient
 
 import Base: convert, show, open, mkdir, ascii, mv
