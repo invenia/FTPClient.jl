@@ -341,7 +341,7 @@ function ftp_get(
         #@ce_curl curl_easy_setopt CURLOPT_FTP_USE_EPRT 0
         #@ce_curl curl_easy_setopt CURLOPT_FTPPORT "-"
 
-        @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
+        @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION C_WRITE_FILE_CB[]
         @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
         @ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(1)
@@ -453,7 +453,7 @@ function ftp_put(
 
     @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(1)
     @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
-    @ce_curl curl_easy_setopt CURLOPT_READFUNCTION c_curl_read_cb
+    @ce_curl curl_easy_setopt CURLOPT_READFUNCTION C_CURL_READ_CB[]
 
     @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url * file_name
 
@@ -521,7 +521,7 @@ function ftp_command(
 
     @ce_curl curl_easy_setopt CURLOPT_CUSTOMREQUEST cmd
 
-    @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION c_write_file_cb
+    @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION C_WRITE_FILE_CB[]
     @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
     resp = ftp_perform(ctxt, verbose)
@@ -583,7 +583,7 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
     resp = Response()
     p_resp = pointer_from_objref(resp)
 
-    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION c_header_command_cb
+    @ce_curl curl_easy_setopt CURLOPT_HEADERFUNCTION C_HEADER_COMMAND_CB[]
     @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
     libc_file = nothing
