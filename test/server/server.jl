@@ -2,6 +2,7 @@ import Base: Process
 import Base: close
 using Conda
 using Compat
+using Compat.Random: randstring
 
 Conda.add("pyopenssl")
 
