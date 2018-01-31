@@ -48,7 +48,7 @@ mutable struct FTPServer
 
         line = readline(io)
         m = match(r"starting FTP.* server on .*:(?<port>\d+)", line)
-        if m != nothing
+        if m !== nothing
             port = parse(Int, m[:port])
             new(root, port, username, password, permissions, security, process, io)
         else
