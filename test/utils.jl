@@ -1,4 +1,4 @@
-using Compat: replace
+using Compat: replace, contains
 
 function is_headers_equal(original::AbstractArray{A}, expected::AbstractArray{B}) where {A<:AbstractString, B<:AbstractString}
     length(original) == length(expected) || return false
@@ -26,7 +26,7 @@ function is_header_equal(original::AbstractString, expected::AbstractString)
 
         # Remove empty quoted sections
         expected = replace(expected, "\\Q\\E" => "")
-        return ismatch(Regex(expected), original)
+        return contains(original, Regex(expected))
     else
         return original == expected
     end
