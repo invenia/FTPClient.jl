@@ -31,7 +31,7 @@ function expected_output(active::Bool)
     ftp = FTP(; opts..., active_mode=active)
     println(buff, ftp)
     seekstart(buff)
-    @test readstring(buff) == expected
+    @test read(buff, String) == expected
     close(ftp)
 end
 
@@ -87,7 +87,7 @@ end
     # check download to buffer
     ftp = FTP(; opts...)
     buffer = download(ftp, download_file)
-    @test readstring(buffer) == readstring(joinpath(ROOT,download_file))
+    @test read(buffer, String) == read(joinpath(ROOT, download_file), String)
     no_unexpected_changes(ftp)
     close(ftp)
 end
@@ -101,7 +101,7 @@ end
     @test isfile(local_file)
     resp = upload(ftp, local_file)
     @test isfile(server_file)
-    @test readstring(server_file) == readstring(local_file)
+    @test read(server_file, String) == read(local_file, String)
 
     no_unexpected_changes(ftp)
     close(ftp)
@@ -212,7 +212,7 @@ end
     mv(ftp, mv_file, new_file)
     @test !isfile(server_file)
     @test isfile(server_new_file)
-    @test readstring(server_new_file) == readstring(mv_file)
+    @test read(server_new_file, String) == read(mv_file, String)
     no_unexpected_changes(ftp)
     close(ftp)
 
@@ -258,7 +258,7 @@ end
     resp = upload(ftp, upload_file)
 
     @test isfile(server_file)
-    @test readstring(server_file) == readstring(upload_file)
+    @test read(server_file, String) == read(upload_file, String)
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -269,7 +269,7 @@ end
     @test !isfile(server_file)
     resp = upload(ftp, upload_file, "some name")
     @test isfile(server_file)
-    @test readstring(server_file) == readstring(upload_file)
+    @test read(server_file, String) == read(upload_file, String)
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -281,7 +281,7 @@ end
     resp = upload(ftp, [upload_file], "/")
     @test resp == [true]
     @test isfile(server_file)
-    @test readstring(server_file) == readstring(upload_file)
+    @test read(server_file, String) == read(upload_file, String)
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -303,16 +303,16 @@ end
     @test resp == [true, true, true, true]
 
     @test isfile(server_file)
-    @test readstring(server_file) == readstring(upload_file)
+    @test read(server_file, String) == read(upload_file, String)
 
     @test isfile(server_file_2)
-    @test readstring(server_file_2) == readstring(upload_file_2)
+    @test read(server_file_2, String) == read(upload_file_2, String)
 
     @test isfile(server_file_3)
-    @test readstring(server_file_3) == readstring(upload_file_3)
+    @test read(server_file_3, String) == read(upload_file_3, String)
 
     @test isfile(server_file_4)
-    @test readstring(server_file_4) == readstring(upload_file_4)
+    @test read(server_file_4, String) == read(upload_file_4, String)
 
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
@@ -346,16 +346,16 @@ end
     @test resp == [true, true, true, true]
 
     @test isfile(server_file)
-    @test readstring(server_file) == readstring(upload_file)
+    @test read(server_file, String) == read(upload_file, String)
 
     @test isfile(server_file_2)
-    @test readstring(server_file_2) == readstring(upload_file_2)
+    @test read(server_file_2, String) == read(upload_file_2, String)
 
     @test isfile(server_file_3)
-    @test readstring(server_file_3) == readstring(upload_file_3)
+    @test read(server_file_3, String) == read(upload_file_3, String)
 
     @test isfile(server_file_4)
-    @test readstring(server_file_4) == readstring(upload_file_4)
+    @test read(server_file_4, String) == read(upload_file_4, String)
 
 
     no_unexpected_changes(retry_server)
@@ -376,7 +376,7 @@ end
         resp = upload(ftp, fp, "some other name")
     end
     @test isfile(server_file)
-    @test readstring(server_file) == readstring(upload_file)
+    @test read(server_file, String) == read(upload_file, String)
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -426,7 +426,7 @@ end
         test_captured_ouput() do io
             buffer = download(ftp, download_file; verbose=io)
         end
-        @test readstring(buffer) == readstring(joinpath(ROOT,download_file))
+        @test read(buffer, String) == read(joinpath(ROOT, download_file), String)
         no_unexpected_changes(ftp)
         close(ftp)
     end
@@ -442,7 +442,7 @@ end
             upload(ftp, upload_file; verbose=io)
         end
         @test isfile(server_file)
-        @test readstring(server_file) == readstring(local_file)
+        @test read(server_file, String) == read(local_file, String)
 
         no_unexpected_changes(ftp)
         close(ftp)
@@ -524,7 +524,7 @@ end
 
         @test !isfile(server_file)
         @test isfile(server_new_file)
-        @test readstring(server_new_file) == readstring(mv_file)
+        @test read(server_new_file, String) == read(mv_file, String)
         no_unexpected_changes(ftp)
         close(ftp)
 
@@ -566,7 +566,7 @@ end
             end
 
             @test isfile(server_file)
-            @test readstring(server_file) == readstring(upload_file)
+            @test read(server_file, String) == read(upload_file, String)
             no_unexpected_changes(ftp)
             cleanup_file(server_file)
             close(ftp)
@@ -579,7 +579,7 @@ end
                 resp = upload(ftp, upload_file, "some name"; verbose=io)
             end
             @test isfile(server_file)
-            @test readstring(server_file) == readstring(upload_file)
+            @test read(server_file, String) == read(upload_file, String)
             no_unexpected_changes(ftp)
             cleanup_file(server_file)
             close(ftp)
@@ -593,7 +593,7 @@ end
                 @test resp == [true]
             end
             @test isfile(server_file)
-            @test readstring(server_file) == readstring(upload_file)
+            @test read(server_file, String) == read(upload_file, String)
             no_unexpected_changes(ftp)
             cleanup_file(server_file)
             close(ftp)
@@ -654,6 +654,6 @@ end
  # check do (doesn't work)
   # ftp(ssl=false, user=user, pswd=pswd, host=host) do f
   # buff = download(f, file_name)
-  # @test readstring(buff) == file_contents
+  # @test read(buff, String) == file_contents
   # no_unexpected_changes(f)
   # end

@@ -2,6 +2,7 @@ import Base: Process
 import Base: close
 using Conda
 using Compat
+using Compat.Random: randstring
 
 Conda.add("pyopenssl")
 
@@ -13,7 +14,7 @@ const SCRIPT = abspath(dirname(@__FILE__), "server.py")
 const CERT = abspath(dirname(@__FILE__), "test.crt")
 const KEY = abspath(dirname(@__FILE__), "test.key")
 
-python = joinpath(Conda.PYTHONDIR, is_windows() ? "python.exe" : "python")
+python = joinpath(Conda.PYTHONDIR, Sys.iswindows() ? "python.exe" : "python")
 
 mutable struct FTPServer
     root::AbstractString
@@ -47,7 +48,7 @@ mutable struct FTPServer
 
         line = readline(io)
         m = match(r"starting FTP.* server on .*:(?<port>\d+)", line)
-        if m != nothing
+        if m !== nothing
             port = parse(Int, m[:port])
             new(root, port, username, password, permissions, security, process, io)
         else

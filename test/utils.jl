@@ -1,3 +1,5 @@
+using Compat: replace, contains
+
 function is_headers_equal(original::AbstractArray{A}, expected::AbstractArray{B}) where {A<:AbstractString, B<:AbstractString}
     length(original) == length(expected) || return false
     for (a, b) in zip(original, expected)
@@ -18,13 +20,13 @@ to match against headers regular expressions should be used instead.
 function is_header_equal(original::AbstractString, expected::AbstractString)
     if contains(expected, "...") || contains(expected, "||")
         # Change `...` to `.*` and `||` to `|` while quoting the rest of the string.
-        expected = replace(expected, "...", "\\E.*\\Q")
-        expected = replace(expected, "||", "\\E|\\Q")
+        expected = replace(expected, "..." => "\\E.*\\Q")
+        expected = replace(expected, "||" => "\\E|\\Q")
         expected = string("^(?:\\Q", expected, "\\E)\$")
 
         # Remove empty quoted sections
-        expected = replace(expected, "\\Q\\E", "")
-        return ismatch(Regex(expected), original)
+        expected = replace(expected, "\\Q\\E" => "")
+        return contains(original, Regex(expected))
     else
         return original == expected
     end

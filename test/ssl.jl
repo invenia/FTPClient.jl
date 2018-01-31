@@ -52,7 +52,7 @@ function test_download(options::RequestOptions)
     server_path = "test_download.txt"
     resp = ftp_get(options, server_path)
     @test resp.code == 226
-    @test readstring(resp.body) == readstring(joinpath(ROOT, server_path))
+    @test read(resp.body, String) == read(joinpath(ROOT, server_path), String)
 end
 
 function test_upload(options::RequestOptions)
@@ -63,21 +63,21 @@ function test_upload(options::RequestOptions)
         ftp_put(options, client_path, fp)
     end
     @test resp.code == 226
-    @test readstring(local_server_path) == readstring(client_path)
+    @test read(local_server_path, String) == read(client_path, String)
     rm(local_server_path)
 end
 
 function test_cmd(options::RequestOptions)
     resp = ftp_command(options, "PWD")
     @test resp.code == 257
-    @test readstring(resp.body) == ""
+    @test read(resp.body, String) == ""
 end
 
 function test_download(ctxt::ConnContext)
     server_path = "test_download.txt"
     resp = ftp_get(ctxt, server_path)
     @test resp.code == 226
-    @test readstring(resp.body) == readstring(joinpath(ROOT, server_path))
+    @test read(resp.body, String) == read(joinpath(ROOT, server_path), String)
 end
 
 function test_upload(ctxt::ConnContext)
@@ -88,14 +88,14 @@ function test_upload(ctxt::ConnContext)
     end
     ftp_close_connection(ctxt)
     @test resp.code ==226
-    @test readstring(client_path) == readstring(local_server_path)
+    @test read(client_path, String) == read(local_server_path, String)
     rm(local_server_path)
 end
 
 function test_cmd(ctxt::ConnContext)
     resp = ftp_command(ctxt, "PWD")
     @test resp.code == 257
-    @test readstring(resp.body) == ""
+    @test read(resp.body, String) == ""
 end
 
 @testset "ssl" begin
