@@ -4,7 +4,7 @@ module FTPClient
 
 import Base: convert, show, open, mkdir, ascii, mv
 import Base: readdir, cd, pwd, rm, close, download
-import Compat: readstring, unsafe_string, unsafe_write, @compat
+import Compat: readstring, unsafe_string, unsafe_write, @compat, Cvoid
 
 mutable struct FTPClientError <: Exception
     msg::AbstractString
@@ -35,9 +35,9 @@ export RequestOptions,
     binary_mode,
     close
 
-const C_WRITE_FILE_CB = Ref{Ptr{Void}}(C_NULL)
-const C_HEADER_COMMAND_CB = Ref{Ptr{Void}}(C_NULL)
-const C_CURL_READ_CB = Ref{Ptr{Void}}(C_NULL)
+const C_WRITE_FILE_CB = Ref{Ptr{Cvoid}}(C_NULL)
+const C_HEADER_COMMAND_CB = Ref{Ptr{Cvoid}}(C_NULL)
+const C_CURL_READ_CB = Ref{Ptr{Cvoid}}(C_NULL)
 
 function __init__()
     C_WRITE_FILE_CB[] = cfunction(write_file_cb, Csize_t, Tuple{Ptr{UInt8}, Csize_t, Csize_t, Ptr{Cvoid}})
