@@ -1,4 +1,4 @@
-import Compat: readstring, Sys
+import Compat: read, Sys
 using FTPClient
 using Base.Test
 

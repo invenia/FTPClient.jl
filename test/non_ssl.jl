@@ -11,7 +11,7 @@ opts = (
 function test_response(resp, body, code, headers)
     @test typeof(resp.total_time) == Float64
     @test resp.code == code
-    @test readstring(resp.body) == body
+    @test read(resp.body, String) == body
     @test is_headers_equal(resp.headers, headers)
     @test resp.bytes_recd == length(body)
 end
@@ -21,8 +21,8 @@ function test_response(resp, code, headers, save_path, file_body)
 
     @test typeof(resp.total_time) == Float64
     @test resp.code == code
-    @test readstring(resp.body) == ""
-    @test readstring(save_path) == file_body
+    @test read(resp.body, String) == ""
+    @test read(save_path, String) == file_body
     @test is_headers_equal(resp.headers, headers)
     @test resp.bytes_recd == length(file_body)
 end
@@ -51,7 +51,7 @@ function test_put(headers, opt)
     end
 
     @test isfile(server_file)
-    @test readstring(server_file) == readstring(local_file)
+    @test read(server_file, String) == read(local_file, String)
     cleanup_file(server_file)
 
     test_response(resp, "", 226, headers)
@@ -305,7 +305,7 @@ end
     error = FTPClientError(msg, lib_curl_error)
     showerror(buff, error)
     seekstart(buff)
-    @test "$msg :: LibCURL error #$lib_curl_error" == readstring(buff)
+    @test "$msg :: LibCURL error #$lib_curl_error" == read(buff, String)
 
     options = RequestOptions(ssl=false, active_mode=false, hostname="not a host", username=username(server), password=password(server))
     @test_throws FTPClientError ftp_connect(options)
