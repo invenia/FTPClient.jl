@@ -574,6 +574,7 @@ Close the connection to the FTP server.
 """
 function ftp_close_connection(ctxt::ConnContext)
     cleanup_easy_context(ctxt)
+    nothing
 end
 
 
