@@ -4,13 +4,13 @@ tempfile(mv_file)
 global retry_server = nothing
 
 opts = (
-    :hostname => hostname(server),
-    :username => username(server),
-    :password => password(server),
+    :hostname => "$(ftp_hostname(server)):$(ftp_port(server))",
+    :username => ftp_username(server),
+    :password => ftp_password(server),
     :ssl => false,
 )
 
-function no_unexpected_changes(ftp::FTP, hostname::AbstractString=hostname(server))
+function no_unexpected_changes(ftp::FTP, hostname::AbstractString=fto_hostname(server))
     other = FTP(; opts...)
     @test ftp.ctxt.options == other.ctxt.options
     @test ftp.ctxt.url == "ftp://$hostname/"
@@ -20,8 +20,8 @@ end
 function expected_output(active::Bool)
     mode = active ? "active" : "passive"
     expected = """
-        Host:      ftp://$(hostname(server))/
-        User:      $(username(server))
+        Host:      ftp://$(ftp_hostname(server)):$(ftp_port(server))/
+        User:      $(ftp_username(server))
         Transfer:  $mode mode
         Security:  None
 
@@ -56,7 +56,7 @@ end
 
 @testset "conn error" begin
     # check connection error
-    @test_throws FTPClientError FTP(hostname="not a host", username=username(server), password=password(server), ssl=false)
+    @test_throws FTPClientError FTP(hostname="not a host", username=ftp_username(server), password=ftp_password(server), ssl=false)
 end
 
 @testset "object" begin
@@ -67,7 +67,7 @@ end
 end
 
 @testset "connection with url" begin
-    host = hostname(server)
+    host = ftp_hostname(server)
     ftp = FTP(; url="ftp://$host/", opts...)
     @test ftp.ctxt.url == "ftp://$host/"
     close(ftp)
@@ -141,7 +141,7 @@ end
 @testset "cd" begin
     server_dir = joinpath(ROOT, testdir)
 
-    host = hostname(server)
+    host = ftp_hostname(server)
     # check cd
     ftp = FTP(; opts...)
     mkdir(server_dir)
@@ -466,7 +466,7 @@ end
 
     @testset "cd" begin
         server_dir = joinpath(ROOT, testdir)
-        host = hostname(server)
+        host = ftp_hostname(server)
 
         ftp = FTP(; opts...)
         mkdir(server_dir)
