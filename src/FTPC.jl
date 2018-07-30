@@ -9,9 +9,9 @@ import Base: ==
 ##############################
 
 mutable struct RequestOptions
-    url::AbstractString
-    username::AbstractString
-    password::AbstractString
+    url::String
+    username::String
+    password::String
     ssl::Bool
     verify_peer::Bool
     active_mode::Bool
