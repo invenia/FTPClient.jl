@@ -77,7 +77,7 @@ function RequestOptions(
 
     # https://curl.haxx.se/libcurl/c/CURLOPT_URL.html
     RequestOptions(
-        "$(u.scheme)://$(u.host):$port",
+        string(u),
         username,
         password,
         (u.scheme == "ftps" ? true : ssl),

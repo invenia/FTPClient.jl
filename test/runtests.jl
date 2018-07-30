@@ -1,6 +1,7 @@
 import Compat: read, Sys
 using FTPClient
 using Base.Test
+using URIParser: URI
 
 include("server/server.jl")
 include("utils.jl")

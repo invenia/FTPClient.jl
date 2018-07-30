@@ -10,10 +10,19 @@ opts = (
     :ssl => false,
 )
 
-function no_unexpected_changes(ftp::FTP, hostname::AbstractString=ftp_hostname(server), port::Integer=ftp_port(server))
+function no_unexpected_changes(
+    ftp::FTP;
+    host::AbstractString=ftp_hostname(server),
+    path::AbstractString="",
+    port::Integer=ftp_port(server)
+)
     other = FTP(; opts...)
     @test ftp.ctxt.options == other.ctxt.options
-    @test ftp.ctxt.url == "ftp://$hostname:$port/"
+
+    uri = URI(ftp.ctxt.url)
+    @test uri.host == host
+    @test uri.port == port
+    @test normpath(strip(uri.path, '/')) == normpath(strip(path, '/'))
     close(other)
 end
 
@@ -71,7 +80,7 @@ end
     user = ftp_username(server)
     pass = ftp_password(server)
     port = ftp_port(server)
-    uri = "ftp://$user:$pass@$host:$port"
+    uri = "ftp://$user:$pass@$host:$port/"
 
     ftp = FTP(uri)
     @test ftp.ctxt.url == uri
@@ -159,7 +168,7 @@ end
     ftp = FTP(; opts...)
     mkdir(server_dir)
     cd(ftp, testdir)
-    no_unexpected_changes(ftp, "$host/$testdir")
+    no_unexpected_changes(ftp; host=host, path=testdir)
     cleanup_dir(server_dir)
     close(ftp)
 
@@ -178,7 +187,7 @@ end
     @test isdir(server_dir)
     cd(ftp, testdir)
     cd(ftp, "..")
-    no_unexpected_changes(ftp, "$host/$testdir/..")
+    no_unexpected_changes(ftp; host=host)
     cleanup_dir(server_dir)
     close(ftp)
 end
@@ -486,7 +495,7 @@ end
         test_captured_ouput() do io
             cd(ftp, testdir; verbose=io)
         end
-        no_unexpected_changes(ftp, "$host/$testdir")
+        no_unexpected_changes(ftp; host=host, path=testdir)
         cleanup_dir(server_dir)
         close(ftp)
     end

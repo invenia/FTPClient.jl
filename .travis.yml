@@ -5,6 +5,8 @@ os:
 julia:
   - 0.6
   - nightly
+env:
+  - CONDA_JL_VERSION="2"
 matrix:
   allow_failures:
       - julia: nightly
