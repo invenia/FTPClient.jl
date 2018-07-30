@@ -4,16 +4,16 @@ tempfile(mv_file)
 global retry_server = nothing
 
 opts = (
-    :hostname => "$(ftp_hostname(server)):$(ftp_port(server))",
+    :hostname => string(ftp_hostname(server), ':', ftp_port(server)),
     :username => ftp_username(server),
     :password => ftp_password(server),
     :ssl => false,
 )
 
-function no_unexpected_changes(ftp::FTP, hostname::AbstractString=fto_hostname(server))
+function no_unexpected_changes(ftp::FTP, hostname::AbstractString=ftp_hostname(server), port::Integer=ftp_port(server))
     other = FTP(; opts...)
     @test ftp.ctxt.options == other.ctxt.options
-    @test ftp.ctxt.url == "ftp://$hostname/"
+    @test ftp.ctxt.url == "ftp://$hostname:$port/"
     close(other)
 end
 
@@ -66,10 +66,23 @@ end
     close(ftp)
 end
 
+@testset "connection with URI" begin
+    host = ftp_hostname(server)
+    user = ftp_username(server)
+    pass = ftp_password(server)
+    port = ftp_port(server)
+    uri = "ftp://$user:$pass@$host:$port"
+
+    ftp = FTP(uri)
+    @test ftp.ctxt.url == uri
+    close(ftp)
+end
+
 @testset "connection with url" begin
     host = ftp_hostname(server)
-    ftp = FTP(; url="ftp://$host/", opts...)
-    @test ftp.ctxt.url == "ftp://$host/"
+    port = ftp_port(server)
+    ftp = FTP(; url="ftp://$host:$port/", opts...)
+    @test ftp.ctxt.url == "ftp://$host:$port/"
     close(ftp)
 end
 

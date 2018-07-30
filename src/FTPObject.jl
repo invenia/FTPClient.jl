@@ -6,7 +6,7 @@ mutable struct FTP
     ctxt::ConnContext
 end
 
-function FTP(options::RequestOptions)
+function FTP(options::RequestOptions; verbose::Union{Bool,IOStream}=false)
     try
         ctxt, resp = ftp_connect(options; verbose=verbose)
         FTP(ctxt)
@@ -50,7 +50,7 @@ function FTP(;
         ssl=ssl, implicit=implicit, verify_peer=verify_peer, active_mode=active_mode,
     )
 
-    FTP(options)
+    FTP(options; verbose=verbose)
 end
 
 """
@@ -72,7 +72,16 @@ julia> FTP("ftp://user:password@ftp.example.com", ssl=true);  # Explicit securit
 julia> FTP("ftps://user:password@ftp.example.com");  # Implicit security (FTPS)
 ```
 """
-FTP(uri::AbstractString; kwargs...) = FTP(RequestOptions(uri; kwargs...))
+function FTP(
+    uri::AbstractString;
+    ssl::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
+    verbose::Union{Bool,IOStream}=false,
+)
+    options = RequestOptions(uri; ssl=ssl, verify_peer=verify_peer, active_mode=active_mode)
+    FTP(options; verbose=verbose)
+end
 
 function show(io::IO, ftp::FTP)
     o = ftp.ctxt.options

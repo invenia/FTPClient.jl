@@ -6,9 +6,9 @@ function ssl_tests(implicit::Bool = true)
     server = FTPServer(security=mode)
 
     opts = (
-        :hostname => hostname(server),
-        :username => username(server),
-        :password => password(server),
+        :hostname => string(ftp_hostname(server), ':', ftp_port(server)),
+        :username => ftp_username(server),
+        :password => ftp_password(server),
         :ssl => true,
         :implicit => implicit,
         :verify_peer => false,

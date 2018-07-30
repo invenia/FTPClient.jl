@@ -86,6 +86,8 @@ function RequestOptions(
     )
 end
 
+ftp_security(opt::RequestOptions) = opt
+
 """
     Response
 
