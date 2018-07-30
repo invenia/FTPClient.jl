@@ -13,25 +13,29 @@ Create an FTP object.
 
 # Arguments
 * `hostname::AbstractString=""`: the hostname or address of the FTP server.
-* `implicit::Bool=false`: use implicit security.
-* `ssl::Bool=false`: use FTPS.
-* `verify_peer::Bool=true`: verify authenticity of peer's certificate.
-* `active_mode::Bool=false`: use active mode to establish data connection.
 * `username::AbstractString=""`: the username used to access the FTP server.
 * `password::AbstractString=""`: the password used to access the FTP server.
+* `ssl::Bool=false`: use FTPS.
+* `implicit::Bool=false`: use implicit security.
+* `verify_peer::Bool=true`: verify authenticity of peer's certificate.
+* `active_mode::Bool=false`: use active mode to establish data connection.
 * `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
     `Bool`, if true output is written to STDERR.
 """
 function FTP(;
-    hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
-    verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
-    password::AbstractString="", url::AbstractString="",
+    hostname::AbstractString="",
+    username::AbstractString="",
+    password::AbstractString="",
+    ssl::Bool=false,
+    implicit::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
     verbose::Union{Bool,IOStream}=false,
+    url::AbstractString="",
 )
     options = RequestOptions(
-        implicit=implicit, ssl=ssl,
-        verify_peer=verify_peer, active_mode=active_mode,
-        username=username, password=password, hostname=hostname, url=url
+        username=username, password=password, hostname=hostname, url=url,
+        ssl=ssl, implicit=implicit, verify_peer=verify_peer, active_mode=active_mode,
     )
 
     ctxt = nothing
@@ -44,7 +48,7 @@ function FTP(;
         rethrow()
     end
 
-    new(ctxt)
+    FTP(ctxt)
 end
 
 function show(io::IO, ftp::FTP)
