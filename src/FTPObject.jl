@@ -1,6 +1,11 @@
 # FTP code for when the file transfer is complete.
 const complete_transfer_code = 226
 
+
+mutable struct FTP
+    ctxt::ConnContext
+end
+
 """
     FTP(; kwargs...) -> FTP
 
@@ -17,33 +22,29 @@ Create an FTP object.
 * `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
     `Bool`, if true output is written to STDERR.
 """
-mutable struct FTP
-    ctxt::ConnContext
-
-    function FTP(;
-        hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
-        verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
-        password::AbstractString="", url::AbstractString="",
-        verbose::Union{Bool,IOStream}=false,
+function FTP(;
+    hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
+    verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
+    password::AbstractString="", url::AbstractString="",
+    verbose::Union{Bool,IOStream}=false,
+)
+    options = RequestOptions(
+        implicit=implicit, ssl=ssl,
+        verify_peer=verify_peer, active_mode=active_mode,
+        username=username, password=password, hostname=hostname, url=url
     )
-        options = RequestOptions(
-            implicit=implicit, ssl=ssl,
-            verify_peer=verify_peer, active_mode=active_mode,
-            username=username, password=password, hostname=hostname, url=url
-        )
 
-        ctxt = nothing
-        try
-            ctxt, resp = ftp_connect(options; verbose=verbose)
-        catch err
-            if isa(err, FTPClientError)
-                err.msg = "Failed to connect."
-            end
-            rethrow()
+    ctxt = nothing
+    try
+        ctxt, resp = ftp_connect(options; verbose=verbose)
+    catch err
+        if isa(err, FTPClientError)
+            err.msg = "Failed to connect."
         end
-
-        new(ctxt)
+        rethrow()
     end
+
+    new(ctxt)
 end
 
 function show(io::IO, ftp::FTP)

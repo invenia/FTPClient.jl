@@ -31,24 +31,28 @@ mutable struct RequestOptions
     password::AbstractString
     url::AbstractString
     hostname::AbstractString
+end
 
-    function RequestOptions(;
-        implicit::Bool=false, ssl::Bool=false,
-        verify_peer::Bool=true, active_mode::Bool=false,
-        username::AbstractString="", password::AbstractString="",
-        url::AbstractString="", hostname::AbstractString="localhost",
-    )
+function RequestOptions(;
+    implicit::Bool=false,
+    ssl::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
+    username::AbstractString="",
+    password::AbstractString="",
+    url::AbstractString="",
+    hostname::AbstractString="localhost",
+)
 
-        if isempty(url)
-            if implicit
-                url = "ftps://$hostname/"
-            else
-                url = "ftp://$hostname/"
-            end
+    if isempty(url)
+        if implicit
+            url = "ftps://$hostname/"
+        else
+            url = "ftp://$hostname/"
         end
-
-        new(implicit, ssl, verify_peer, active_mode, username, password, url, hostname)
     end
+
+    RequestOptions(implicit, ssl, verify_peer, active_mode, username, password, url, hostname)
 end
 
 """
