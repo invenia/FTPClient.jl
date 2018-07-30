@@ -22,15 +22,15 @@ end
 
 The options used to connect to an FTP server.
 
-# Parameters
-* `implicit::Bool=false`: use implicit security.
-* `ssl::Bool=false`: use FTPS.
-* `verify_peer::Bool=true`: verify authenticity of peer's certificate.
-* `active_mode::Bool=false`: use active mode to establish data connection.
-* `username::AbstractString=""`: the username used to access the FTP server.
-* `password::AbstractString=""`: the password used to access the FTP server.
-* `url::AbstractString=""`: the url of the FTP server.
-* `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
+# Keywords
+- `url::AbstractString=""`: the URL of the FTP server.
+- `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
+- `username::AbstractString=""`: the username used to access the FTP server.
+- `password::AbstractString=""`: the password used to access the FTP server.
+- `implicit::Bool=false`: use an implicit FTPS configuration.
+- `ssl::Bool=false`: use a secure connection. Typically specified for explicit FTPS.
+- `verify_peer::Bool=true`: verify authenticity of peer's certificate.
+- `active_mode::Bool=false`: use active mode to establish data connection.
 """
 function RequestOptions(;
     url::AbstractString="",
@@ -51,6 +51,39 @@ function RequestOptions(;
     end
 
     RequestOptions(url, username, password, ssl, verify_peer, active_mode)
+end
+
+function RequestOptions(
+    uri::AbstractString;
+    ssl::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
+)
+    u = URI(uri)
+
+    if !(u.scheme in ("ftps", "ftp"))
+        throw(ArgumentError("Unhandled FTP scheme: $(u.scheme)"))
+    end
+
+    username, password = split(u.userinfo, ':', limit=2)
+
+    port = if !iszero(u.port)
+        Int(u.port)
+    elseif u.scheme == "ftp"
+        21
+    elseif u.scheme == "ftps"  # Implicit FTPS
+        990
+    end
+
+    # https://curl.haxx.se/libcurl/c/CURLOPT_URL.html
+    RequestOptions(
+        "$(u.scheme)://$(u.host):$port",
+        username,
+        password,
+        (u.scheme == "ftps" ? true : ssl),
+        verify_peer,
+        active_mode,
+    )
 end
 
 """

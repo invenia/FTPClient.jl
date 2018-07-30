@@ -6,6 +6,18 @@ mutable struct FTP
     ctxt::ConnContext
 end
 
+function FTP(options::RequestOptions)
+    try
+        ctxt, resp = ftp_connect(options; verbose=verbose)
+        FTP(ctxt)
+    catch err
+        if isa(err, FTPClientError)
+            err.msg = "Failed to connect."
+        end
+        rethrow()
+    end
+end
+
 """
     FTP(; kwargs...) -> FTP
 
@@ -38,18 +50,29 @@ function FTP(;
         ssl=ssl, implicit=implicit, verify_peer=verify_peer, active_mode=active_mode,
     )
 
-    ctxt = nothing
-    try
-        ctxt, resp = ftp_connect(options; verbose=verbose)
-    catch err
-        if isa(err, FTPClientError)
-            err.msg = "Failed to connect."
-        end
-        rethrow()
-    end
-
-    FTP(ctxt)
+    FTP(options)
 end
+
+"""
+    FTP(uri; kwargs...)
+
+Connect to an FTP server using the information specified in the URI.
+
+# Keywords
+- `ssl::Bool=false`: use a secure FTP connect.
+- `verify_peer::Bool=true`: verify the authenticity of the peer's certificate.
+- `active_mode::Bool=false`: use active mode to establish data connection.
+
+# Example
+```julia
+julia> FTP("ftp://user:password@ftp.example.com");  # FTP connection with no security
+
+julia> FTP("ftp://user:password@ftp.example.com", ssl=true);  # Explicit security (FTPES)
+
+julia> FTP("ftps://user:password@ftp.example.com");  # Implicit security (FTPS)
+```
+"""
+FTP(uri::AbstractString; kwargs...) = FTP(RequestOptions(uri; kwargs...))
 
 function show(io::IO, ftp::FTP)
     o = ftp.ctxt.options
