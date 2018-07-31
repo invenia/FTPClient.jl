@@ -35,21 +35,26 @@ function expected_output(active::Bool)
     close(ftp)
 end
 
-function expected_upload(src, dest; timeout=30)
+function copy_and_wait(f::Function, files...; timeout=30)
     # Writing/uploading FTP files can have concurrency issues so we repeatedly
     # try and read the destination file until we have data.
-    @test isfile(dest)
-    local_data = read(src, String)
-    srv_data = read(dest, String)
-    attempts = 1
+    resp = f()
 
-    while isempty(srv_data) && attempts < timeout
-        sleep(1)
-        attempts += 1
-        srv_data = read(dest, String)
+    for f in files
+        file_data = ""
+        attempts = 1
+
+        while attempts < timeout
+            if isfile(f) && !isempty(read(f, String))
+                break
+            end
+
+            sleep(1)
+            attempts += 1
+        end
     end
 
-    @test srv_data == local_data
+    return resp
 end
 
 # Function that will bring up the server after a few retries, and returns
@@ -116,8 +121,13 @@ end
     server_file = joinpath(ROOT, local_file)
     tempfile(local_file)
     @test isfile(local_file)
-    resp = upload(ftp, local_file)
-    expected_upload(local_file, server_file)
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, local_file)
+    end
+    @test isfile(server_file)
+    @test read(local_file, String) == read(server_file, String)
+
     no_unexpected_changes(ftp)
     close(ftp)
     cleanup_file(server_file)
@@ -270,8 +280,13 @@ end
     server_file = joinpath(ROOT, upload_file)
     @test isfile(upload_file)
     @test !isfile(server_file)
-    resp = upload(ftp, upload_file)
-    expected_upload(upload_file, server_file)
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, upload_file)
+    end
+    @test isfile(server_file)
+    @test read(upload_file, String) == read(server_file, String)
+
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -280,8 +295,13 @@ end
     ftp = FTP(; opts...)
     server_file= joinpath(ROOT, "some name")
     @test !isfile(server_file)
-    resp = upload(ftp, upload_file, "some name")
-    expected_upload(upload_file, server_file)
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, upload_file, "some name")
+    end
+    @test isfile(server_file)
+    @test read(upload_file, String) == read(server_file, String)
+
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -290,9 +310,15 @@ end
     ftp = FTP(; opts...)
     server_file= joinpath(ROOT, "test_upload.txt")
     @test !isfile(server_file)
-    resp = upload(ftp, [upload_file], "/")
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, [upload_file], "/")
+    end
+
     @test resp == [true]
-    expected_upload(upload_file, server_file)
+    @test isfile(server_file)
+    @test read(upload_file, String) == read(server_file, String)
+
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -310,20 +336,21 @@ end
     server_file_4 = joinpath(ROOT, "test_upload_4.txt")
     @test !isfile(server_file_4)
 
-    resp = upload(ftp, upload_list, "/")
+    server_list = [server_file, server_file_2, server_file_3, server_file_4]
+
+    resp = copy_and_wait(server_list...) do
+        upload(ftp, upload_list, "/")
+    end
+
     @test resp == [true, true, true, true]
 
-    expected_upload(upload_file, server_file)
-    expected_upload(upload_file_2, server_file_2)
-    expected_upload(upload_file_3, server_file_3)
-    expected_upload(upload_file_4, server_file_4)
+    for (ufile, sfile) in zip(upload_list, server_list)
+        @test isfile(sfile)
+        @test read(ufile, String) == read(sfile, String)
+    end
 
     no_unexpected_changes(ftp)
-    cleanup_file(server_file)
-    cleanup_file(server_file_2)
-    cleanup_file(server_file_3)
-    cleanup_file(server_file_4)
-
+    map(cleanup_file, server_list)
     close(ftp)
 
     # Check upload with retry, multiple files, where it will fail the first time
@@ -332,33 +359,22 @@ end
     # Close the FTP so we can't connect to it
     close(ftp)
 
-    upload_list = [upload_file, upload_file_2, upload_file_3, upload_file_4]
-
-    server_file = joinpath(ROOT, "test_upload.txt")
-    @test !isfile(server_file)
-    server_file_2 = joinpath(ROOT, "test_upload_2.txt")
-    @test !isfile(server_file_2)
-    server_file_3 = joinpath(ROOT, "test_upload_3.txt")
-    @test !isfile(server_file_3)
-    server_file_4 = joinpath(ROOT, "test_upload_4.txt")
-    @test !isfile(server_file_4)
-
     # When this function is first called, ftp should not be functioning
     # It should wait for 1 retry, then create a server and put the details in the
     # retry_server variable, and use that to transfer the files.
-    resp = upload(ftp, upload_list, "/", retry_callback=retry_test, retry_wait_seconds=1)
+    resp = copy_and_wait(server_list...) do
+        upload(ftp, upload_list, "/", retry_callback=retry_test, retry_wait_seconds=1)
+    end
+
     @test resp == [true, true, true, true]
 
-    expected_upload(upload_file, server_file)
-    expected_upload(upload_file_2, server_file_2)
-    expected_upload(upload_file_3, server_file_3)
-    expected_upload(upload_file_4, server_file_4)
+    for (ufile, sfile) in zip(upload_list, server_list)
+        @test isfile(sfile)
+        @test read(ufile, String) == read(sfile, String)
+    end
 
     no_unexpected_changes(retry_server)
-    cleanup_file(server_file)
-    cleanup_file(server_file_2)
-    cleanup_file(server_file_3)
-    cleanup_file(server_file_4)
+    map(cleanup_file, server_list)
 
     close(retry_server)
 end
@@ -368,11 +384,14 @@ end
     ftp = FTP(; opts...)
     server_file= joinpath(ROOT, "some other name")
     @test !isfile(server_file)
-    open(upload_file) do fp
-        resp = upload(ftp, fp, "some other name")
+    resp = copy_and_wait(server_file) do
+        open(upload_file) do fp
+            resp = upload(ftp, fp, "some other name")
+        end
     end
 
-    expected_upload(upload_file, server_file)
+    @test isfile(server_file)
+    @test read(upload_file, String) == read(server_file, String)
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -434,10 +453,14 @@ end
         tempfile(local_file)
         @test isfile(local_file)
         @test !isfile(server_file)
-        test_captured_ouput() do io
-            upload(ftp, upload_file; verbose=io)
+
+        copy_and_wait(server_file) do
+            test_captured_ouput() do io
+                upload(ftp, upload_file; verbose=io)
+            end
         end
-        expected_upload(local_file, server_file)
+        @test isfile(server_file)
+        @test read(upload_file, String) == read(server_file, String)
 
         no_unexpected_changes(ftp)
         close(ftp)
@@ -556,11 +579,14 @@ end
             server_file = joinpath(ROOT, upload_file)
             @test isfile(upload_file)
             @test !isfile(server_file)
-            test_captured_ouput() do io
-                resp = upload(ftp, upload_file; verbose=io)
+            copy_and_wait(server_file) do
+                test_captured_ouput() do io
+                    resp = upload(ftp, upload_file; verbose=io)
+                end
             end
 
-            expected_upload(upload_file, server_file)
+            @test isfile(server_file)
+            @test read(upload_file, String) == read(server_file, String)
             no_unexpected_changes(ftp)
             cleanup_file(server_file)
             close(ftp)
@@ -569,10 +595,13 @@ end
             ftp = FTP(; opts...)
             server_file= joinpath(ROOT, "some name")
             @test !isfile(server_file)
-            test_captured_ouput() do io
-                resp = upload(ftp, upload_file, "some name"; verbose=io)
+            copy_and_wait(server_file) do
+                test_captured_ouput() do io
+                    resp = upload(ftp, upload_file, "some name"; verbose=io)
+                end
             end
-            expected_upload(upload_file, server_file)
+            @test isfile(server_file)
+            @test read(upload_file, String) == read(server_file, String)
             no_unexpected_changes(ftp)
             cleanup_file(server_file)
             close(ftp)
@@ -581,11 +610,14 @@ end
             ftp = FTP(; opts...)
             server_file= joinpath(ROOT, "test_upload.txt")
             @test !isfile(server_file)
-            test_captured_ouput() do io
-                resp = upload(ftp, [upload_file], "/"; verbose=io)
-                @test resp == [true]
+            copy_and_wait(server_file) do
+                test_captured_ouput() do io
+                    resp = upload(ftp, [upload_file], "/"; verbose=io)
+                    @test resp == [true]
+                end
             end
-            expected_upload(upload_file, server_file)
+            @test isfile(server_file)
+            @test read(upload_file, String) == read(server_file, String)
             no_unexpected_changes(ftp)
             cleanup_file(server_file)
             close(ftp)

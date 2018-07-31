@@ -42,12 +42,16 @@ function test_put(headers, opt)
     server_file = joinpath(ROOT, local_file)
 
     @test !isfile(server_file)
-    resp = open(local_file) do fp
-        ftp_put(opt, local_file, fp)
-    end
+    resp = copy_and_wait(server_file) do
+        r = open(local_file) do fp
+            ftp_put(opt, local_file, fp)
+        end
 
-    if isa(opt, ConnContext)
-        ftp_close_connection(opt) # close the connection so that the server file closes
+        if isa(opt, ConnContext)
+            ftp_close_connection(opt) # close the connection so that the server file closes
+        end
+
+        return r
     end
 
     @test isfile(server_file)
@@ -273,7 +277,9 @@ end
     # upload
     server_byte_file = joinpath(ROOT, byte_upload_file)
     bin_file = IOBuffer(hex2bytes(upload_bytes))
-    ftp_put(options, byte_upload_file, bin_file; mode=binary_mode)
+    copy_and_wait(server_byte_file) do
+        ftp_put(options, byte_upload_file, bin_file; mode=binary_mode)
+    end
     @test isfile(server_byte_file)
     @test hex2bytes(upload_bytes) == read(server_byte_file)
     cleanup_file(server_byte_file)
@@ -281,7 +287,9 @@ end
     # upload with ctxt
     ctxt, resp = ftp_connect(options)
     bin_file = IOBuffer(hex2bytes(upload_bytes))
-    ftp_put(ctxt, byte_upload_file, bin_file)
+    copy_and_wait(server_byte_file) do
+        ftp_put(ctxt, byte_upload_file, bin_file)
+    end
     @test isfile(server_byte_file)
     @test hex2bytes(upload_bytes) == read(server_byte_file)
     cleanup_file(server_byte_file)
@@ -290,7 +298,9 @@ end
     # ftpObject upload
     ftp = FTP(; opts...)
     bin_file = IOBuffer(hex2bytes(upload_bytes))
-    upload(ftp, bin_file, byte_upload_file)
+    copy_and_wait(server_byte_file) do
+        upload(ftp, bin_file, byte_upload_file)
+    end
     @test isfile(server_byte_file)
     @test hex2bytes(upload_bytes) == read(server_byte_file)
     cleanup_file(server_byte_file)
