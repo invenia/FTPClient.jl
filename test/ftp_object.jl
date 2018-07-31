@@ -23,8 +23,7 @@ function expected_output(active::Bool)
         Host:      ftp://$(hostname(server))/
         User:      $(username(server))
         Transfer:  $mode mode
-        Security:  None
-
+        Security:  none
         """
 
     buff = IOBuffer()
