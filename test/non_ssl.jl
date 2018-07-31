@@ -2,9 +2,9 @@ tempfile(upload_file)
 tempfile(joinpath(ROOT,download_file))
 
 opts = (
-    :hostname => hostname(server),
-    :username => username(server),
-    :password => password(server),
+    :hostname => string(ftp_hostname(server), ':', ftp_port(server)),
+    :username => ftp_username(server),
+    :password => ftp_password(server),
 )
 
 # options = RequestOptions(hostname="127.0.0.1:8000", username="user", passwd="passwd", ssl=false, active_mode=true)
@@ -150,7 +150,7 @@ function tests_by_mode(active::Bool)
     @test resp.bytes_recd == length(body)
     @test resp.code == 226
     @test is_headers_equal(resp.headers, headers)
-    @test ctxt.url == options.url == "ftp://$(hostname(server))/"
+    @test ctxt.url == options.url == "ftp://$(ftp_hostname(server)):$(ftp_port(server))/"
     @test ctxt.options == options
     ftp_close_connection(ctxt)
 
@@ -162,7 +162,7 @@ function tests_by_mode(active::Bool)
     ctxt, resp = ftp_connect(options)
     test_command(headers, ctxt)
 
-    @test ctxt.url == options.url == "ftp://$(hostname(server))/"
+    @test ctxt.url == options.url == "ftp://$(ftp_hostname(server)):$(ftp_port(server))/"
     @test ctxt.options == options
     ftp_close_connection(ctxt)
 
@@ -176,7 +176,7 @@ function tests_by_mode(active::Bool)
     ctxt, resp = ftp_connect(options)
     test_get(headers, ctxt)
 
-    @test ctxt.url == options.url == "ftp://$(hostname(server))/"
+    @test ctxt.url == options.url == "ftp://$(ftp_hostname(server)):$(ftp_port(server))/"
     @test ctxt.options == options
     ftp_close_connection(ctxt)
 
@@ -307,6 +307,6 @@ end
     seekstart(buff)
     @test "$msg :: LibCURL error #$lib_curl_error" == read(buff, String)
 
-    options = RequestOptions(ssl=false, active_mode=false, hostname="not a host", username=username(server), password=password(server))
+    options = RequestOptions(ssl=false, active_mode=false, hostname="not a host", username=ftp_username(server), password=ftp_password(server))
     @test_throws FTPClientError ftp_connect(options)
 end

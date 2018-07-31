@@ -7,49 +7,86 @@ import Base: ==
 ##############################
 # Type definitions
 ##############################
+
+mutable struct RequestOptions
+    url::String
+    username::String
+    password::String
+    ssl::Bool
+    verify_peer::Bool
+    active_mode::Bool
+end
+
 """
     RequestOptions(;kwargs)
 
 The options used to connect to an FTP server.
 
-# Parameters
-* `implicit::Bool=false`: use implicit security.
-* `ssl::Bool=false`: use FTPS.
-* `verify_peer::Bool=true`: verify authenticity of peer's certificate.
-* `active_mode::Bool=false`: use active mode to establish data connection.
-* `username::AbstractString=""`: the username used to access the FTP server.
-* `password::AbstractString=""`: the password used to access the FTP server.
-* `url::AbstractString=""`: the url of the FTP server.
-* `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
+# Keywords
+- `url::AbstractString=""`: the URL of the FTP server.
+- `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
+- `username::AbstractString=""`: the username used to access the FTP server.
+- `password::AbstractString=""`: the password used to access the FTP server.
+- `implicit::Bool=false`: use an implicit FTPS configuration.
+- `ssl::Bool=false`: use a secure connection. Typically specified for explicit FTPS.
+- `verify_peer::Bool=true`: verify authenticity of peer's certificate.
+- `active_mode::Bool=false`: use active mode to establish data connection.
 """
-mutable struct RequestOptions
-    implicit::Bool
-    ssl::Bool
-    verify_peer::Bool
-    active_mode::Bool
-    username::AbstractString
-    password::AbstractString
-    url::AbstractString
-    hostname::AbstractString
-
-    function RequestOptions(;
-        implicit::Bool=false, ssl::Bool=false,
-        verify_peer::Bool=true, active_mode::Bool=false,
-        username::AbstractString="", password::AbstractString="",
-        url::AbstractString="", hostname::AbstractString="localhost",
-    )
-
-        if isempty(url)
-            if implicit
-                url = "ftps://$hostname/"
-            else
-                url = "ftp://$hostname/"
-            end
+function RequestOptions(;
+    url::AbstractString="",
+    hostname::AbstractString="localhost",
+    username::AbstractString="",
+    password::AbstractString="",
+    ssl::Bool=false,
+    implicit::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
+)
+    if isempty(url)
+        if implicit
+            url = "ftps://$hostname/"
+        else
+            url = "ftp://$hostname/"
         end
-
-        new(implicit, ssl, verify_peer, active_mode, username, password, url, hostname)
     end
+
+    RequestOptions(url, username, password, ssl, verify_peer, active_mode)
 end
+
+function RequestOptions(
+    uri::AbstractString;
+    ssl::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
+)
+    u = URI(uri)
+
+    if !(u.scheme in ("ftps", "ftp"))
+        throw(ArgumentError("Unhandled FTP scheme: $(u.scheme)"))
+    end
+
+    username, password = split(u.userinfo, ':', limit=2)
+
+    port = if !iszero(u.port)
+        Int(u.port)
+    elseif u.scheme == "ftp"
+        21
+    elseif u.scheme == "ftps"  # Implicit FTPS
+        990
+    end
+
+    # https://curl.haxx.se/libcurl/c/CURLOPT_URL.html
+    RequestOptions(
+        string(u),
+        username,
+        password,
+        (u.scheme == "ftps" ? true : ssl),
+        verify_peer,
+        active_mode,
+    )
+end
+
+ftp_security(opt::RequestOptions) = opt
 
 """
     Response
@@ -629,12 +666,12 @@ end
 ##############################
 
 function ==(this::RequestOptions, other::RequestOptions)
-    return this.implicit == other.implicit &&
-        this.ssl == other.ssl &&
-        this.verify_peer == other.verify_peer &&
-        this.active_mode == other.active_mode &&
+    return (
+        this.url == other.url &&
         this.username == other.username &&
         this.password == other.password &&
-        this.url == other.url &&
-        this.hostname == other.hostname
+        this.ssl == other.ssl &&
+        this.verify_peer == other.verify_peer &&
+        this.active_mode == other.active_mode
+    )
 end
