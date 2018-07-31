@@ -59,8 +59,10 @@ function test_upload(options::RequestOptions)
     client_path = "test_upload.txt"
     local_server_path = joinpath(ROOT, client_path)
     cleanup_file(local_server_path)
-    resp = open(client_path) do fp
-        ftp_put(options, client_path, fp)
+    resp = copy_and_wait(local_server_path) do
+        open(client_path) do fp
+            ftp_put(options, client_path, fp)
+        end
     end
     @test resp.code == 226
     @test read(local_server_path, String) == read(client_path, String)
@@ -83,8 +85,10 @@ end
 function test_upload(ctxt::ConnContext)
     client_path = "test_upload.txt"
     local_server_path = joinpath(ROOT, client_path)
-    resp = open(client_path) do file
-        ftp_put(ctxt, client_path, file)
+    resp = copy_and_wait(local_server_path) do
+        open(client_path) do file
+            ftp_put(ctxt, client_path, file)
+        end
     end
     ftp_close_connection(ctxt)
     @test resp.code ==226
