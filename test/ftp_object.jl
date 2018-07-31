@@ -44,6 +44,23 @@ function expected_output(active::Bool)
     close(ftp)
 end
 
+function expected_upload(src, dest; timeout=30)
+    # Writing/uploading FTP files can have concurrency issues so we repeatedly
+    # try and read the destination file until we have data.
+    @test isfile(dest)
+    local_data = read(src, String)
+    srv_data = read(dest, String)
+    attempts = 1
+
+    while isempty(srv_data) && attempts < timeout
+        sleep(1)
+        attempts += 1
+        srv_data = read(dest, String)
+    end
+
+    @test srv_data == local_data
+end
+
 # Function that will bring up the server after a few retries, and returns
 # connection details that over ride the previously defined wrong connection.
 # Used for testing upload with retries.
@@ -122,9 +139,7 @@ end
     tempfile(local_file)
     @test isfile(local_file)
     resp = upload(ftp, local_file)
-    @test isfile(server_file)
-    @test read(server_file, String) == read(local_file, String)
-
+    expected_upload(local_file, server_file)
     no_unexpected_changes(ftp)
     close(ftp)
     cleanup_file(server_file)
@@ -278,9 +293,7 @@ end
     @test isfile(upload_file)
     @test !isfile(server_file)
     resp = upload(ftp, upload_file)
-
-    @test isfile(server_file)
-    @test read(server_file, String) == read(upload_file, String)
+    expected_upload(upload_file, server_file)
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -290,8 +303,7 @@ end
     server_file= joinpath(ROOT, "some name")
     @test !isfile(server_file)
     resp = upload(ftp, upload_file, "some name")
-    @test isfile(server_file)
-    @test read(server_file, String) == read(upload_file, String)
+    expected_upload(upload_file, server_file)
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -302,8 +314,7 @@ end
     @test !isfile(server_file)
     resp = upload(ftp, [upload_file], "/")
     @test resp == [true]
-    @test isfile(server_file)
-    @test read(server_file, String) == read(upload_file, String)
+    expected_upload(upload_file, server_file)
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -324,17 +335,10 @@ end
     resp = upload(ftp, upload_list, "/")
     @test resp == [true, true, true, true]
 
-    @test isfile(server_file)
-    @test read(server_file, String) == read(upload_file, String)
-
-    @test isfile(server_file_2)
-    @test read(server_file_2, String) == read(upload_file_2, String)
-
-    @test isfile(server_file_3)
-    @test read(server_file_3, String) == read(upload_file_3, String)
-
-    @test isfile(server_file_4)
-    @test read(server_file_4, String) == read(upload_file_4, String)
+    expected_upload(upload_file, server_file)
+    expected_upload(upload_file_2, server_file_2)
+    expected_upload(upload_file_3, server_file_3)
+    expected_upload(upload_file_4, server_file_4)
 
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
@@ -367,18 +371,10 @@ end
     resp = upload(ftp, upload_list, "/", retry_callback=retry_test, retry_wait_seconds=1)
     @test resp == [true, true, true, true]
 
-    @test isfile(server_file)
-    @test read(server_file, String) == read(upload_file, String)
-
-    @test isfile(server_file_2)
-    @test read(server_file_2, String) == read(upload_file_2, String)
-
-    @test isfile(server_file_3)
-    @test read(server_file_3, String) == read(upload_file_3, String)
-
-    @test isfile(server_file_4)
-    @test read(server_file_4, String) == read(upload_file_4, String)
-
+    expected_upload(upload_file, server_file)
+    expected_upload(upload_file_2, server_file_2)
+    expected_upload(upload_file_3, server_file_3)
+    expected_upload(upload_file_4, server_file_4)
 
     no_unexpected_changes(retry_server)
     cleanup_file(server_file)
@@ -397,8 +393,8 @@ end
     open(upload_file) do fp
         resp = upload(ftp, fp, "some other name")
     end
-    @test isfile(server_file)
-    @test read(server_file, String) == read(upload_file, String)
+
+    expected_upload(upload_file, server_file)
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
@@ -463,8 +459,7 @@ end
         test_captured_ouput() do io
             upload(ftp, upload_file; verbose=io)
         end
-        @test isfile(server_file)
-        @test read(server_file, String) == read(local_file, String)
+        expected_upload(local_file, server_file)
 
         no_unexpected_changes(ftp)
         close(ftp)
@@ -587,8 +582,7 @@ end
                 resp = upload(ftp, upload_file; verbose=io)
             end
 
-            @test isfile(server_file)
-            @test read(server_file, String) == read(upload_file, String)
+            expected_upload(upload_file, server_file)
             no_unexpected_changes(ftp)
             cleanup_file(server_file)
             close(ftp)
@@ -600,8 +594,7 @@ end
             test_captured_ouput() do io
                 resp = upload(ftp, upload_file, "some name"; verbose=io)
             end
-            @test isfile(server_file)
-            @test read(server_file, String) == read(upload_file, String)
+            expected_upload(upload_file, server_file)
             no_unexpected_changes(ftp)
             cleanup_file(server_file)
             close(ftp)
@@ -614,8 +607,7 @@ end
                 resp = upload(ftp, [upload_file], "/"; verbose=io)
                 @test resp == [true]
             end
-            @test isfile(server_file)
-            @test read(server_file, String) == read(upload_file, String)
+            expected_upload(upload_file, server_file)
             no_unexpected_changes(ftp)
             cleanup_file(server_file)
             close(ftp)
