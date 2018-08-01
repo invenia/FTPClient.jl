@@ -8,7 +8,9 @@ include("utils.jl")
 setup_server()
 ftp_init()
 server = FTPServer()
-prefix = "ftp://$(hostname(server)):$(port(server))"
+
+# Note: port is always supplied with the test server
+prefix = "ftp://$(username(server)):$(password(server))@$(hostname(server)):$(port(server))"
 
 testdir = "test_dir"
 

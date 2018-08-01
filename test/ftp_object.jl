@@ -12,7 +12,6 @@ opts = (
 )
 
 
-
 function no_unexpected_changes(ftp::FTP, url::AbstractString=prefix)
     other = FTP(; opts...)
     @test ftp.ctxt.options == other.ctxt.options
@@ -23,7 +22,7 @@ end
 function expected_output(active::Bool)
     mode = active ? "active" : "passive"
     expected = """
-        Host:      $prefix
+        Host:      $(FTPClient.safe_uri(prefix))
         User:      $(username(server))
         Transfer:  $mode mode
         Security:  none
@@ -93,7 +92,7 @@ end
 @testset "connection with url" begin
     url = "ftp://$(hostname(server)):$(port(server))/"
     ftp = FTP(; url=url, opts...)
-    @test ftp.ctxt.url == url
+    @test ftp.ctxt.url == prefix * "/"
     close(ftp)
 end
 

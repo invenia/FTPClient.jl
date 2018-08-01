@@ -58,7 +58,7 @@ end
 function show(io::IO, ftp::FTP)
     opts = ftp.ctxt.options
     join(io, [
-        "Host:      $(ftp.ctxt.url)",
+        "Host:      $(safe_uri(ftp.ctxt.url))",
         "User:      $(username(opts))",
         "Transfer:  $(ispassive(opts) ? "passive" : "active") mode",
         "Security:  $(security(opts))",

@@ -9,9 +9,7 @@ import Base: ==
 ##############################
 
 struct RequestOptions
-    url::AbstractString
-    username::AbstractString
-    password::AbstractString
+    uri::URI
     ssl::Bool
     verify_peer::Bool
     active_mode::Bool
@@ -43,20 +41,27 @@ function RequestOptions(;
     active_mode::Bool=false,
     url::AbstractString="",  # TODO: deprecate when we support this functionality elsewhere
 )
-    if isempty(url)
-        scheme = implicit ? "ftps" : "ftp"
-        url = "$scheme://$hostname"
-        port > 0 && (url *= ":$port")
+    userinfo = if !isempty(password)
+        username * ":" * password
+    else
+        username
     end
 
-    RequestOptions(url, username, password, ssl, verify_peer, active_mode)
+    uri = if isempty(url)
+        scheme = implicit ? "ftps" : "ftp"
+        URI(scheme, hostname, port, "", "", "", userinfo)
+    else
+        URI(URI(url); userinfo=userinfo)
+    end
+
+    RequestOptions(uri, ssl, verify_peer, active_mode)
 end
 
 function security(opts::RequestOptions)
-    opts.ssl ? (startswith(opts.url, "ftps") ? :implicit : :explicit) : :none
+    opts.ssl ? (opts.uri.scheme == "ftps" ? :implicit : :explicit) : :none
 end
 
-username(opts::RequestOptions) = opts.username
+username(opts::RequestOptions) = first(split(opts.uri.userinfo, ':', limit=2))
 ispassive(opts::RequestOptions) = !opts.active_mode
 
 
@@ -117,10 +122,10 @@ Keeps track of a persistent FTP connection.
 """
 mutable struct ConnContext
     curl::Ptr{CURL}
-    url::AbstractString
+    url::String  # Avoid using an abstract type when interacting with C libraries
     options::RequestOptions
 
-    ConnContext(options::RequestOptions) = new(C_NULL, options.url, options)
+    ConnContext(options::RequestOptions) = new(C_NULL, string(options.uri), options)
 end
 
 
@@ -197,15 +202,8 @@ function setup_easy_handle(options::RequestOptions)
 
     p_ctxt = pointer_from_objref(ctxt)
 
-    ctxt.url = options.url
-
-    @ce_curl curl_easy_setopt CURLOPT_URL options.url
+    @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
     # @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
-
-    if !isempty(options.username) && !isempty(options.password)
-        @ce_curl curl_easy_setopt CURLOPT_USERNAME options.username
-        @ce_curl curl_easy_setopt CURLOPT_PASSWORD options.password
-    end
 
     if options.ssl
         @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
@@ -639,9 +637,7 @@ end
 
 function ==(this::RequestOptions, other::RequestOptions)
     return (
-        this.url == other.url &&
-        this.username == other.username &&
-        this.password == other.password &&
+        this.uri == other.uri &&
         this.ssl == other.ssl &&
         this.verify_peer == other.verify_peer &&
         this.active_mode == other.active_mode
