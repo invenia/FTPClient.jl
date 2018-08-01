@@ -18,22 +18,21 @@ struct RequestOptions
 end
 
 """
-    RequestOptions(;kwargs)
+    RequestOptions(; kwargs...)
 
 The options used to connect to an FTP server.
 
-# Parameters
-* `implicit::Bool=false`: use implicit security.
-* `ssl::Bool=false`: use FTPS.
-* `verify_peer::Bool=true`: verify authenticity of peer's certificate.
-* `active_mode::Bool=false`: use active mode to establish data connection.
-* `username::AbstractString=""`: the username used to access the FTP server.
-* `password::AbstractString=""`: the password used to access the FTP server.
-* `url::AbstractString=""`: the url of the FTP server.
-* `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
+# Keywords
+- `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
+- `username::AbstractString=""`: the username used to access the FTP server.
+- `password::AbstractString=""`: the password used to access the FTP server.
+- `implicit::Bool=false`: use an implicit FTPS configuration.
+- `ssl::Bool=false`: use a secure connection. Typically specified for explicit FTPS.
+- `verify_peer::Bool=true`: verify authenticity of peer's certificate.
+- `active_mode::Bool=false`: use active mode to establish data connection.
+- `url::AbstractString=""`: the URL of the FTP server. Can be used to specify the port.
 """
 function RequestOptions(;
-    url::AbstractString="",
     hostname::AbstractString="localhost",
     username::AbstractString="",
     password::AbstractString="",
@@ -41,6 +40,7 @@ function RequestOptions(;
     implicit::Bool=false,
     verify_peer::Bool=true,
     active_mode::Bool=false,
+    url::AbstractString="",  # TODO: deprecate when we support this functionality elsewhere
 )
     if isempty(url)
         scheme = implicit ? "ftps" : "ftp"
