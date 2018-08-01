@@ -47,11 +47,13 @@ mutable struct FTP
 end
 
 function show(io::IO, ftp::FTP)
-    o = ftp.ctxt.options
-    println(io, "Host:      $(ftp.ctxt.url)")
-    println(io, "User:      $(o.username)")
-    println(io, "Transfer:  $(o.active_mode ? "active" : "passive") mode")
-    println(io, "Security:  $(o.ssl ? (o.implicit ? "implicit" : "explicit") : "None")")
+    opts = ftp.ctxt.options
+    join(io, [
+        "Host:      $(ftp.ctxt.url)",
+        "User:      $(username(opts))",
+        "Transfer:  $(ispassive(opts) ? "passive" : "active") mode",
+        "Security:  $(security(opts))",
+    ], "\n")
 end
 
 """

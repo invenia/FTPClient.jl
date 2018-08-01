@@ -7,6 +7,16 @@ import Base: ==
 ##############################
 # Type definitions
 ##############################
+
+struct RequestOptions
+    url::AbstractString
+    username::AbstractString
+    password::AbstractString
+    ssl::Bool
+    verify_peer::Bool
+    active_mode::Bool
+end
+
 """
     RequestOptions(;kwargs)
 
@@ -22,34 +32,31 @@ The options used to connect to an FTP server.
 * `url::AbstractString=""`: the url of the FTP server.
 * `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
 """
-mutable struct RequestOptions
-    implicit::Bool
-    ssl::Bool
-    verify_peer::Bool
-    active_mode::Bool
-    username::AbstractString
-    password::AbstractString
-    url::AbstractString
-    hostname::AbstractString
-
-    function RequestOptions(;
-        implicit::Bool=false, ssl::Bool=false,
-        verify_peer::Bool=true, active_mode::Bool=false,
-        username::AbstractString="", password::AbstractString="",
-        url::AbstractString="", hostname::AbstractString="localhost",
-    )
-
-        if isempty(url)
-            if implicit
-                url = "ftps://$hostname/"
-            else
-                url = "ftp://$hostname/"
-            end
-        end
-
-        new(implicit, ssl, verify_peer, active_mode, username, password, url, hostname)
+function RequestOptions(;
+    url::AbstractString="",
+    hostname::AbstractString="localhost",
+    username::AbstractString="",
+    password::AbstractString="",
+    ssl::Bool=false,
+    implicit::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
+)
+    if isempty(url)
+        scheme = implicit ? "ftps" : "ftp"
+        url = "$scheme://$hostname/"
     end
+
+    RequestOptions(url, username, password, ssl, verify_peer, active_mode)
 end
+
+function security(opts::RequestOptions)
+    opts.ssl ? (startswith(opts.url, "ftps") ? :implicit : :explicit) : :none
+end
+
+username(opts::RequestOptions) = opts.username
+ispassive(opts::RequestOptions) = !opts.active_mode
+
 
 """
     Response
@@ -629,12 +636,12 @@ end
 ##############################
 
 function ==(this::RequestOptions, other::RequestOptions)
-    return this.implicit == other.implicit &&
-        this.ssl == other.ssl &&
-        this.verify_peer == other.verify_peer &&
-        this.active_mode == other.active_mode &&
+    return (
+        this.url == other.url &&
         this.username == other.username &&
         this.password == other.password &&
-        this.url == other.url &&
-        this.hostname == other.hostname
+        this.ssl == other.ssl &&
+        this.verify_peer == other.verify_peer &&
+        this.active_mode == other.active_mode
+    )
 end
