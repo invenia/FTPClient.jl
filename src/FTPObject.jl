@@ -27,13 +27,12 @@ Create an FTP object.
 - `hostname::AbstractString=""`: the hostname or address of the FTP server.
 - `username::AbstractString=""`: the username used to access the FTP server.
 - `password::AbstractString=""`: the password used to access the FTP server.
-- `ssl::Bool=false`: use FTPS.
-- `implicit::Bool=false`: use implicit security.
+- `ssl::Bool=false`: use a secure FTP connection.
+- `implicit::Bool=false`: use implicit security (FTPS).
 - `verify_peer::Bool=true`: verify authenticity of peer's certificate.
 - `active_mode::Bool=false`: use active mode to establish data connection.
 - `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
     `Bool`, if true output is written to STDERR.
-- `url::AbstractString=""`: the URL of the FTP server. Can be used to specify the port.
 """
 function FTP(;
     hostname::AbstractString="",
@@ -47,11 +46,48 @@ function FTP(;
     verbose::Union{Bool,IOStream}=false,
     url::AbstractString="",  # TODO: deprecate when we support this functionality elsewhere
 )
+    if !isempty(url)
+        Base.depwarn(string(
+            "Using `FTP` with the `url` keyword is deprecated; ",
+            "use `FTP(url, ...)` instead",
+        ), :FTP)
+    end
+
     options = RequestOptions(
         username=username, password=password, hostname=hostname, port=port, url=url,
         ssl=ssl, implicit=implicit, verify_peer=verify_peer, active_mode=active_mode,
     )
 
+    FTP(options; verbose=verbose)
+end
+
+"""
+    FTP(url; kwargs...)
+
+Connect to an FTP server using the information specified in the URI.
+
+# Keywords
+- `ssl::Bool=false`: use a secure FTP connection.
+- `verify_peer::Bool=true`: verify the authenticity of the peer's certificate.
+- `active_mode::Bool=false`: use active mode to establish data connection.
+
+# Example
+```julia
+julia> FTP("ftp://user:password@ftp.example.com");  # FTP connection with no security
+
+julia> FTP("ftp://user:password@ftp.example.com", ssl=true);  # Explicit security (FTPES)
+
+julia> FTP("ftps://user:password@ftp.example.com");  # Implicit security (FTPS)
+```
+"""
+function FTP(
+    url::AbstractString;
+    ssl::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
+    verbose::Union{Bool,IOStream}=false,
+)
+    options = RequestOptions(url; ssl=ssl, verify_peer=verify_peer, active_mode=active_mode)
     FTP(options; verbose=verbose)
 end
 

@@ -28,7 +28,6 @@ The options used to connect to an FTP server.
 - `ssl::Bool=false`: use a secure connection. Typically specified for explicit FTPS.
 - `verify_peer::Bool=true`: verify authenticity of peer's certificate.
 - `active_mode::Bool=false`: use active mode to establish data connection.
-- `url::AbstractString=""`: the URL of the FTP server. Can be used to specify the port.
 """
 function RequestOptions(;
     hostname::AbstractString="localhost",
@@ -39,7 +38,7 @@ function RequestOptions(;
     implicit::Bool=false,
     verify_peer::Bool=true,
     active_mode::Bool=false,
-    url::AbstractString="",  # TODO: deprecate when we support this functionality elsewhere
+    url::AbstractString="",
 )
     userinfo = if !isempty(password)
         username * ":" * password
@@ -51,10 +50,34 @@ function RequestOptions(;
         scheme = implicit ? "ftps" : "ftp"
         URI(scheme, hostname, port, "", "", "", userinfo)
     else
+        Base.depwarn(string(
+            "Using `RequestOptions` with the `url` keyword is deprecated; ",
+            "use `RequestOptions(url, ...)` instead",
+        ), :RequestOptions)
         URI(URI(url); userinfo=userinfo)
     end
 
     RequestOptions(uri, ssl, verify_peer, active_mode)
+end
+
+function RequestOptions(
+    url::AbstractString;
+    ssl::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
+)
+    uri = URI(url)
+
+    if !(uri.scheme in ("ftps", "ftp"))
+        throw(ArgumentError("Unhandled FTP scheme: $(uri.scheme)"))
+    end
+
+    RequestOptions(
+        uri,
+        uri.scheme == "ftps" ? true : ssl,
+        verify_peer,
+        active_mode,
+    )
 end
 
 function security(opts::RequestOptions)

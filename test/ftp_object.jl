@@ -90,9 +90,20 @@ end
 end
 
 @testset "connection with url" begin
-    url = "ftp://$(hostname(server)):$(port(server))/"
-    ftp = FTP(; url=url, opts...)
-    @test ftp.ctxt.url == prefix * "/"
+    url = string(
+        "ftp://",
+        username(server),
+        ":",
+        password(server),
+        "@",
+        hostname(server),
+        ":",
+        port(server),
+        "/",
+    )
+
+    ftp = FTP(url; ssl=false)
+    @test ftp.ctxt.url == url
     close(ftp)
 end
 
