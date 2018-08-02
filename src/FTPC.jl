@@ -1,5 +1,5 @@
 using Compat
-using Compat: Cvoid, uninitialized
+using Compat: Cvoid, undef
 using LibCURL
 
 import Base: ==
@@ -188,7 +188,7 @@ function curl_read_cb(out::Ptr{Cvoid}, s::Csize_t, n::Csize_t, p_rd::Ptr{Cvoid})
     breq::Csize_t = rd.sz - rd.offset
     b2copy = bavail > breq ? breq : bavail
 
-    b_read = Array{UInt8}(uninitialized, b2copy)
+    b_read = Array{UInt8}(undef, b2copy)
     read!(rd.src, b_read)
 
     ccall(:memcpy, Ptr{Cvoid}, (Ptr{Cvoid}, Ptr{Cvoid}, UInt), out, b_read, b2copy)
