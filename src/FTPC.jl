@@ -84,7 +84,6 @@ function security(opts::RequestOptions)
     opts.ssl ? (opts.uri.scheme == "ftps" ? :implicit : :explicit) : :none
 end
 
-username(opts::RequestOptions) = first(split(opts.uri.userinfo, ':', limit=2))
 ispassive(opts::RequestOptions) = !opts.active_mode
 
 
@@ -148,7 +147,9 @@ mutable struct ConnContext
     url::String  # Avoid using an abstract type when interacting with C libraries
     options::RequestOptions
 
-    ConnContext(options::RequestOptions) = new(C_NULL, string(options.uri), options)
+    function ConnContext(options::RequestOptions)
+        new(C_NULL, rstrip(string(options.uri), '/'), options)
+    end
 end
 
 

@@ -22,8 +22,7 @@ end
 function expected_output(active::Bool)
     mode = active ? "active" : "passive"
     expected = """
-        Host:      $(FTPClient.safe_uri(prefix))
-        User:      $(username(server))
+        URL:       $(FTPClient.safe_uri(prefix))
         Transfer:  $mode mode
         Security:  none
         """
@@ -99,7 +98,6 @@ end
         hostname(server),
         ":",
         port(server),
-        "/",
     )
 
     ftp = FTP(url; ssl=false)
