@@ -154,7 +154,7 @@ function tests_by_mode(active::Bool)
     @test resp.bytes_recd == length(body)
     @test resp.code == 226
     @test is_headers_equal(resp.headers, headers)
-    @test ctxt.url == options.url == "ftp://$(hostname(server))/"
+    @test ctxt.url == options.url == "ftp://$(hostname(server))"
     @test ctxt.options == options
     ftp_close_connection(ctxt)
 
@@ -166,7 +166,7 @@ function tests_by_mode(active::Bool)
     ctxt, resp = ftp_connect(options)
     test_command(headers, ctxt)
 
-    @test ctxt.url == options.url == "ftp://$(hostname(server))/"
+    @test ctxt.url == options.url == "ftp://$(hostname(server))"
     @test ctxt.options == options
     ftp_close_connection(ctxt)
 
@@ -180,7 +180,7 @@ function tests_by_mode(active::Bool)
     ctxt, resp = ftp_connect(options)
     test_get(headers, ctxt)
 
-    @test ctxt.url == options.url == "ftp://$(hostname(server))/"
+    @test ctxt.url == options.url == "ftp://$(hostname(server))"
     @test ctxt.options == options
     ftp_close_connection(ctxt)
 

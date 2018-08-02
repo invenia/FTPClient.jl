@@ -299,10 +299,6 @@ end
 Set the current working directory of the FTP server to "dir".
 """
 function cd(ftp::FTP, dir::AbstractString; verbose::Union{Bool,IOStream}=false)
-    if !endswith(dir, "/")
-        dir *= "/"
-    end
-
     resp = ftp_command(ftp.ctxt, "CWD $dir"; verbose=verbose)
 
     if resp.code != 250

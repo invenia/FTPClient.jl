@@ -13,14 +13,14 @@ opts = (
 function no_unexpected_changes(ftp::FTP, hostname::AbstractString=hostname(server))
     other = FTP(; opts...)
     @test ftp.ctxt.options == other.ctxt.options
-    @test ftp.ctxt.url == "ftp://$hostname/"
+    @test ftp.ctxt.url == "ftp://$hostname"
     close(other)
 end
 
 function expected_output(active::Bool)
     mode = active ? "active" : "passive"
     expected = """
-        Host:      ftp://$(hostname(server))/
+        Host:      ftp://$(hostname(server))
         User:      $(username(server))
         Transfer:  $mode mode
         Security:  none

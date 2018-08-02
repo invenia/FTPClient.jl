@@ -44,7 +44,7 @@ function RequestOptions(;
 )
     if isempty(url)
         scheme = implicit ? "ftps" : "ftp"
-        url = "$scheme://$hostname/"
+        url = "$scheme://$hostname"
     end
 
     RequestOptions(url, username, password, ssl, verify_peer, active_mode)
@@ -355,7 +355,7 @@ function ftp_get(
 
         @ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(1)
 
-        full_url = ctxt.url * file_name
+        full_url = ctxt.url * "/" * file_name
         if mode == binary_mode
             @ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=i"
         elseif mode == ascii_mode
@@ -464,7 +464,7 @@ function ftp_put(
     @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
     @ce_curl curl_easy_setopt CURLOPT_READFUNCTION C_CURL_READ_CB[]
 
-    @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url * file_name
+    @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url * "/" * file_name
 
     if mode == binary_mode
         @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
@@ -538,9 +538,9 @@ function ftp_command(
     resp.body = seekstart(wd.buffer)
     resp.bytes_recd = wd.bytes_recd
 
-    cmd = split(cmd)
-    if resp.code == 250 && cmd[1] == "CWD"
-        ctxt.url *= join(cmd[2:end], ' ')
+    parts = split(cmd, ' ', limit=2)
+    if resp.code == 250 && parts[1] == "CWD"
+        ctxt.url *= "/" * rstrip(parts[2], '/')
     end
 
     return resp
