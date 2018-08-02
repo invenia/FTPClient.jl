@@ -34,6 +34,7 @@ The options used to connect to an FTP server.
 """
 function RequestOptions(;
     hostname::AbstractString="localhost",
+    port::Integer=0,
     username::AbstractString="",
     password::AbstractString="",
     ssl::Bool=false,
@@ -45,6 +46,7 @@ function RequestOptions(;
     if isempty(url)
         scheme = implicit ? "ftps" : "ftp"
         url = "$scheme://$hostname"
+        port > 0 && (url *= ":$port")
     end
 
     RequestOptions(url, username, password, ssl, verify_peer, active_mode)

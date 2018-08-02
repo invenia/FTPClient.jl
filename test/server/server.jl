@@ -58,7 +58,7 @@ mutable struct FTPServer
     end
 end
 
-hostname(server::FTPServer) = "localhost:$(port(server))"
+hostname(server::FTPServer) = "localhost"
 port(server::FTPServer) = server.port
 username(server::FTPServer) = server.username
 password(server::FTPServer) = server.password

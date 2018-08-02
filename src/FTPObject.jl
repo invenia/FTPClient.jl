@@ -37,6 +37,7 @@ Create an FTP object.
 """
 function FTP(;
     hostname::AbstractString="",
+    port::Integer=0,
     username::AbstractString="",
     password::AbstractString="",
     ssl::Bool=false,
@@ -47,7 +48,7 @@ function FTP(;
     url::AbstractString="",  # TODO: deprecate when we support this functionality elsewhere
 )
     options = RequestOptions(
-        username=username, password=password, hostname=hostname, url=url,
+        username=username, password=password, hostname=hostname, port=port, url=url,
         ssl=ssl, implicit=implicit, verify_peer=verify_peer, active_mode=active_mode,
     )
 
@@ -406,13 +407,13 @@ Execute Function "code" on FTP server.
 """
 function ftp(
     code::Function;
-    hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
+    hostname::AbstractString="", port::Integer=0, implicit::Bool=false, ssl::Bool=false,
     verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
     password::AbstractString="", verbose::Union{Bool,IOStream}=false,
 )
     ftp_init()
     ftp_client = FTP(
-        hostname=hostname, implicit=implicit, ssl=ssl, verify_peer=verify_peer,
+        hostname=hostname, port=port, implicit=implicit, ssl=ssl, verify_peer=verify_peer,
         active_mode=active_mode, username=username, password=password, verbose=verbose,
     )
 

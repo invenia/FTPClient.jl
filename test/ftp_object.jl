@@ -5,22 +5,25 @@ global retry_server = nothing
 
 opts = (
     :hostname => hostname(server),
+    :port => port(server),
     :username => username(server),
     :password => password(server),
     :ssl => false,
 )
 
-function no_unexpected_changes(ftp::FTP, hostname::AbstractString=hostname(server))
+
+
+function no_unexpected_changes(ftp::FTP, url::AbstractString=prefix)
     other = FTP(; opts...)
     @test ftp.ctxt.options == other.ctxt.options
-    @test ftp.ctxt.url == "ftp://$hostname"
+    @test ftp.ctxt.url == url
     close(other)
 end
 
 function expected_output(active::Bool)
     mode = active ? "active" : "passive"
     expected = """
-        Host:      ftp://$(hostname(server))
+        Host:      $prefix
         User:      $(username(server))
         Transfer:  $mode mode
         Security:  none
@@ -88,9 +91,9 @@ end
 end
 
 @testset "connection with url" begin
-    host = hostname(server)
-    ftp = FTP(; url="ftp://$host/", opts...)
-    @test ftp.ctxt.url == "ftp://$host/"
+    url = "ftp://$(hostname(server)):$(port(server))/"
+    ftp = FTP(; url=url, opts...)
+    @test ftp.ctxt.url == url
     close(ftp)
 end
 
@@ -165,12 +168,11 @@ end
 @testset "cd" begin
     server_dir = joinpath(ROOT, testdir)
 
-    host = hostname(server)
     # check cd
     ftp = FTP(; opts...)
     mkdir(server_dir)
     cd(ftp, testdir)
-    no_unexpected_changes(ftp, "$host/$testdir")
+    no_unexpected_changes(ftp, "$prefix/$testdir")
     cleanup_dir(server_dir)
     close(ftp)
 
@@ -189,7 +191,7 @@ end
     @test isdir(server_dir)
     cd(ftp, testdir)
     cd(ftp, "..")
-    no_unexpected_changes(ftp, "$host/$testdir/..")
+    no_unexpected_changes(ftp, "$prefix/$testdir/..")
     cleanup_dir(server_dir)
     close(ftp)
 end
@@ -483,14 +485,13 @@ end
 
     @testset "cd" begin
         server_dir = joinpath(ROOT, testdir)
-        host = hostname(server)
 
         ftp = FTP(; opts...)
         mkdir(server_dir)
         test_captured_ouput() do io
             cd(ftp, testdir; verbose=io)
         end
-        no_unexpected_changes(ftp, "$host/$testdir")
+        no_unexpected_changes(ftp, "$prefix/$testdir")
         cleanup_dir(server_dir)
         close(ftp)
     end
