@@ -12,7 +12,7 @@ opts = (
 )
 
 
-function no_unexpected_changes(ftp::FTP, url::AbstractString=prefix)
+function no_unexpected_changes(ftp::FTP, url::AbstractString=FTPClient.trailing(prefix, '/'))
     other = FTP(; opts...)
     @test ftp.ctxt.options == other.ctxt.options
     @test ftp.ctxt.url == url
@@ -98,6 +98,7 @@ end
         hostname(server),
         ":",
         port(server),
+        "/",
     )
 
     ftp = FTP(url; ssl=false)
@@ -180,7 +181,7 @@ end
     ftp = FTP(; opts...)
     mkdir(server_dir)
     cd(ftp, testdir)
-    no_unexpected_changes(ftp, "$prefix/$testdir")
+    no_unexpected_changes(ftp, "$prefix/$testdir/")
     cleanup_dir(server_dir)
     close(ftp)
 
@@ -199,7 +200,7 @@ end
     @test isdir(server_dir)
     cd(ftp, testdir)
     cd(ftp, "..")
-    no_unexpected_changes(ftp, "$prefix/$testdir/..")
+    no_unexpected_changes(ftp, "$prefix/$testdir/../")
     cleanup_dir(server_dir)
     close(ftp)
 end
@@ -499,7 +500,7 @@ end
         test_captured_ouput() do io
             cd(ftp, testdir; verbose=io)
         end
-        no_unexpected_changes(ftp, "$prefix/$testdir")
+        no_unexpected_changes(ftp, "$prefix/$testdir/")
         cleanup_dir(server_dir)
         close(ftp)
     end

@@ -11,3 +11,7 @@ function safe_uri(uri::URI)
 end
 
 safe_uri(uri::AbstractString) = string(safe_uri(URI(uri)))
+
+function trailing(str::AbstractString, tail::Char)
+    endswith(str, tail) ? str : string(str, tail)
+end
