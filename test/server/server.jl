@@ -53,12 +53,12 @@ mutable struct FTPServer
             new(root, port, username, password, permissions, security, process, io)
         else
             kill(process)
-            error(line, bytestring(readavailable(io)))  # Display traceback
+            error(line, String(readavailable(io)))  # Display traceback
         end
     end
 end
 
-hostname(server::FTPServer) = "localhost:$(port(server))"
+hostname(server::FTPServer) = "localhost"
 port(server::FTPServer) = server.port
 username(server::FTPServer) = server.username
 password(server::FTPServer) = server.password

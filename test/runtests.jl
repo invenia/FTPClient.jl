@@ -9,6 +9,9 @@ setup_server()
 ftp_init()
 server = FTPServer()
 
+# Note: port is always supplied with the test server
+prefix = "ftp://$(username(server)):$(password(server))@$(hostname(server)):$(port(server))"
+
 testdir = "test_dir"
 
 upload_file = "test_upload.txt"

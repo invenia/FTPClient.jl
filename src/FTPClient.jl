@@ -5,6 +5,7 @@ module FTPClient
 import Base: convert, show, open, mkdir, ascii, mv
 import Base: readdir, cd, pwd, rm, close, download
 using Compat: unsafe_string, unsafe_write, @compat, Cvoid
+using URIParser: URI
 
 mutable struct FTPClientError <: Exception
     msg::AbstractString
@@ -45,6 +46,7 @@ function __init__()
     C_CURL_READ_CB[] = cfunction(curl_read_cb, Csize_t, Tuple{Ptr{Cvoid}, Csize_t, Csize_t, Ptr{Cvoid}})
 end
 
+include("utils.jl")
 include("FTPC.jl")
 include("FTPObject.jl")
 

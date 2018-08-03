@@ -1,5 +1,5 @@
 using Compat
-using Compat: Cvoid, uninitialized
+using Compat: Cvoid, undef
 using LibCURL
 
 import Base: ==
@@ -9,52 +9,81 @@ import Base: ==
 ##############################
 
 struct RequestOptions
-    url::AbstractString
-    username::AbstractString
-    password::AbstractString
+    uri::URI
     ssl::Bool
     verify_peer::Bool
     active_mode::Bool
 end
 
 """
-    RequestOptions(;kwargs)
+    RequestOptions(; kwargs...)
 
 The options used to connect to an FTP server.
 
-# Parameters
-* `implicit::Bool=false`: use implicit security.
-* `ssl::Bool=false`: use FTPS.
-* `verify_peer::Bool=true`: verify authenticity of peer's certificate.
-* `active_mode::Bool=false`: use active mode to establish data connection.
-* `username::AbstractString=""`: the username used to access the FTP server.
-* `password::AbstractString=""`: the password used to access the FTP server.
-* `url::AbstractString=""`: the url of the FTP server.
-* `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
+# Keywords
+- `hostname::AbstractString="localhost"`: the hostname or address of the FTP server.
+- `username::AbstractString=""`: the username used to access the FTP server.
+- `password::AbstractString=""`: the password used to access the FTP server.
+- `implicit::Bool=false`: use an implicit FTPS configuration.
+- `ssl::Bool=false`: use a secure connection. Typically specified for explicit FTPS.
+- `verify_peer::Bool=true`: verify authenticity of peer's certificate.
+- `active_mode::Bool=false`: use active mode to establish data connection.
 """
 function RequestOptions(;
-    url::AbstractString="",
     hostname::AbstractString="localhost",
+    port::Integer=0,
     username::AbstractString="",
     password::AbstractString="",
     ssl::Bool=false,
     implicit::Bool=false,
     verify_peer::Bool=true,
     active_mode::Bool=false,
+    url::AbstractString="",
 )
-    if isempty(url)
-        scheme = implicit ? "ftps" : "ftp"
-        url = "$scheme://$hostname/"
+    userinfo = if !isempty(password)
+        username * ":" * password
+    else
+        username
     end
 
-    RequestOptions(url, username, password, ssl, verify_peer, active_mode)
+    uri = if isempty(url)
+        scheme = implicit ? "ftps" : "ftp"
+        URI(scheme, hostname, port, "", "", "", userinfo)
+    else
+        Base.depwarn(string(
+            "Using `RequestOptions` with the `url` keyword is deprecated; ",
+            "use `RequestOptions(url, ...)` instead",
+        ), :RequestOptions)
+        URI(URI(url); userinfo=userinfo)
+    end
+
+    RequestOptions(uri, ssl, verify_peer, active_mode)
+end
+
+function RequestOptions(
+    url::AbstractString;
+    ssl::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
+)
+    uri = URI(url)
+
+    if !(uri.scheme in ("ftps", "ftp"))
+        throw(ArgumentError("Unhandled FTP scheme: $(uri.scheme)"))
+    end
+
+    RequestOptions(
+        uri,
+        uri.scheme == "ftps" ? true : ssl,
+        verify_peer,
+        active_mode,
+    )
 end
 
 function security(opts::RequestOptions)
-    opts.ssl ? (startswith(opts.url, "ftps") ? :implicit : :explicit) : :none
+    opts.ssl ? (opts.uri.scheme == "ftps" ? :implicit : :explicit) : :none
 end
 
-username(opts::RequestOptions) = opts.username
 ispassive(opts::RequestOptions) = !opts.active_mode
 
 
@@ -115,10 +144,12 @@ Keeps track of a persistent FTP connection.
 """
 mutable struct ConnContext
     curl::Ptr{CURL}
-    url::AbstractString
+    url::String  # Avoid using an abstract type when interacting with C libraries
     options::RequestOptions
 
-    ConnContext(options::RequestOptions) = new(C_NULL, options.url, options)
+    function ConnContext(options::RequestOptions)
+        new(C_NULL, trailing(string(options.uri), '/'), options)
+    end
 end
 
 
@@ -158,7 +189,7 @@ function curl_read_cb(out::Ptr{Cvoid}, s::Csize_t, n::Csize_t, p_rd::Ptr{Cvoid})
     breq::Csize_t = rd.sz - rd.offset
     b2copy = bavail > breq ? breq : bavail
 
-    b_read = Array{UInt8}(uninitialized, b2copy)
+    b_read = Array{UInt8}(undef, b2copy)
     read!(rd.src, b_read)
 
     ccall(:memcpy, Ptr{Cvoid}, (Ptr{Cvoid}, Ptr{Cvoid}, UInt), out, b_read, b2copy)
@@ -195,15 +226,8 @@ function setup_easy_handle(options::RequestOptions)
 
     p_ctxt = pointer_from_objref(ctxt)
 
-    ctxt.url = options.url
-
-    @ce_curl curl_easy_setopt CURLOPT_URL options.url
+    @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
     # @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
-
-    if !isempty(options.username) && !isempty(options.password)
-        @ce_curl curl_easy_setopt CURLOPT_USERNAME options.username
-        @ce_curl curl_easy_setopt CURLOPT_PASSWORD options.password
-    end
 
     if options.ssl
         @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
@@ -538,9 +562,9 @@ function ftp_command(
     resp.body = seekstart(wd.buffer)
     resp.bytes_recd = wd.bytes_recd
 
-    cmd = split(cmd)
-    if resp.code == 250 && cmd[1] == "CWD"
-        ctxt.url *= join(cmd[2:end], ' ')
+    parts = split(cmd, ' ', limit=2)
+    if resp.code == 250 && parts[1] == "CWD"
+        ctxt.url *= trailing(parts[2], '/')
     end
 
     return resp
@@ -637,9 +661,7 @@ end
 
 function ==(this::RequestOptions, other::RequestOptions)
     return (
-        this.url == other.url &&
-        this.username == other.username &&
-        this.password == other.password &&
+        this.uri == other.uri &&
         this.ssl == other.ssl &&
         this.verify_peer == other.verify_peer &&
         this.active_mode == other.active_mode

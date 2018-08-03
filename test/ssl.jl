@@ -7,6 +7,7 @@ function ssl_tests(implicit::Bool = true)
 
     opts = (
         :hostname => hostname(server),
+        :port => port(server),
         :username => username(server),
         :password => password(server),
         :ssl => true,

@@ -1,56 +1,100 @@
 # FTP code for when the file transfer is complete.
 const complete_transfer_code = 226
 
+
+struct FTP
+    ctxt::ConnContext
+end
+
+function FTP(options::RequestOptions; verbose::Union{Bool,IOStream}=false)
+    try
+        ctxt, resp = ftp_connect(options; verbose=verbose)
+        FTP(ctxt)
+    catch err
+        if isa(err, FTPClientError)
+            err.msg = "Failed to connect."
+        end
+        rethrow()
+    end
+end
+
 """
     FTP(; kwargs...) -> FTP
 
 Create an FTP object.
 
-# Arguments
-* `hostname::AbstractString=""`: the hostname or address of the FTP server.
-* `implicit::Bool=false`: use implicit security.
-* `ssl::Bool=false`: use FTPS.
-* `verify_peer::Bool=true`: verify authenticity of peer's certificate.
-* `active_mode::Bool=false`: use active mode to establish data connection.
-* `username::AbstractString=""`: the username used to access the FTP server.
-* `password::AbstractString=""`: the password used to access the FTP server.
-* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
+# Keywords
+- `hostname::AbstractString=""`: the hostname or address of the FTP server.
+- `username::AbstractString=""`: the username used to access the FTP server.
+- `password::AbstractString=""`: the password used to access the FTP server.
+- `ssl::Bool=false`: use a secure FTP connection.
+- `implicit::Bool=false`: use implicit security (FTPS).
+- `verify_peer::Bool=true`: verify authenticity of peer's certificate.
+- `active_mode::Bool=false`: use active mode to establish data connection.
+- `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
     `Bool`, if true output is written to STDERR.
 """
-mutable struct FTP
-    ctxt::ConnContext
-
-    function FTP(;
-        hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
-        verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
-        password::AbstractString="", url::AbstractString="",
-        verbose::Union{Bool,IOStream}=false,
-    )
-        options = RequestOptions(
-            implicit=implicit, ssl=ssl,
-            verify_peer=verify_peer, active_mode=active_mode,
-            username=username, password=password, hostname=hostname, url=url
-        )
-
-        ctxt = nothing
-        try
-            ctxt, resp = ftp_connect(options; verbose=verbose)
-        catch err
-            if isa(err, FTPClientError)
-                err.msg = "Failed to connect."
-            end
-            rethrow()
-        end
-
-        new(ctxt)
+function FTP(;
+    hostname::AbstractString="",
+    port::Integer=0,
+    username::AbstractString="",
+    password::AbstractString="",
+    ssl::Bool=false,
+    implicit::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
+    verbose::Union{Bool,IOStream}=false,
+    url::AbstractString="",  # TODO: deprecate when we support this functionality elsewhere
+)
+    if !isempty(url)
+        Base.depwarn(string(
+            "Using `FTP` with the `url` keyword is deprecated; ",
+            "use `FTP(url, ...)` instead",
+        ), :FTP)
     end
+
+    options = RequestOptions(
+        username=username, password=password, hostname=hostname, port=port, url=url,
+        ssl=ssl, implicit=implicit, verify_peer=verify_peer, active_mode=active_mode,
+    )
+
+    FTP(options; verbose=verbose)
+end
+
+"""
+    FTP(url; kwargs...)
+
+Connect to an FTP server using the information specified in the URI.
+
+# Keywords
+- `ssl::Bool=false`: use a secure FTP connection.
+- `verify_peer::Bool=true`: verify the authenticity of the peer's certificate.
+- `active_mode::Bool=false`: use active mode to establish data connection.
+
+# Example
+```julia
+julia> FTP("ftp://user:password@ftp.example.com");  # FTP connection with no security
+
+julia> FTP("ftp://user:password@ftp.example.com", ssl=true);  # Explicit security (FTPES)
+
+julia> FTP("ftps://user:password@ftp.example.com");  # Implicit security (FTPS)
+```
+"""
+function FTP(
+    url::AbstractString;
+    ssl::Bool=false,
+    verify_peer::Bool=true,
+    active_mode::Bool=false,
+    verbose::Union{Bool,IOStream}=false,
+)
+    options = RequestOptions(url; ssl=ssl, verify_peer=verify_peer, active_mode=active_mode)
+    FTP(options; verbose=verbose)
 end
 
 function show(io::IO, ftp::FTP)
     opts = ftp.ctxt.options
     join(io, [
-        "Host:      $(ftp.ctxt.url)",
-        "User:      $(username(opts))",
+        "URL:       $(safe_uri(ftp.ctxt.url))",
         "Transfer:  $(ispassive(opts) ? "passive" : "active") mode",
         "Security:  $(security(opts))",
     ], "\n")
@@ -291,10 +335,6 @@ end
 Set the current working directory of the FTP server to "dir".
 """
 function cd(ftp::FTP, dir::AbstractString; verbose::Union{Bool,IOStream}=false)
-    if !endswith(dir, "/")
-        dir *= "/"
-    end
-
     resp = ftp_command(ftp.ctxt, "CWD $dir"; verbose=verbose)
 
     if resp.code != 250
@@ -402,13 +442,13 @@ Execute Function "code" on FTP server.
 """
 function ftp(
     code::Function;
-    hostname::AbstractString="", implicit::Bool=false, ssl::Bool=false,
+    hostname::AbstractString="", port::Integer=0, implicit::Bool=false, ssl::Bool=false,
     verify_peer::Bool=true, active_mode::Bool=false, username::AbstractString="",
     password::AbstractString="", verbose::Union{Bool,IOStream}=false,
 )
     ftp_init()
     ftp_client = FTP(
-        hostname=hostname, implicit=implicit, ssl=ssl, verify_peer=verify_peer,
+        hostname=hostname, port=port, implicit=implicit, ssl=ssl, verify_peer=verify_peer,
         active_mode=active_mode, username=username, password=password, verbose=verbose,
     )
 
