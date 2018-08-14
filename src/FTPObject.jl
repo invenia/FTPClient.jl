@@ -295,7 +295,7 @@ function upload(
                         break
                     end
                 catch e
-                    warn(e)
+                    @warn(e)
                 end
                 sleep(retry_wait_seconds)
                 # It returns ftp_options for testing purposes, where the ftp server
