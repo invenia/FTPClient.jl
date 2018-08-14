@@ -44,7 +44,11 @@ mutable struct FTPServer
         io = Pipe()
 
         # Note: open(::AbstractCmd, ...) won't work here as it doesn't allow us to capture STDERR.
-        process = spawn(pipeline(cmd, stdout=io, stderr=io))
+        process = if VERSION > v"0.7.0-DEV.4445"
+            run(pipeline(cmd, stdout=io, stderr=io), wait=false)
+        else
+            spawn(pipeline(cmd, stdout=io, stderr=io))
+        end
 
         line = readline(io)
         m = match(r"starting FTP.* server on .*:(?<port>\d+)", line)
