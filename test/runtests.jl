@@ -1,4 +1,4 @@
-import Compat: read, Sys
+import Compat: Sys, occursin, read
 using Compat.Test
 using FTPClient
 
