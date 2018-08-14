@@ -4,7 +4,7 @@ module FTPClient
 
 import Base: convert, show, open, mkdir, ascii, mv
 import Base: readdir, cd, pwd, rm, close, download
-using Compat: Cvoid, @compat, @cfunction, unsafe_string, unsafe_write
+using Compat: Cvoid, @compat, @cfunction, @warn, unsafe_string, unsafe_write
 using URIParser: URI
 
 mutable struct FTPClientError <: Exception
