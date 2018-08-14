@@ -150,8 +150,8 @@ function tests_by_mode(active::Bool)
     ctxt, resp = ftp_connect(options)
     directory_name = "test_directory"
     body = read(resp.body, String)
-    @test contains(body, download_file)
-    @test contains(body, directory_name)
+    @test occursin(download_file, body)
+    @test occursin(directory_name, body)
     @test resp.bytes_recd == length(body)
     @test resp.code == 226
     @test is_headers_equal(resp.headers, headers)
