@@ -4,16 +4,20 @@ os:
   - linux
 julia:
   - 0.6
+  - 0.7
+  - 1.0
   - nightly
 env:
   - CONDA_JL_VERSION="2"
 matrix:
   allow_failures:
-      - julia: nightly
+    - julia: nightly
 notifications:
   email: false
-script:
- - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
- - julia -e 'Pkg.clone(pwd()); Pkg.build("FTPClient"); Pkg.test("FTPClient"; coverage=true)'
 after_success:
- - julia -e 'cd(Pkg.dir("FTPClient")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+ - |
+   julia -e '
+      VERSION >= v"0.7.0-DEV.3656" && using Pkg
+      VERSION >= v"0.7.0-DEV.5183" || cd(Pkg.dir("FTPClient"))
+      Pkg.add("Coverage"); using Coverage
+      Codecov.submit(process_folder())'
