@@ -108,7 +108,7 @@ end
     ssl_tests(true, false)
 
     # Environment variable overrides specifying ssl=false
-    withenv("FTPS" => true) do
+    withenv("FTPES" => true) do
         ssl_tests(false, true)
         ssl_tests(false, false)
     end

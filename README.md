@@ -80,7 +80,7 @@ end
 - `verify_peer`: verify authenticity of peer's certificate, default is true
 - `active_mode`: use active mode to establish data connection, default is false
 
-Note: Can also specify `ENV["FTPS"] = true`. If either ssl=true or the environment variable `FTPS` is true ssl will be used
+Note: Can also specify explicit FTP with SSL `ENV["FTPES"] = true`. If either ssl=true or the environment variable `FTPES` is true ssl will be used
 
 
 #### FTPObject functions
