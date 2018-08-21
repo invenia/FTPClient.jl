@@ -1,4 +1,4 @@
-function ssl_tests(implicit::Bool = true)
+function ssl_tests(ssl::Bool = true, implicit::Bool = true)
     mode = implicit ? :implicit : :explicit
 
     setup_server()
@@ -10,7 +10,7 @@ function ssl_tests(implicit::Bool = true)
         :port => port(server),
         :username => username(server),
         :password => password(server),
-        :ssl => true,
+        :ssl => ssl,
         :implicit => implicit,
         :verify_peer => false,
     )
@@ -104,6 +104,12 @@ function test_cmd(ctxt::ConnContext)
 end
 
 @testset "ssl" begin
-    ssl_tests(true)
-    ssl_tests(false)
+    ssl_tests(true, true)
+    ssl_tests(true, false)
+
+    ENV["FTPS"] = true
+
+    # Environment variable overrides specifying ssl=false
+    ssl_tests(false, true)
+    ssl_tests(false, false)
 end

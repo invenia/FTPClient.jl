@@ -229,7 +229,7 @@ function setup_easy_handle(options::RequestOptions)
     @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
     # @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
-    if options.ssl
+    if options.ssl || parse(Bool, get(ENV, "FTPS", "false"))
         @ce_curl curl_easy_setopt CURLOPT_USE_SSL CURLUSESSL_ALL
         @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
         @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
