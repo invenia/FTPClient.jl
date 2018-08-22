@@ -47,7 +47,7 @@ function RequestOptions(;
     end
 
     uri = if isempty(url)
-        scheme = implicit ? "ftps" : "ftp"
+        scheme = ssl ? (implicit ? "ftps" : "ftpes") : "ftp"
         URI(scheme, hostname, port, "", "", "", userinfo)
     else
         Base.depwarn(string(
@@ -68,13 +68,13 @@ function RequestOptions(
 )
     uri = URI(url)
 
-    if !(uri.scheme in ("ftps", "ftp"))
+    if !(uri.scheme in ("ftps", "ftp", "ftpes"))
         throw(ArgumentError("Unhandled FTP scheme: $(uri.scheme)"))
     end
 
     RequestOptions(
         uri,
-        uri.scheme == "ftps" ? true : ssl,
+        uri.scheme in ("ftps", "ftpes") ? true : ssl,
         verify_peer,
         active_mode,
     )
@@ -226,7 +226,9 @@ function setup_easy_handle(options::RequestOptions)
 
     p_ctxt = pointer_from_objref(ctxt)
 
-    @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
+    # Set ftpes protocol to ftp in the url so that libcurl can understand it
+    url = options.ssl ? replace(ctxt.url, "ftpes://", "ftp://") : ctxt.url
+    @ce_curl curl_easy_setopt CURLOPT_URL url
     # @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
 
     if options.ssl
@@ -379,7 +381,9 @@ function ftp_get(
 
         @ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(1)
 
-        full_url = ctxt.url * file_name
+        # Set ftpes protocol to ftp in the url so that libcurl can understand it
+        url = ctxt.options.ssl ? replace(ctxt.url, "ftpes://", "ftp://") : ctxt.url
+        full_url = url * file_name
         if mode == binary_mode
             @ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=i"
         elseif mode == ascii_mode
@@ -392,7 +396,7 @@ function ftp_get(
             seekstart(wd.buffer)
         end
 
-        @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
+        @ce_curl curl_easy_setopt CURLOPT_URL url
 
         # Set it back to default
         @ce_curl curl_easy_setopt CURLOPT_PROXY_TRANSFER_MODE Int64(0)
@@ -488,7 +492,9 @@ function ftp_put(
     @ce_curl curl_easy_setopt CURLOPT_READDATA p_rd
     @ce_curl curl_easy_setopt CURLOPT_READFUNCTION C_CURL_READ_CB[]
 
-    @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url * file_name
+    # Set ftpes protocol to ftp in the url so that libcurl can understand it
+    url = ctxt.options.ssl ? replace(ctxt.url, "ftpes://", "ftp://") : ctxt.url
+    @ce_curl curl_easy_setopt CURLOPT_URL url * file_name
 
     if mode == binary_mode
         @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
@@ -501,7 +507,7 @@ function ftp_put(
     resp = ftp_perform(ctxt, verbose)
 
     # resest handle defaults
-    @ce_curl curl_easy_setopt CURLOPT_URL ctxt.url
+    @ce_curl curl_easy_setopt CURLOPT_URL url
     @ce_curl curl_easy_setopt CURLOPT_UPLOAD Int64(0)
     @ce_curl curl_easy_setopt CURLOPT_TRANSFERTEXT Int64(0)
 

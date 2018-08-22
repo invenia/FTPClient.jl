@@ -75,7 +75,7 @@ Connect to an FTP server using the information specified in the URI.
 ```julia
 julia> FTP("ftp://user:password@ftp.example.com");  # FTP connection with no security
 
-julia> FTP("ftp://user:password@ftp.example.com", ssl=true);  # Explicit security (FTPES)
+julia> FTP("ftpes://user:password@ftp.example.com");  # Explicit security (FTPES)
 
 julia> FTP("ftps://user:password@ftp.example.com");  # Implicit security (FTPS)
 ```

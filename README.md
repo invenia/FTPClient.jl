@@ -76,7 +76,7 @@ end
 ```
 
 - `implicit`: use implicit security, default is false
-- `ssl`: use FTPS, default is false
+- `ssl`: use FTPS or FTPES (if implicit is set to false), default is false
 - `verify_peer`: verify authenticity of peer's certificate, default is true
 - `active_mode`: use active mode to establish data connection, default is false
 
@@ -125,7 +125,7 @@ dir = resp.body
 ftp_cleanup()
 ```
 
-Using persistent connection and FTPS with explicit security:
+Using persistent connection and FTPES with explicit security:
 
 ```julia
 using FTPClient

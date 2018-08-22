@@ -16,6 +16,8 @@ function ssl_tests(implicit::Bool = true)
     )
     try
         options = RequestOptions(; opts..., active_mode=false)
+        # Test implicit/exlicit ftp ssl scheme is set correctly
+        @test options.uri.scheme == (implicit ? "ftps" : "ftpes")
         test_download(options)
         test_upload(options)
         test_cmd(options)
