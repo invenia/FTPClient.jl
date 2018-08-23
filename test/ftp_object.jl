@@ -101,7 +101,7 @@ end
         "/",
     )
 
-    ftp = FTP(url; ssl=false)
+    ftp = FTP(url)
     @test ftp.ctxt.url == url
     close(ftp)
 end

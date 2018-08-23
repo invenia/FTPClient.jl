@@ -75,19 +75,29 @@ Connect to an FTP server using the information specified in the URI.
 ```julia
 julia> FTP("ftp://user:password@ftp.example.com");  # FTP connection with no security
 
-julia> FTP("ftp://user:password@ftp.example.com", ssl=true);  # Explicit security (FTPES)
+julia> FTP("ftpes://user:password@ftp.example.com");  # Explicit security (FTPES)
 
 julia> FTP("ftps://user:password@ftp.example.com");  # Implicit security (FTPS)
 ```
 """
 function FTP(
     url::AbstractString;
-    ssl::Bool=false,
     verify_peer::Bool=true,
     active_mode::Bool=false,
     verbose::Union{Bool,IOStream}=false,
+    ssl::Union{Nothing, Bool}=nothing,
 )
-    options = RequestOptions(url; ssl=ssl, verify_peer=verify_peer, active_mode=active_mode)
+    if ssl !== nothing
+        Base.depwarn(
+            "`FTP` keyword `ssl` has been depprecated, change the URL " *
+            "protocol to \"ftp://\", \"ftps://\", or \"ftpes://\" to respectively " *
+            "indicate no security, implicit security, or explicit security.",
+            :FTP
+        )
+        url = ssl ? replace(url, "ftp://" => "ftpes://") : url
+    end
+
+    options = RequestOptions(url; verify_peer=verify_peer, active_mode=active_mode)
     FTP(options; verbose=verbose)
 end
 
