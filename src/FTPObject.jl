@@ -88,11 +88,11 @@ function FTP(
     ssl::Union{Nothing, Bool}=nothing,
 )
     if ssl !== nothing
-         Base.depwarn(
-            "FTP(url; ssl=false, verify_peer=true, active_mode=false, verbose=false) is " *
-            "deprecated, use \"ftpes://\" or \"ftps://\" in the url to indicate " *
-            "explicit or implicit ssl respectively",
-            :RequestOptions
+        Base.depwarn(
+            "`FTP` keyword `ssl` has been depprecated, change the URL " *
+            "protocol to \"ftp://\", \"ftps://\", or \"ftpes://\" to respectively " *
+            "indicate no security, implicit security, or explicit security.",
+            :FTP
         )
         url = ssl ? replace(url, "ftp://" => "ftpes://") : url
     end

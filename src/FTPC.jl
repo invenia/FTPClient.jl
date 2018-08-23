@@ -67,9 +67,9 @@ function RequestOptions(
 )
     if ssl !== nothing
          Base.depwarn(
-            "RequestOptions(url; ssl=false, verify_peer=true, active_mode=false) is " *
-            "deprecated, use \"ftpes://\" or \"ftps://\" in the url to indicate " *
-            "explicit or implicit ssl respectively",
+            "`RequestOptions` keyword `ssl` has been depprecated, change the URL " *
+            "protocol to \"ftp://\", \"ftps://\", or \"ftpes://\" to respectively " *
+            "indicate no security, implicit security, or explicit security.",
             :RequestOptions
         )
         url = ssl ? replace(url, "ftp://" => "ftpes://") : url
@@ -83,7 +83,7 @@ function RequestOptions(
 
     RequestOptions(
         uri,
-        uri.scheme in ("ftps", "ftpes") ? true : false,
+        uri.scheme in ("ftps", "ftpes"),
         verify_peer,
         active_mode,
     )
