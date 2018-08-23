@@ -82,12 +82,22 @@ julia> FTP("ftps://user:password@ftp.example.com");  # Implicit security (FTPS)
 """
 function FTP(
     url::AbstractString;
-    ssl::Bool=false,
     verify_peer::Bool=true,
     active_mode::Bool=false,
     verbose::Union{Bool,IOStream}=false,
+    ssl::Union{Nothing, Bool}=nothing,
 )
-    options = RequestOptions(url; ssl=ssl, verify_peer=verify_peer, active_mode=active_mode)
+    if ssl !== nothing
+         Base.depwarn(
+            "FTP(url; ssl=false, verify_peer=true, active_mode=false, verbose=false) is " *
+            "deprecated, use \"ftpes://\" or \"ftps://\" in the url to indicate " *
+            "explicit or implicit ssl respectively",
+            :RequestOptions
+        )
+        url = ssl ? replace(url, "ftp://" => "ftpes://") : url
+    end
+
+    options = RequestOptions(url; verify_peer=verify_peer, active_mode=active_mode)
     FTP(options; verbose=verbose)
 end
 
