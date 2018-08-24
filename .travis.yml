@@ -15,7 +15,7 @@ matrix:
 notifications:
   email: false
 before_install:
-  - sudo apt-get install -y ca-certificates
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CURL_CA_BUNDLE="/etc/ssl/certs/ca-certificates.crt"; fi
 after_success:
   - |
     julia -e '
