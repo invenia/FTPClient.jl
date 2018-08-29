@@ -14,8 +14,6 @@ matrix:
     - julia: nightly
 notifications:
   email: false
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export CURL_CA_BUNDLE="/etc/ssl/certs/ca-certificates.crt"; fi
 after_success:
   - |
     julia -e '
