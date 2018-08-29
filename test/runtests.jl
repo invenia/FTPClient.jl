@@ -1,6 +1,6 @@
-import Compat: read, Sys
+import Compat: Sys, occursin, read
+using Compat.Test
 using FTPClient
-using Base.Test
 
 include("server/server.jl")
 include("utils.jl")
