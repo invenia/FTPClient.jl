@@ -145,7 +145,7 @@ end
     ftp = FTP(; opts...)
     local_file = upload_file
     server_dir = joinpath(HOMEDIR, testdir)
-    mkdir(ftp, testdir)
+    mkdir(ftp, mode=testdir)
     server_file = joinpath(server_dir, local_file)
     tempfile(local_file)
     @test isfile(local_file)
@@ -166,8 +166,8 @@ end
     ftp = FTP(; opts...)
     local_file = upload_file
     server_dir = joinpath(HOMEDIR, testdir)
-    mkdir(ftp, testdir)
-    mkdir(ftp, joinpath(testdir, testdir2))
+    mkdir(ftp, mode=testdir)
+    mkdir(ftp, mode=joinpath(testdir, testdir2))
     server_file = joinpath(server_dir, local_file)
     tempfile(local_file)
 
@@ -187,7 +187,7 @@ end
     ftp = FTP(; opts...)
     local_file = upload_file
     server_dir = joinpath(HOMEDIR, testdir)
-    mkdir(ftp, testdir)
+    mkdir(ftp, mode=testdir)
     server_file = joinpath(server_dir, local_file)
     tempfile(local_file)
     @test isfile(local_file)
@@ -228,7 +228,7 @@ end
     cleanup_dir(server_dir)
     @test !isdir(server_dir)
 
-    resp = mkdir(ftp, testdir)
+    resp = mkdir(ftp, mode=testdir)
     @test isdir(server_dir)
     no_unexpected_changes(ftp)
     cleanup_dir(server_dir)
@@ -239,7 +239,7 @@ end
     @test !isdir(server_dir)
     mkdir(server_dir)
     @test isdir(server_dir)
-    @test_throws FTPClientError mkdir(ftp, testdir)
+    @test_throws FTPClientError mkdir(ftp, mode=testdir)
     @test isdir(server_dir)
     no_unexpected_changes(ftp)
     cleanup_dir(server_dir)
@@ -247,7 +247,7 @@ end
 
     # check bad directory error
     ftp = FTP(; opts...)
-    @test_throws FTPClientError mkdir(ftp, "")
+    @test_throws FTPClientError mkdir(ftp, mode="")
     close(ftp)
 end
 
@@ -528,7 +528,7 @@ end
         local ftp
         num_bytes = captured_size() do io
             ftp = FTP(; opts..., verbose=io)
-            mkdir(ftp, testdir)
+            mkdir(ftp, mode=testdir)
         end
         @test num_bytes > 0
         @test isdir(server_dir)

@@ -82,7 +82,7 @@ julia> mv(ftp, "Assignment3-copy.txt", "Assignment3-dup.txt")
 
 julia> rm(ftp, "Assignment3-dup.txt")
 
-julia> mkdir(ftp, "tmp")
+julia> mkdir(ftp, mode="tmp")
 
 julia> rmdir(ftp, "tmp")
 
