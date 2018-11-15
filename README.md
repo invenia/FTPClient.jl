@@ -22,7 +22,7 @@ ftp_command(options::RequestOptions, cmd::AbstractString)
 ```
 
 These functions all establish a connection, perform the desired operation then close the
-connection and return a `Response` object. Any data retrieved from server is in 
+connection and return a `Response` object. Any data retrieved from server is in
 `Response.body`:
 
 ```julia
@@ -197,7 +197,7 @@ ftp_cleanup()
 
 ### Code Coverage
 
-There are parts of the code that are not executed when running the basic test. The server is not yet equipped 
+There are parts of the code that are not executed when running the basic test. The server is not yet equipped
 to check for error situations on command.
 
 
@@ -205,7 +205,13 @@ to check for error situations on command.
 
 ### Downloaded files are unusable
 
-Try downloading file in both binary and ASCII mode to see if one of the files is usable. 
+Try downloading file in both binary and ASCII mode to see if one of the files is usable.
+
+### Linux and Travis CI
+
+Travis CI currently [does not reliably support FTP connections on sudo-enabled
+Linux](https://blog.travis-ci.com/2018-07-23-the-tale-of-ftp-at-travis-ci). This will
+usually manifest itself as a `Connection Timeout` error. Disable `sudo` for a workaround.
 
 ### Other issues
 
