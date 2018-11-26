@@ -125,7 +125,6 @@ end
         file_name::AbstractString,
         save_path::AbstractString="";
         mode::FTP_MODE=binary_mode,
-        verbose::Union{Bool,IOStream}=false,
     )
 
 Download the file "file_name" from FTP server and return IOStream.
@@ -136,8 +135,9 @@ function download(
     file_name::AbstractString,
     save_path::AbstractString="";
     mode::FTP_MODE=binary_mode,
-    verbose::Union{Bool,IOStream}=false,
+    verbose=nothing,
 )
+    _dep_verbose_kw(verbose, typeof(ftp), :download)
     resp = nothing
     try
         resp = ftp_get(ftp.ctxt, file_name, save_path; mode=mode, verbose=verbose)
@@ -155,7 +155,6 @@ end
         ftp::FTP,
         local_name::AbstractString;
         mode::FTP_MODE=binary_mode,
-        verbose::Union{Bool,IOStream}=false,
     )
 
 Upload the file "local_name" to the FTP server and save as "local_name".
@@ -164,8 +163,9 @@ function upload(
     ftp::FTP,
     local_name::AbstractString;
     mode::FTP_MODE=binary_mode,
-    verbose::Union{Bool,IOStream}=false,
+    verbose=nothing,
 )
+    _dep_verbose_kw(verbose, typeof(ftp), :upload)
     return upload(ftp, local_name, local_name; mode=mode, verbose=verbose)
 end
 
@@ -175,7 +175,6 @@ end
         local_name::AbstractString,
         remote_name::AbstractString;
         mode::FTP_MODE=binary_mode,
-        verbose::Union{Bool,IOStream}=false,
     )
 
 Upload the file "local_name" to the FTP server and save as "remote_name".
@@ -185,8 +184,10 @@ function upload(
     local_name::AbstractString,
     remote_name::AbstractString;
     mode::FTP_MODE=binary_mode,
-    verbose::Union{Bool,IOStream}=false,
+    verbose=nothing,
 )
+    _dep_verbose_kw(verbose, typeof(ftp), :upload)
+
     open(local_name) do local_file
         return upload(ftp, local_file, remote_name; mode=mode, verbose=verbose)
     end
@@ -198,7 +199,6 @@ end
         local_file::IO,
         remote_name::AbstractString;
         mode::FTP_MODE=binary_mode,
-        verbose::Union{Bool,IOStream}=false,
     )
 
 Upload IO object "local_file" to the FTP server and save as "remote_name".
@@ -208,8 +208,10 @@ function upload(
     local_file::IO,
     remote_name::AbstractString;
     mode::FTP_MODE=binary_mode,
-    verbose::Union{Bool,IOStream}=false,
+    verbose=nothing,
 )
+    _dep_verbose_kw(verbose, typeof(ftp), :upload)
+
     try
         ftp_put(ftp.ctxt, remote_name, local_file; mode=mode, verbose=verbose)
     catch err
@@ -229,7 +231,6 @@ end
         ftp_dir<:AbstractString;
         retry_callback::Function=(count, options) -> (count < 4, options),
         retry_wait_seconds::Integer = 5,
-        verbose::Union{Bool,IOStream}=false,
     )
 
 Uploads the files specified in local_file_paths to the directory specifed by
@@ -252,8 +253,6 @@ allows backup ftp directories to be used for example.
 `retry_callback::Function=(count, options) -> (count < 4, options)`: Function for retrying
     when delivery fails.
 `retry_wait_seconds::Integer = 5`: How many seconds to wait in between retries.
-`verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
-    `Bool`, if true output is written to STDERR.
 
 # Returns
 - `Array{Bool,1}`: Returns a vector of booleans with true for each successfully delivered
@@ -265,9 +264,9 @@ function upload(
     ftp_dir::AbstractString;
     retry_callback::Function=(count, options) -> (count < 4, options),
     retry_wait_seconds::Integer=5,
-    verbose::Union{Bool,IOStream}=false,
+    verbose=nothing,
 )
-
+    _dep_verbose_kw(verbose, typeof(ftp), :upload)
     successful_delivery = Bool[]
 
     ftp_options = ftp.ctxt
@@ -317,11 +316,12 @@ end
 
 
 """
-    readdir(ftp::FTP; verbose::Union{Bool,IOStream}=false)
+    readdir(ftp::FTP)
 
 Return the contents of the current working directory of the FTP server.
 """
-function readdir(ftp::FTP; verbose::Union{Bool,IOStream}=false)
+function readdir(ftp::FTP; verbose=nothing)
+    _dep_verbose_kw(verbose, typeof(ftp), :readdir)
     resp = nothing
 
     try
@@ -340,11 +340,12 @@ end
 
 
 """
-    cd(ftp::FTP, dir::AbstractString; verbose::Union{Bool,IOStream}=false)
+    cd(ftp::FTP, dir::AbstractString)
 
 Set the current working directory of the FTP server to "dir".
 """
-function cd(ftp::FTP, dir::AbstractString; verbose::Union{Bool,IOStream}=false)
+function cd(ftp::FTP, dir::AbstractString; verbose=nothing)
+    _dep_verbose_kw(verbose, typeof(ftp), :cd)
     resp = ftp_command(ftp.ctxt, "CWD $dir"; verbose=verbose)
 
     if resp.code != 250
@@ -354,11 +355,12 @@ end
 
 
 """
-    pwd(ftp::FTP; verbose::Union{Bool,IOStream}=false)
+    pwd(ftp::FTP)
 
 Get the current working directory of the FTP server
 """
-function pwd(ftp::FTP; verbose::Union{Bool,IOStream}=false)
+function pwd(ftp::FTP; verbose=nothing)
+    _dep_verbose_kw(verbose, typeof(ftp), :pwd)
     resp = ftp_command(ftp.ctxt, "PWD"; verbose=verbose)
 
     if resp.code != 257
@@ -370,11 +372,12 @@ end
 
 
 """
-    rm(ftp::FTP, file_name::AbstractString; verbose::Union{Bool,IOStream}=false)
+    rm(ftp::FTP, file_name::AbstractString)
 
 Delete file "file_name" from FTP server.
 """
-function rm(ftp::FTP, file_name::AbstractString; verbose::Union{Bool,IOStream}=false)
+function rm(ftp::FTP, file_name::AbstractString; verbose=nothing)
+    _dep_verbose_kw(verbose, typeof(ftp), :rm)
     resp = ftp_command(ftp.ctxt, "DELE $file_name"; verbose=verbose)
 
     if resp.code != 250
@@ -384,11 +387,12 @@ end
 
 
 """
-    rmdir(ftp::FTP, dir_name::AbstractString; verbose::Union{Bool,IOStream}=false)
+    rmdir(ftp::FTP, dir_name::AbstractString)
 
 Delete directory "dir_name" from FTP server.
 """
-function rmdir(ftp::FTP, dir_name::AbstractString; verbose::Union{Bool,IOStream}=false)
+function rmdir(ftp::FTP, dir_name::AbstractString; verbose=nothing)
+    _dep_verbose_kw(verbose, typeof(ftp), :rmdir)
     resp = ftp_command(ftp.ctxt, "RMD $dir_name"; verbose=verbose)
 
     if resp.code != 250
@@ -398,11 +402,12 @@ end
 
 
 """
-    mkdir(ftp::FTP, dir::AbstractString; verbose::Union{Bool,IOStream}=false)
+    mkdir(ftp::FTP, dir::AbstractString)
 
 Make directory "dir" on FTP server.
 """
-function mkdir(ftp::FTP, dir::AbstractString; verbose::Union{Bool,IOStream}=false)
+function mkdir(ftp::FTP, dir::AbstractString; verbose=nothing)
+    _dep_verbose_kw(verbose, typeof(ftp), :mkdir)
     resp = ftp_command(ftp.ctxt, "MKD $dir"; verbose=verbose)
 
     if resp.code != 257
@@ -416,7 +421,6 @@ end
         ftp::FTP,
         file_name::AbstractString,
         new_name::AbstractString;
-        verbose::Union{Bool,IOStream}=false,
     )
 
 Move (rename) file "file_name" to "new_name" on FTP server.
@@ -425,8 +429,9 @@ function mv(
     ftp::FTP,
     file_name::AbstractString,
     new_name::AbstractString;
-    verbose::Union{Bool,IOStream}=false,
+    verbose=nothing,
 )
+    _dep_verbose_kw(verbose, typeof(ftp), :mv)
     resp = ftp_command(ftp.ctxt, "RNFR $file_name"; verbose=verbose)
 
     if resp.code != 350
