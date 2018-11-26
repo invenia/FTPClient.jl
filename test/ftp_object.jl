@@ -417,44 +417,46 @@ end
 
 @testset "verbose" begin
 
-    function test_captured_ouput(func::Function)
-        local resp
+    function captured_size(func::Function)
         temp_file_path, io = mktemp()
         ftp_init()
         try
-            resp = func(io)
+            func(io)
             close(io)
-            @test filesize(temp_file_path) > 0
+            return filesize(temp_file_path)
         finally
             close(io)
             isfile(temp_file_path) && rm(temp_file_path)
             ftp_cleanup()
         end
 
-        return resp
+        return nothing
     end
 
     @testset "FTP" begin
-        test_captured_ouput() do io
+        num_bytes = captured_size() do io
             FTP(; opts..., verbose=io)
         end
+        @test num_bytes > 0
     end
 
     @testset "readdir" begin
         local ftp
-        test_captured_ouput() do io
+        num_bytes = captured_size() do io
             ftp = FTP(; opts..., verbose=io)
             readdir(ftp)
         end
+        @test num_bytes > 0
         close(ftp)
     end
 
     @testset "download" begin
         local ftp, buffer
-        test_captured_ouput() do io
+        num_bytes = captured_size() do io
             ftp = FTP(; opts..., verbose=io)
             buffer = download(ftp, download_file)
         end
+        @test num_bytes > 0
         @test read(buffer, String) == read(joinpath(ROOT, download_file), String)
         no_unexpected_changes(ftp)
         close(ftp)
@@ -468,13 +470,14 @@ end
         @test !isfile(server_file)
 
         local ftp
-        copy_and_wait(server_file) do
-            test_captured_ouput() do io
+        num_bytes = copy_and_wait(server_file) do
+            captured_size() do io
                 ftp = FTP(; opts..., verbose=io)
                 upload(ftp, upload_file)
             end
         end
 
+        @test num_bytes > 0
         @test isfile(server_file)
         @test read(upload_file, String) == read(server_file, String)
 
@@ -489,10 +492,11 @@ end
         @test !isdir(server_dir)
 
         local ftp
-        test_captured_ouput() do io
+        num_bytes = captured_size() do io
             ftp = FTP(; opts..., verbose=io)
             mkdir(ftp, testdir)
         end
+        @test num_bytes > 0
         @test isdir(server_dir)
         no_unexpected_changes(ftp)
         cleanup_dir(server_dir)
@@ -505,11 +509,12 @@ end
         mkdir(server_dir)
 
         local ftp
-        test_captured_ouput() do io
+        num_bytes = captured_size() do io
             ftp = FTP(; opts..., verbose=io)
             cd(ftp, testdir)
         end
 
+        @test num_bytes > 0
         no_unexpected_changes(ftp, "$prefix/$testdir/")
         cleanup_dir(server_dir)
         close(ftp)
@@ -522,11 +527,12 @@ end
         @test isdir(server_dir)
 
         local ftp
-        test_captured_ouput() do io
+        num_bytes = captured_size() do io
             ftp = FTP(; opts..., verbose=io)
             rmdir(ftp, testdir)
         end
 
+        @test num_bytes > 0
         @test !isdir(server_dir)
         no_unexpected_changes(ftp)
         close(ftp)
@@ -534,11 +540,12 @@ end
 
     @testset "pwd" begin
         local ftp
-        test_captured_ouput() do io
+        num_bytes = captured_size() do io
             ftp = FTP(; opts..., verbose=io)
             dir = pwd(ftp)
             @test dir == "/"
         end
+        @test num_bytes > 0
         no_unexpected_changes(ftp)
         close(ftp)
     end
@@ -559,11 +566,12 @@ end
         isfile(server_new_file) && rm(server_new_file)
 
         local ftp
-        test_captured_ouput() do io
+        num_bytes = captured_size() do io
             ftp = FTP(; opts..., verbose=io)
             mv(ftp, mv_file, new_file)
         end
 
+        @test num_bytes > 0
         @test !isfile(server_file)
         @test isfile(server_new_file)
         @test read(server_new_file, String) == read(mv_file, String)
@@ -586,10 +594,12 @@ end
         @test isfile(server_file)
 
         local ftp
-        test_captured_ouput() do io
+        num_bytes = captured_size() do io
             ftp = FTP(; opts..., verbose=io)
             rm(ftp, mv_file)
         end
+
+        @test num_bytes > 0
         @test !isfile(server_file)
         no_unexpected_changes(ftp)
         close(ftp)
@@ -604,13 +614,14 @@ end
             @test !isfile(server_file)
 
             local ftp
-            copy_and_wait(server_file) do
-                test_captured_ouput() do io
+            num_bytes = copy_and_wait(server_file) do
+                captured_size() do io
                     ftp = FTP(; opts..., verbose=io)
                     upload(ftp, upload_file)
                 end
             end
 
+            @test num_bytes > 0
             @test isfile(server_file)
             @test read(upload_file, String) == read(server_file, String)
             no_unexpected_changes(ftp)
@@ -622,13 +633,14 @@ end
             @test !isfile(server_file)
 
             local ftp
-            copy_and_wait(server_file) do
-                test_captured_ouput() do io
+            num_bytes = copy_and_wait(server_file) do
+                captured_size() do io
                     ftp = FTP(; opts..., verbose=io)
                     upload(ftp, upload_file, "some name")
                 end
             end
 
+            @test num_bytes > 0
             @test isfile(server_file)
             @test read(upload_file, String) == read(server_file, String)
             no_unexpected_changes(ftp)
@@ -640,14 +652,15 @@ end
             @test !isfile(server_file)
 
             local ftp
-            copy_and_wait(server_file) do
-                test_captured_ouput() do io
+            num_bytes = copy_and_wait(server_file) do
+                captured_size() do io
                     ftp = FTP(; opts..., verbose=io)
                     resp = upload(ftp, [upload_file], "/")
                     @test resp == [true]
                 end
             end
 
+            @test num_bytes > 0
             @test isfile(server_file)
             @test read(upload_file, String) == read(server_file, String)
             no_unexpected_changes(ftp)
@@ -658,7 +671,7 @@ end
 
     @testset "verbose multiple commands" begin
         @testset "two commands" begin
-            test_captured_ouput() do io
+            captured_size() do io
                 # The initial connection will output information which we'll want to ignore
                 # for the purposes of this test.
                 ftp = FTP(; opts..., verbose=io)
@@ -675,7 +688,7 @@ end
         end
 
         @testset "write to stream between FTP commands" begin
-            test_captured_ouput() do io
+            captured_size() do io
                 ftp = FTP(; opts..., verbose=io)
                 init_pos = position(io)
 
@@ -695,9 +708,10 @@ end
     end
 
     @testset "ftp open do end" begin
-        test_captured_ouput() do io
+        num_bytes = captured_size() do io
             ftp(f -> nothing; opts..., verbose=io)
         end
+        @test num_bytes > 0
     end
 
 end
