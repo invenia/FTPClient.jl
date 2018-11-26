@@ -2,20 +2,19 @@
 const complete_transfer_code = 226
 
 
-struct FTP
+mutable struct FTP
     ctxt::ConnContext
+
+    function FTP(ctxt::ConnContext)
+        ftp = new(ctxt)
+        @compat finalizer(close, ftp)  # 0.7.0-DEV.2562
+        return ftp
+    end
 end
 
 function FTP(options::RequestOptions; verbose::Union{Bool,IOStream}=false)
-    try
-        ctxt, resp = ftp_connect(options; verbose=verbose)
-        FTP(ctxt)
-    catch err
-        if isa(err, FTPClientError)
-            err.msg = "Failed to connect."
-        end
-        rethrow()
-    end
+    ctxt = setup_easy_handle(options; verbose=verbose)
+    return FTP(ctxt)
 end
 
 """

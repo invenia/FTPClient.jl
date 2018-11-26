@@ -76,9 +76,11 @@ function retry_test(count, options)
     end
 end
 
-@testset "conn error" begin
-    # check connection error
-    @test_throws FTPClientError FTP(hostname="not a host", username=username(server), password=password(server), ssl=false)
+@testset "connection error" begin
+    # Note: Creating the FTP instance will not actually establish a connection. A connection
+    # will only occur upon the first command executed which requires remote access.
+    ftp = FTP(hostname="not a host", username=username(server), password=password(server), ssl=false)
+    @test_throws FTPClientError pwd(ftp)
 end
 
 @testset "object" begin
@@ -437,7 +439,7 @@ end
         num_bytes = captured_size() do io
             FTP(; opts..., verbose=io)
         end
-        @test num_bytes > 0
+        @test num_bytes == 0
     end
 
     @testset "readdir" begin
@@ -675,6 +677,7 @@ end
                 # The initial connection will output information which we'll want to ignore
                 # for the purposes of this test.
                 ftp = FTP(; opts..., verbose=io)
+                pwd(ftp)  # trigger connection
                 init_pos = position(io)
 
                 path = pwd(ftp)
@@ -690,6 +693,7 @@ end
         @testset "write to stream between FTP commands" begin
             captured_size() do io
                 ftp = FTP(; opts..., verbose=io)
+                pwd(ftp)  # trigger connection
                 init_pos = position(io)
 
                 path = pwd(ftp)
@@ -709,7 +713,9 @@ end
 
     @testset "ftp open do end" begin
         num_bytes = captured_size() do io
-            ftp(f -> nothing; opts..., verbose=io)
+            ftp(; opts..., verbose=io) do f
+                pwd(f)
+            end
         end
         @test num_bytes > 0
     end
