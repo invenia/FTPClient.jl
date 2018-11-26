@@ -38,6 +38,9 @@ export RequestOptions,
 
 include("utils.jl")
 include("FTPC.jl")
+include("response.jl")
+include("request_options.jl")
+include("conn_context.jl")
 include("FTPObject.jl")
 
 const C_WRITE_FILE_CB = Ref{Ptr{Cvoid}}(C_NULL)
