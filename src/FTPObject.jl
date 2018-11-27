@@ -44,17 +44,9 @@ function FTP(;
     verify_peer::Bool=true,
     active_mode::Bool=false,
     verbose::Union{Bool,IOStream}=false,
-    url::AbstractString="",  # TODO: deprecate when we support this functionality elsewhere
 )
-    if !isempty(url)
-        Base.depwarn(string(
-            "Using `FTP` with the `url` keyword is deprecated; ",
-            "use `FTP(url, ...)` instead",
-        ), :FTP)
-    end
-
     options = RequestOptions(
-        username=username, password=password, hostname=hostname, port=port, url=url,
+        username=username, password=password, hostname=hostname, port=port,
         ssl=ssl, implicit=implicit, verify_peer=verify_peer, active_mode=active_mode,
     )
 
