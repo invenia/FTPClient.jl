@@ -3,17 +3,22 @@
 
 Keeps track of a persistent FTP connection.
 
-# Parameters
-* `url::AbstractString`: url of the FTP server.
-* `options::RequestOptions`: the options used for the connection.
+# Arguments
+- `url::AbstractString`: url of the FTP server.
+- `options::RequestOptions`: the options used for the connection.
+
+# Keywords
+- `verbose::Union{IOStream,Bool}=false`: an `IOStream` to capture LibCURL's output or a
+  `Bool`, if true output is written to STDERR.
 """
-mutable struct ConnContext
+mutable struct ConnContext{T <: Union{IOStream,Bool}}
     curl::Ptr{CURL}
     url::String  # Avoid using an abstract type when interacting with C libraries
     options::RequestOptions
+    verbose::T
 
-    function ConnContext(options::RequestOptions)
-        new(C_NULL, trailing(string(options.uri), '/'), options)
+    function ConnContext(options::RequestOptions; verbose::T=false) where T <: Union{IOStream,Bool}
+        new{T}(C_NULL, trailing(string(options.uri), '/'), options, verbose)
     end
 end
 
@@ -97,7 +102,6 @@ end
         file_name::AbstractString,
         save_path::AbstractString="";
         mode::FTP_MODE=binary_mode,
-        verbose::Union{Bool,IOStream}=false,
     )
 
 Download a file with a persistent connection. Returns a `Response`.
@@ -110,16 +114,16 @@ Download a file with a persistent connection. Returns a `Response`.
     body.
 * `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or
     ASCII format.
-* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
-    `Bool`, if true output is written to STDERR.
 """
 function ftp_get(
     ctxt::ConnContext,
     file_name::AbstractString,
     save_path::AbstractString="";
     mode::FTP_MODE=binary_mode,
-    verbose::Union{Bool,IOStream}=false,
+    verbose=nothing,
 )
+    _dep_verbose_kw(verbose, typeof(ctxt), :ftp_get)
+
     wd = WriteData()
 
     if !isempty(save_path)
@@ -176,7 +180,6 @@ end
         file_name::AbstractString,
         file::IO;
         mode::FTP_MODE=binary_mode,
-        verbose::Union{Bool,IOStream}=false,
     )
 
 Upload file with persistent connection. Returns a `Response`.
@@ -188,16 +191,16 @@ Upload file with persistent connection. Returns a `Response`.
 * `file::IO`: what is being written to the server.
 * `mode::FTP_MODE=binary_mode`: defines whether the file is transferred in binary or
     ASCII format.
-* `verbose::Union{Bool,IOStream}=false`: an `IOStream` to capture LibCurl's output or a
-    `Bool`, if true output is written to STDERR.
 """
 function ftp_put(
     ctxt::ConnContext,
     file_name::AbstractString,
     file::IO;
     mode::FTP_MODE=binary_mode,
-    verbose::Union{Bool,IOStream}=false,
+    verbose=nothing,
 )
+    _dep_verbose_kw(verbose, typeof(ctxt), :ftp_put)
+
     rd = ReadData()
 
     rd.src = file
@@ -235,8 +238,7 @@ end
 """
     ftp_command(
         ctxt::ConnContext,
-        cmd::AbstractString;
-        verbose::Union{Bool,IOStream}=false,
+        cmd::AbstractString
     )
 
 Pass FTP command with persistent connection. Returns a `Response`.
@@ -244,8 +246,10 @@ Pass FTP command with persistent connection. Returns a `Response`.
 function ftp_command(
     ctxt::ConnContext,
     cmd::AbstractString;
-    verbose::Union{Bool,IOStream}=false,
+    verbose=nothing,
 )
+    _dep_verbose_kw(verbose, typeof(ctxt), :ftp_command)
+
     wd = WriteData()
     p_wd = pointer_from_objref(wd)
 
@@ -278,7 +282,7 @@ function ftp_close_connection(ctxt::ConnContext)
 end
 
 
-function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
+function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream,Nothing})
     resp = Response()
     p_resp = pointer_from_objref(resp)
 
@@ -286,6 +290,7 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream})
     @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
     libc_file = nothing
+    verbose = verbose === nothing || verbose == false ? ctxt.verbose : verbose
     if verbose != false
         @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
         if isa(verbose, IOStream)

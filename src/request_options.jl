@@ -77,7 +77,9 @@ function ==(this::RequestOptions, other::RequestOptions)
     )
 end
 
-setup_easy_handle(options::RequestOptions) = setup_easy_handle(ConnContext(options))
+function setup_easy_handle(options::RequestOptions; verbose::Union{Bool,IOStream}=false)
+    setup_easy_handle(ConnContext(options, verbose=verbose))
+end
 
 """
     ftp_get(
@@ -107,9 +109,9 @@ function ftp_get(
     mode::FTP_MODE=binary_mode,
     verbose::Union{Bool,IOStream}=false,
 )
-    ctxt = setup_easy_handle(options)
+    ctxt = setup_easy_handle(options; verbose=verbose)
     try
-        return ftp_get(ctxt, file_name, save_path; mode=mode, verbose=verbose)
+        return ftp_get(ctxt, file_name, save_path; mode=mode)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -142,9 +144,9 @@ function ftp_put(
     mode::FTP_MODE=binary_mode,
     verbose::Union{Bool,IOStream}=false,
 )
-    ctxt = setup_easy_handle(options)
+    ctxt = setup_easy_handle(options; verbose=verbose)
     try
-        return ftp_put(ctxt, file_name, file; mode=mode, verbose=verbose)
+        return ftp_put(ctxt, file_name, file; mode=mode)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -164,9 +166,9 @@ function ftp_command(
     cmd::AbstractString;
     verbose::Union{Bool,IOStream}=false,
 )
-    ctxt = setup_easy_handle(options)
+    ctxt = setup_easy_handle(options; verbose=verbose)
     try
-        return ftp_command(ctxt, cmd; verbose=verbose)
+        return ftp_command(ctxt, cmd)
     finally
         cleanup_easy_context(ctxt)
     end
@@ -178,10 +180,10 @@ end
 Establish connection to FTP server. Returns a `ConnContext` and a `Response`.
 """
 function ftp_connect(options::RequestOptions; verbose::Union{Bool,IOStream}=false)
-    ctxt = setup_easy_handle(options)
+    ctxt = setup_easy_handle(options; verbose=verbose)
     try
         # ping the server
-        resp = ftp_command(ctxt, "LIST"; verbose=verbose)
+        resp = ftp_command(ctxt, "LIST")
 
         return ctxt, resp
     catch
