@@ -56,18 +56,7 @@ function RequestOptions(
     url::AbstractString;
     verify_peer::Bool=true,
     active_mode::Bool=false,
-    ssl::Union{Nothing, Bool}=nothing,
 )
-    if ssl !== nothing
-         Base.depwarn(
-            "`RequestOptions` keyword `ssl` has been depprecated, change the URL " *
-            "protocol to \"ftp://\", \"ftps://\", or \"ftpes://\" to respectively " *
-            "indicate no security, implicit security, or explicit security.",
-            :RequestOptions
-        )
-        url = ssl ? replace(url, "ftp://" => "ftpes://") : url
-    end
-
     uri = URI(url)
 
     if !(uri.scheme in ("ftps", "ftp", "ftpes"))

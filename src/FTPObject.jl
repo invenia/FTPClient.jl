@@ -67,7 +67,6 @@ end
 Connect to an FTP server using the information specified in the URI.
 
 # Keywords
-- `ssl::Bool=false`: use a secure FTP connection.
 - `verify_peer::Bool=true`: verify the authenticity of the peer's certificate.
 - `active_mode::Bool=false`: use active mode to establish data connection.
 
@@ -85,18 +84,7 @@ function FTP(
     verify_peer::Bool=true,
     active_mode::Bool=false,
     verbose::Union{Bool,IOStream}=false,
-    ssl::Union{Nothing, Bool}=nothing,
 )
-    if ssl !== nothing
-        Base.depwarn(
-            "`FTP` keyword `ssl` has been depprecated, change the URL " *
-            "protocol to \"ftp://\", \"ftps://\", or \"ftpes://\" to respectively " *
-            "indicate no security, implicit security, or explicit security.",
-            :FTP
-        )
-        url = ssl ? replace(url, "ftp://" => "ftpes://") : url
-    end
-
     options = RequestOptions(url; verify_peer=verify_peer, active_mode=active_mode)
     FTP(options; verbose=verbose)
 end
