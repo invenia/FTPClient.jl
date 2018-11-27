@@ -30,7 +30,6 @@ function RequestOptions(;
     implicit::Bool=false,
     verify_peer::Bool=true,
     active_mode::Bool=false,
-    url::AbstractString="",
 )
     userinfo = if !isempty(password)
         username * ":" * password
@@ -38,16 +37,8 @@ function RequestOptions(;
         username
     end
 
-    uri = if isempty(url)
-        scheme = ssl ? (implicit ? "ftps" : "ftpes") : "ftp"
-        URI(scheme, hostname, port, "", "", "", userinfo)
-    else
-        Base.depwarn(string(
-            "Using `RequestOptions` with the `url` keyword is deprecated; ",
-            "use `RequestOptions(url, ...)` instead",
-        ), :RequestOptions)
-        URI(URI(url); userinfo=userinfo)
-    end
+    scheme = ssl ? (implicit ? "ftps" : "ftpes") : "ftp"
+    uri = URI(scheme, hostname, port, "", "", "", userinfo)
 
     RequestOptions(uri, ssl, verify_peer, active_mode)
 end
@@ -56,18 +47,7 @@ function RequestOptions(
     url::AbstractString;
     verify_peer::Bool=true,
     active_mode::Bool=false,
-    ssl::Union{Nothing, Bool}=nothing,
 )
-    if ssl !== nothing
-         Base.depwarn(
-            "`RequestOptions` keyword `ssl` has been depprecated, change the URL " *
-            "protocol to \"ftp://\", \"ftps://\", or \"ftpes://\" to respectively " *
-            "indicate no security, implicit security, or explicit security.",
-            :RequestOptions
-        )
-        url = ssl ? replace(url, "ftp://" => "ftpes://") : url
-    end
-
     uri = URI(url)
 
     if !(uri.scheme in ("ftps", "ftp", "ftpes"))
