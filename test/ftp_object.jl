@@ -424,7 +424,7 @@ end
         ftp_init()
         try
             func(io)
-            close(io)
+            flush(io)
             return filesize(temp_file_path)
         finally
             close(io)
