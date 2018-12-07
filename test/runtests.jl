@@ -1,13 +1,14 @@
 import Compat: Sys, occursin, read
 using Compat.Test
 using FTPClient
+using FTPServer
+using FTPServer: username, password, hostname, port, HOMEDIR, tempfile
 
-include("server/server.jl")
 include("utils.jl")
 
-setup_server()
+FTPServer.init()
 ftp_init()
-server = FTPServer()
+server = FTPServer.Server()
 
 # Note: port is always supplied with the test server
 prefix = "ftp://$(username(server)):$(password(server))@$(hostname(server)):$(port(server))"
@@ -29,9 +30,9 @@ download_file = "test_download.txt"
         tempfile(upload_file_3)
         tempfile(upload_file_4)
 
-        tempfile(joinpath(ROOT,download_file))
+        tempfile(joinpath(HOMEDIR, download_file))
         cleanup_file(download_file)
-        cleanup_file(joinpath(ROOT, upload_file))
+        cleanup_file(joinpath(HOMEDIR, upload_file))
 
         @testset "All Tests" begin
             include("ftp_object.jl")
@@ -45,9 +46,9 @@ download_file = "test_download.txt"
         cleanup_file(upload_file_2)
         cleanup_file(upload_file_3)
         cleanup_file(upload_file_4)
-        cleanup_file(joinpath(ROOT, download_file))
+        cleanup_file(joinpath(HOMEDIR, download_file))
 
-        teardown_server()
+        FTPServer.cleanup()
         close(server)
     end
 

@@ -122,7 +122,7 @@ end
     # check download to buffer
     ftp = FTP(; opts...)
     buffer = download(ftp, download_file)
-    @test read(buffer, String) == read(joinpath(ROOT, download_file), String)
+    @test read(buffer, String) == read(joinpath(HOMEDIR, download_file), String)
     no_unexpected_changes(ftp)
     close(ftp)
 end
@@ -131,7 +131,7 @@ end
     # check upload
     ftp = FTP(; opts...)
     local_file = upload_file
-    server_file = joinpath(ROOT, local_file)
+    server_file = joinpath(HOMEDIR, local_file)
     tempfile(local_file)
     @test isfile(local_file)
 
@@ -149,7 +149,7 @@ end
 @testset "mkdir" begin
     # check mkdir
     ftp = FTP(; opts...)
-    server_dir = joinpath(ROOT, testdir)
+    server_dir = joinpath(HOMEDIR, testdir)
     cleanup_dir(server_dir)
     @test !isdir(server_dir)
 
@@ -177,7 +177,7 @@ end
 end
 
 @testset "cd" begin
-    server_dir = joinpath(ROOT, testdir)
+    server_dir = joinpath(HOMEDIR, testdir)
 
     # check cd
     ftp = FTP(; opts...)
@@ -208,7 +208,7 @@ end
 end
 
 @testset "rmdir" begin
-    server_dir = joinpath(ROOT, testdir)
+    server_dir = joinpath(HOMEDIR, testdir)
 
     # check rmdir
     ftp = FTP(; opts...)
@@ -240,10 +240,10 @@ end
     # check mv
     ftp = FTP(; opts...)
     new_file = "test_mv2.txt"
-    server_file = joinpath(ROOT, mv_file)
+    server_file = joinpath(HOMEDIR, mv_file)
     cp(mv_file, server_file)
 
-    server_new_file = joinpath(ROOT, new_file)
+    server_new_file = joinpath(HOMEDIR, new_file)
     @test isfile(server_file)
 
     mv(ftp, mv_file, new_file)
@@ -266,7 +266,7 @@ end
 end
 
 @testset "rm" begin
-    server_file = joinpath(ROOT, mv_file)
+    server_file = joinpath(HOMEDIR, mv_file)
 
     # check rm
     ftp = FTP(; opts...)
@@ -289,7 +289,7 @@ end
 @testset "upload" begin
     # check upload
     ftp = FTP(; opts...)
-    server_file = joinpath(ROOT, upload_file)
+    server_file = joinpath(HOMEDIR, upload_file)
     @test isfile(upload_file)
     @test !isfile(server_file)
 
@@ -305,7 +305,7 @@ end
 
     # check upload to named file
     ftp = FTP(; opts...)
-    server_file= joinpath(ROOT, "some name")
+    server_file= joinpath(HOMEDIR, "some name")
     @test !isfile(server_file)
 
     resp = copy_and_wait(server_file) do
@@ -320,7 +320,7 @@ end
 
     # Check upload with retry, single file
     ftp = FTP(; opts...)
-    server_file= joinpath(ROOT, "test_upload.txt")
+    server_file= joinpath(HOMEDIR, "test_upload.txt")
     @test !isfile(server_file)
 
     resp = copy_and_wait(server_file) do
@@ -339,13 +339,13 @@ end
     ftp = FTP(; opts...)
     upload_list = [upload_file, upload_file_2, upload_file_3, upload_file_4]
 
-    server_file = joinpath(ROOT, "test_upload.txt")
+    server_file = joinpath(HOMEDIR, "test_upload.txt")
     @test !isfile(server_file)
-    server_file_2 = joinpath(ROOT, "test_upload_2.txt")
+    server_file_2 = joinpath(HOMEDIR, "test_upload_2.txt")
     @test !isfile(server_file_2)
-    server_file_3 = joinpath(ROOT, "test_upload_3.txt")
+    server_file_3 = joinpath(HOMEDIR, "test_upload_3.txt")
     @test !isfile(server_file_3)
-    server_file_4 = joinpath(ROOT, "test_upload_4.txt")
+    server_file_4 = joinpath(HOMEDIR, "test_upload_4.txt")
     @test !isfile(server_file_4)
 
     server_list = [server_file, server_file_2, server_file_3, server_file_4]
@@ -394,7 +394,7 @@ end
 @testset "write" begin
     # check write to file
     ftp = FTP(; opts...)
-    server_file= joinpath(ROOT, "some other name")
+    server_file= joinpath(HOMEDIR, "some other name")
     @test !isfile(server_file)
     resp = copy_and_wait(server_file) do
         open(upload_file) do fp
@@ -459,14 +459,14 @@ end
             buffer = download(ftp, download_file)
         end
         @test num_bytes > 0
-        @test read(buffer, String) == read(joinpath(ROOT, download_file), String)
+        @test read(buffer, String) == read(joinpath(HOMEDIR, download_file), String)
         no_unexpected_changes(ftp)
         close(ftp)
     end
 
     @testset "upload" begin
         local_file = upload_file
-        server_file = joinpath(ROOT, local_file)
+        server_file = joinpath(HOMEDIR, local_file)
         tempfile(local_file)
         @test isfile(local_file)
         @test !isfile(server_file)
@@ -489,7 +489,7 @@ end
     end
 
     @testset "mkdir" begin
-        server_dir = joinpath(ROOT, testdir)
+        server_dir = joinpath(HOMEDIR, testdir)
         cleanup_dir(server_dir)
         @test !isdir(server_dir)
 
@@ -506,7 +506,7 @@ end
     end
 
     @testset "cd" begin
-        server_dir = joinpath(ROOT, testdir)
+        server_dir = joinpath(HOMEDIR, testdir)
 
         mkdir(server_dir)
 
@@ -523,7 +523,7 @@ end
     end
 
     @testset "rmdir" begin
-        server_dir = joinpath(ROOT, testdir)
+        server_dir = joinpath(HOMEDIR, testdir)
 
         mkdir(server_dir)
         @test isdir(server_dir)
@@ -558,11 +558,11 @@ end
         tempfile(mv_file)
         @test isfile(mv_file)
 
-        server_file = joinpath(ROOT, mv_file)
+        server_file = joinpath(HOMEDIR, mv_file)
         cp(mv_file, server_file)
         @test isfile(server_file)
 
-        server_new_file = joinpath(ROOT, new_file)
+        server_new_file = joinpath(HOMEDIR, new_file)
         # remove the new file if it already exists
         # on windows trying to overwrite the file will cause an error to be thrown
         isfile(server_new_file) && rm(server_new_file)
@@ -588,7 +588,7 @@ end
         tempfile(mv_file)
         @test isfile(mv_file)
 
-        server_file = joinpath(ROOT, mv_file)
+        server_file = joinpath(HOMEDIR, mv_file)
 
         @test isfile(mv_file)
 
@@ -611,7 +611,7 @@ end
 
     @testset "upload" begin
         @testset "uploading a file with only the local file name" begin
-            server_file = joinpath(ROOT, upload_file)
+            server_file = joinpath(HOMEDIR, upload_file)
             @test isfile(upload_file)
             @test !isfile(server_file)
 
@@ -631,7 +631,7 @@ end
             close(ftp)
         end
         @testset "uploading a file with remote local file name" begin
-            server_file= joinpath(ROOT, "some name")
+            server_file= joinpath(HOMEDIR, "some name")
             @test !isfile(server_file)
 
             local ftp
@@ -650,7 +650,7 @@ end
             close(ftp)
         end
         @testset "upload with retry single file" begin
-            server_file= joinpath(ROOT, "test_upload.txt")
+            server_file= joinpath(HOMEDIR, "test_upload.txt")
             @test !isfile(server_file)
 
             local ftp
