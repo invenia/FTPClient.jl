@@ -8,7 +8,7 @@ julia:
   - 1.0
   - nightly
 env:
-  - CONDA_JL_VERSION="2"
+  - PYTHON=""
 matrix:
   allow_failures:
     - julia: nightly

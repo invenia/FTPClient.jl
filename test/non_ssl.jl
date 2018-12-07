@@ -1,5 +1,5 @@
 tempfile(upload_file)
-tempfile(joinpath(ROOT,download_file))
+tempfile(joinpath(HOMEDIR,download_file))
 
 opts = (
     :hostname => hostname(server),
@@ -30,7 +30,7 @@ end
 
 function test_get(headers, opt)
     local_file = download_file
-    server_file = joinpath(ROOT, local_file)
+    server_file = joinpath(HOMEDIR, local_file)
     @test !isfile(local_file)
     resp = ftp_get(opt, local_file)
     @test !isfile(local_file)
@@ -40,7 +40,7 @@ end
 
 function test_put(headers, opt)
     local_file = upload_file
-    server_file = joinpath(ROOT, local_file)
+    server_file = joinpath(HOMEDIR, local_file)
 
     @test !isfile(server_file)
     resp = copy_and_wait(server_file) do
@@ -128,7 +128,7 @@ function tests_by_mode(active::Bool)
     local_file = download_file
 
     resp = ftp_get(options, local_file, save_path)
-    server_file = joinpath(ROOT, local_file)
+    server_file = joinpath(HOMEDIR, local_file)
     body = read(server_file, String)
 
     test_response(resp, 226, headers, save_path, body)
@@ -214,7 +214,7 @@ end
     byte_upload_file = "test_upload_byte_file"
     byte_file = "test_byte_file"
 
-    open(joinpath(ROOT, byte_file), "w") do fp
+    open(joinpath(HOMEDIR, byte_file), "w") do fp
         write(fp, hex2bytes(download_bytes))
     end
 
@@ -276,7 +276,7 @@ end
     Base.close(ftp)
 
     # upload
-    server_byte_file = joinpath(ROOT, byte_upload_file)
+    server_byte_file = joinpath(HOMEDIR, byte_upload_file)
     bin_file = IOBuffer(hex2bytes(upload_bytes))
     copy_and_wait(server_byte_file) do
         ftp_put(options, byte_upload_file, bin_file; mode=binary_mode)

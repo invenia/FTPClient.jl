@@ -1,20 +1,19 @@
 function ssl_tests(implicit::Bool = true)
     mode = implicit ? :implicit : :explicit
 
-    setup_server()
+    FTPServer.init()
 
-    server = FTPServer(security=mode)
+    FTPServer.serve(; security=mode) do server
+        opts = (
+            :hostname => hostname(server),
+            :port => port(server),
+            :username => username(server),
+            :password => password(server),
+            :ssl => true,
+            :implicit => implicit,
+            :verify_peer => false,
+        )
 
-    opts = (
-        :hostname => hostname(server),
-        :port => port(server),
-        :username => username(server),
-        :password => password(server),
-        :ssl => true,
-        :implicit => implicit,
-        :verify_peer => false,
-    )
-    try
         options = RequestOptions(; opts..., active_mode=false)
         # Test implicit/exlicit ftp ssl scheme is set correctly
         @test options.uri.scheme == (implicit ? "ftps" : "ftpes")
@@ -42,12 +41,6 @@ function ssl_tests(implicit::Bool = true)
         test_cmd(ctxt)
         test_download(ctxt)
         test_upload(ctxt)
-
-        # the connection has to be closed during test_upload(ctxt) to get the server file to write out
-        # ftp_close_connection(ctxt)
-    finally
-        # ensure the server closes if one of the tests fail
-        close(server)
     end
 end
 
@@ -55,12 +48,12 @@ function test_download(options::RequestOptions)
     server_path = "test_download.txt"
     resp = ftp_get(options, server_path)
     @test resp.code == 226
-    @test read(resp.body, String) == read(joinpath(ROOT, server_path), String)
+    @test read(resp.body, String) == read(joinpath(HOMEDIR, server_path), String)
 end
 
 function test_upload(options::RequestOptions)
     client_path = "test_upload.txt"
-    local_server_path = joinpath(ROOT, client_path)
+    local_server_path = joinpath(HOMEDIR, client_path)
     cleanup_file(local_server_path)
     resp = copy_and_wait(local_server_path) do
         open(client_path) do fp
@@ -82,12 +75,12 @@ function test_download(ctxt::ConnContext)
     server_path = "test_download.txt"
     resp = ftp_get(ctxt, server_path)
     @test resp.code == 226
-    @test read(resp.body, String) == read(joinpath(ROOT, server_path), String)
+    @test read(resp.body, String) == read(joinpath(HOMEDIR, server_path), String)
 end
 
 function test_upload(ctxt::ConnContext)
     client_path = "test_upload.txt"
-    local_server_path = joinpath(ROOT, client_path)
+    local_server_path = joinpath(HOMEDIR, client_path)
     resp = copy_and_wait(local_server_path) do
         open(client_path) do file
             ftp_put(ctxt, client_path, file)
