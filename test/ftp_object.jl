@@ -36,7 +36,7 @@ end
 function copy_and_wait(func::Function, files...; timeout=30)
     # Writing/uploading FTP files can have concurrency issues so we repeatedly
     # try and read the destination file until we have data.
-    resp = func()
+    items = func()
 
     for f in files
         file_data = ""
@@ -52,7 +52,7 @@ function copy_and_wait(func::Function, files...; timeout=30)
         end
     end
 
-    return resp
+    return items
 end
 
 @testset "connection error" begin
@@ -114,9 +114,10 @@ end
     tempfile(local_file)
     @test isfile(local_file)
 
-    resp = copy_and_wait(server_file) do
+    success, resp = copy_and_wait(server_file) do
         upload(ftp, local_file)
     end
+    @test success
     @test isfile(server_file)
     @test read(local_file, String) == read(server_file, String)
 
@@ -272,9 +273,10 @@ end
     @test isfile(upload_file)
     @test !isfile(server_file)
 
-    resp = copy_and_wait(server_file) do
+    success, resp = copy_and_wait(server_file) do
         upload(ftp, upload_file)
     end
+    @test success
     @test isfile(server_file)
     @test read(upload_file, String) == read(server_file, String)
 
@@ -287,9 +289,10 @@ end
     server_file= joinpath(HOMEDIR, "some name")
     @test !isfile(server_file)
 
-    resp = copy_and_wait(server_file) do
+    success, resp = copy_and_wait(server_file) do
         upload(ftp, upload_file, "some name")
     end
+    @test success
     @test isfile(server_file)
     @test read(upload_file, String) == read(server_file, String)
 
@@ -315,12 +318,13 @@ end
     ftp = FTP(; opts...)
     server_file= joinpath(HOMEDIR, "some other name")
     @test !isfile(server_file)
-    resp = copy_and_wait(server_file) do
+    success, resp = copy_and_wait(server_file) do
         open(upload_file) do fp
-            resp = upload(ftp, fp, "some other name")
+            upload(ftp, fp, "some other name")
         end
     end
 
+    @test success
     @test isfile(server_file)
     @test read(upload_file, String) == read(server_file, String)
     no_unexpected_changes(ftp)

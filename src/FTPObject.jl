@@ -137,7 +137,7 @@ end
         ftp_options=ftp.ctxt,
         mode::FTP_MODE=binary_mode,
         verbose=nothing
-    ) -> Bool
+) -> (Bool, FTPResponse)
 
 Upload IO object "local_path_io" to the FTP server and save as "remote_path".
 
@@ -153,6 +153,7 @@ Upload IO object "local_path_io" to the FTP server and save as "remote_path".
 
 # Returns
 `Bool`: Returns a boolean with true if the file was successfully transfered, else false.
+`FTPResponse`: Returns the ftp response object, else nothing
 """
 function upload(
     ftp::FTP,
@@ -161,11 +162,12 @@ function upload(
     ftp_options=ftp.ctxt,
     mode::FTP_MODE=binary_mode,
     verbose=nothing,
-)::Bool
+)
     _dep_verbose_kw(verbose, typeof(ftp), :upload)
 
     # Whether or not the current IO was successfully delivered to the FTP
     success = false
+    resp = nothing
 
     try
         resp = ftp_put(ftp_options, remote_path, local_path_io; mode=mode, verbose=verbose)
@@ -176,7 +178,7 @@ function upload(
         end
         rethrow()
     end
-    return success
+    return success, resp
 end
 
 
@@ -188,7 +190,7 @@ end
         ftp_options=ftp.ctxt,
         mode::FTP_MODE=binary_mode,
         verbose=nothing,
-    ) -> Bool
+    ) -> (Bool, FTPResponse)
 
 Uploads the file specified in "local_path" to the file or directory specifies in
 "remote_path".
@@ -210,6 +212,7 @@ it ends in "/"), then the file will be uploaded to the specified directory but w
 
 # Returns
 `Bool`: Returns a boolean with true if the file was successfully transfered, else false.
+`FTPResponse`: Returns the ftp response object, else nothing
 """
 function upload(
     ftp::FTP,
@@ -218,17 +221,19 @@ function upload(
     ftp_options=ftp.ctxt,
     mode::FTP_MODE=binary_mode,
     verbose=nothing
-)::Bool
+)
     _dep_verbose_kw(verbose, typeof(ftp), :upload)
-
-    # Whether or not the current file was successfully delivered to the FTP
-    success = false
 
     # The location we are going to drop the file in the FTP server
     if basename(remote_path) == ""
         # If the remote path was just a directory, then the full remote path should be
         # that directory plus the basename of the local_path
         server_location = joinpath(dirname(remote_path), basename(local_path))
+    elseif remote_path == "."
+        # Handle the special case where remote_path is "."
+        # Since the dirname/basename strategy doesn't work in this specific case, we just
+        # handle it here.
+        server_location = joinpath(".", basename(local_path))
     else
         # If the remote path is a full file path, then just use that
         server_location = remote_path
@@ -236,12 +241,11 @@ function upload(
 
     # ftp_put requires an io, so open the file
     open(local_path) do local_path_io
-        success = upload(
+        return upload(
             ftp, local_path_io, server_location;
             ftp_options=ftp_options, mode=mode, verbose=verbose
         )
     end
-    return success
 end
 
 """
@@ -251,7 +255,7 @@ end
         ftp_options=ftp.ctxt,
         mode::FTP_MODE=binary_mode,
         verbose=nothing,
-    ) -> Bool
+    ) -> (Bool, FTPResponse)
 
 Uploads the file specified in "local_path" to the FTP as "local_path"
 
@@ -266,6 +270,7 @@ Uploads the file specified in "local_path" to the FTP as "local_path"
 
 # Returns
 `Bool`: Returns a boolean with true if the file was successfully transfered, else false.
+`FTPResponse`: Returns the ftp response object, else nothing
 """
 function upload(
     ftp::FTP,
@@ -273,7 +278,7 @@ function upload(
     ftp_options=ftp.ctxt,
     mode::FTP_MODE=binary_mode,
     verbose=nothing
-)::Bool
+)
     _dep_verbose_kw(verbose, typeof(ftp), :upload)
 
     return upload(
