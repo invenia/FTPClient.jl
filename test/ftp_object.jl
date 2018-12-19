@@ -307,7 +307,7 @@ end
     # this strategy where the ftp client comes back up between trys.
     @test_throws FTPClientError retry(
         upload, delays=fill(0.1, 2)
-    )(ftp, joinpath(HOMEDIR, "test_upload.txt"), "/")
+    )(ftp, upload_file, "/")
 end
 
 @testset "write" begin
