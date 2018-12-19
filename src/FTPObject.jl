@@ -132,167 +132,155 @@ end
 """
     upload(
         ftp::FTP,
-        local_name::AbstractString;
+        local_path_io::IO,
+        remote_path::AbstractString;
+        ftp_options=ftp.ctxt,
         mode::FTP_MODE=binary_mode,
-    )
+        verbose=nothing
+    ) -> Bool
 
-Upload the file "local_name" to the FTP server and save as "local_name".
-"""
-function upload(
-    ftp::FTP,
-    local_name::AbstractString;
-    mode::FTP_MODE=binary_mode,
-    verbose=nothing,
-)
-    _dep_verbose_kw(verbose, typeof(ftp), :upload)
-    return upload(ftp, local_name, local_name; mode=mode, verbose=verbose)
-end
-
-"""
-    upload(
-        ftp::FTP,
-        local_name::AbstractString,
-        remote_name::AbstractString;
-        mode::FTP_MODE=binary_mode,
-    )
-
-Upload the file "local_name" to the FTP server and save as "remote_name".
-"""
-function upload(
-    ftp::FTP,
-    local_name::AbstractString,
-    remote_name::AbstractString;
-    mode::FTP_MODE=binary_mode,
-    verbose=nothing,
-)
-    _dep_verbose_kw(verbose, typeof(ftp), :upload)
-
-    open(local_name) do local_file
-        return upload(ftp, local_file, remote_name; mode=mode, verbose=verbose)
-    end
-end
-
-"""
-    upload(
-        ftp::FTP,
-        local_file::IO,
-        remote_name::AbstractString;
-        mode::FTP_MODE=binary_mode,
-    )
-
-Upload IO object "local_file" to the FTP server and save as "remote_name".
-"""
-function upload(
-    ftp::FTP,
-    local_file::IO,
-    remote_name::AbstractString;
-    mode::FTP_MODE=binary_mode,
-    verbose=nothing,
-)
-    _dep_verbose_kw(verbose, typeof(ftp), :upload)
-
-    try
-        ftp_put(ftp.ctxt, remote_name, local_file; mode=mode, verbose=verbose)
-    catch err
-        if isa(err, FTPClientError)
-            err.msg = "Failed to upload $remote_name."
-        end
-        rethrow()
-    end
-    return nothing
-end
-
-
-"""
-    upload(
-        ftp::FTP,
-        local_file_paths::Vector{<:AbstractString},
-        ftp_dir<:AbstractString;
-        retry_callback::Function=(count, options) -> (count < 4, options),
-        retry_wait_seconds::Integer = 5,
-    )
-
-Uploads the files specified in local_file_paths to the directory specifed by
-ftp_dir. The files will have the same names.
-
-By default, will try to deliver the files 4 times with a 5 second wait in between
-each failed attempt.
-
-You can specify a function for retry_callback to change behaviour. This function must
-take as parameters the number of attempts that have been made so far, and the current
-ftp connection options as a FTPClient.ConnContext type. It must return a boolean
-that is true if another delivery attempt can be made, and a TPClient.ConnContext
-type that is the connection options to use for all future files to be delivered. This
-allows backup ftp directories to be used for example.
+Upload IO object "local_path_io" to the FTP server and save as "remote_path".
 
 # Arguments
 `ftp::FTP`: The FTP to deliver to. See FTPClient.FTP for details.
-`file_paths::Vector{T}`: The file paths to the files we want to deliver.
-`ftp_dir`: The directory on the ftp server where we want to drop the files.
-`retry_callback::Function=(count, options) -> (count < 4, options)`: Function for retrying
-    when delivery fails.
-`retry_wait_seconds::Integer = 5`: How many seconds to wait in between retries.
+`local_path_io::IO`: The IO object that we want to deliver.
+`remote_path::AbstractString`: The path that we want to deliver to.
+
+# Keywords
+`ftp_options=ftp.ctxt`: FTP Options
+`mode::FTP_MODE=binary_mode`: Set the ftp mode.
+`verbose=nothing`: Set the verbosity
 
 # Returns
-- `Array{Bool,1}`: Returns a vector of booleans with true for each successfully delivered
-                   file and false for any that failed to transfer.
+`Bool`: Returns a boolean with true if the file was successfully transfered, else false.
 """
 function upload(
     ftp::FTP,
-    local_file_paths::Vector{<:AbstractString},
-    ftp_dir::AbstractString;
-    retry_callback::Function=(count, options) -> (count < 4, options),
-    retry_wait_seconds::Integer=5,
+    local_path_io::IO,
+    remote_path::AbstractString;
+    ftp_options=ftp.ctxt,
+    mode::FTP_MODE=binary_mode,
     verbose=nothing,
-)
+)::Bool
     _dep_verbose_kw(verbose, typeof(ftp), :upload)
-    successful_delivery = Bool[]
 
-    ftp_options = ftp.ctxt
+    # Whether or not the current IO was successfully delivered to the FTP
+    success = false
 
-    for single_file in local_file_paths
-        # The location we are going to drop the file in the FTP server
-        server_location = joinpath(ftp_dir, basename(single_file))
-
-        # ftp_put requires an io so open up our file.
-        open(single_file) do single_file_io
-            # Whether or not the current file was successfully delivered to the FTP
-            file_delivery_success = false
-
-            attempts = 1
-            # The loops should break after an appropriate amount of retries.
-            # This way of doing retries makes testing easier.
-            # Defaults to 4 attempts, waiting 5 seconds between each retry.
-            while true
-                try
-                    resp = ftp_put(
-                        ftp_options, server_location, single_file_io; verbose=verbose
-                    )
-                    file_delivery_success = resp.code == complete_transfer_code
-                    if file_delivery_success
-                        break
-                    end
-                catch e
-                    @warn(e)
-                end
-                sleep(retry_wait_seconds)
-                # It returns ftp_options for testing purposes, where the ftp server
-                # starts not existing then comes into existence during retries.
-                do_retry, ftp_options = retry_callback(attempts, ftp_options)
-                if !do_retry
-                    break
-                end
-                attempts += 1
-            end
-
-            push!(successful_delivery, file_delivery_success)
-
+    try
+        resp = ftp_put(ftp_options, remote_path, local_path_io; mode=mode, verbose=verbose)
+        success = resp.code == complete_transfer_code
+    catch e
+        if isa(e, FTPClientError)
+            e.msg = "Failed to upload $remote_path"
         end
+        rethrow()
     end
-
-    return successful_delivery
+    return success
 end
 
+
+"""
+    upload(
+        ftp::FTP,
+        local_path::AbstractString,
+        remote_path::AbstractString;
+        ftp_options=ftp.ctxt,
+        mode::FTP_MODE=binary_mode,
+        verbose=nothing,
+    ) -> Bool
+
+Uploads the file specified in "local_path" to the file or directory specifies in
+"remote_path".
+
+If "remote_path" is a full file name path, then the file will be uploaded to the FTP
+using the full file path name. If "remote_path" is a path to a directory (which means
+it ends in "/"), then the file will be uploaded to the specified directory but with the
+"local_path" basename as the file name.
+
+# Arguments
+`ftp::FTP`: The FTP to deliver to. See FTPClient.FTP for details.
+`local_path::AbstractString`: The file path to the file we want to deliver.
+`remote_path::AbstractString`: The file/dir path that we want to deliver to.
+
+# Keywords
+`ftp_options=ftp.ctxt`: FTP Options
+`mode::FTP_MODE=binary_mode`: Set the ftp mode.
+`verbose=nothing`: Set the verbosity
+
+# Returns
+`Bool`: Returns a boolean with true if the file was successfully transfered, else false.
+"""
+function upload(
+    ftp::FTP,
+    local_path::AbstractString,
+    remote_path::AbstractString;
+    ftp_options=ftp.ctxt,
+    mode::FTP_MODE=binary_mode,
+    verbose=nothing
+)::Bool
+    _dep_verbose_kw(verbose, typeof(ftp), :upload)
+
+    # Whether or not the current file was successfully delivered to the FTP
+    success = false
+
+    # The location we are going to drop the file in the FTP server
+    if basename(remote_path) == ""
+        # If the remote path was just a directory, then the full remote path should be
+        # that directory plus the basename of the local_path
+        server_location = joinpath(dirname(remote_path), basename(local_path))
+    else
+        # If the remote path is a full file path, then just use that
+        server_location = remote_path
+    end
+
+    # ftp_put requires an io, so open the file
+    open(local_path) do local_path_io
+        success = upload(
+            ftp, local_path_io, server_location;
+            ftp_options=ftp_options, mode=mode, verbose=verbose
+        )
+    end
+    return success
+end
+
+"""
+    upload(
+        ftp::FTP,
+        local_path::AbstractString;
+        ftp_options=ftp.ctxt,
+        mode::FTP_MODE=binary_mode,
+        verbose=nothing,
+    ) -> Bool
+
+Uploads the file specified in "local_path" to the FTP as "local_path"
+
+# Arguments
+`ftp::FTP`: The FTP to deliver to. See FTPClient.FTP for details.
+`local_path::AbstractString`: The file path to the file we want to deliver.
+
+# Keywords
+`ftp_options=ftp.ctxt`: FTP Options
+`mode::FTP_MODE=binary_mode`: Set the ftp mode.
+`verbose=nothing`: Set the verbosity
+
+# Returns
+`Bool`: Returns a boolean with true if the file was successfully transfered, else false.
+"""
+function upload(
+    ftp::FTP,
+    local_path::AbstractString;
+    ftp_options=ftp.ctxt,
+    mode::FTP_MODE=binary_mode,
+    verbose=nothing
+)::Bool
+    _dep_verbose_kw(verbose, typeof(ftp), :upload)
+
+    return upload(
+        ftp, local_path, local_path;
+        ftp_options=ftp_options, mode=mode, verbose=verbose
+    )
+end
 
 """
     readdir(ftp::FTP)
