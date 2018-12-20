@@ -108,8 +108,8 @@ end
     # check readdir
     ftp = FTP(; opts...)
     server_dir = readdir(ftp)
-    @test occursin("test_directory", string(server_dir))
-    @test occursin("test_download.txt", string(server_dir))
+    @test "test_directory" in server_dir
+    @test "test_download.txt" in server_dir
     no_unexpected_changes(ftp)
     close(ftp)
 end
