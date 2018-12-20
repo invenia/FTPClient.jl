@@ -114,10 +114,9 @@ end
     tempfile(local_file)
     @test isfile(local_file)
 
-    success, resp = copy_and_wait(server_file) do
-        upload(ftp, local_file)
+    resp = copy_and_wait(server_file) do
+        upload(ftp, local_file, local_file)
     end
-    @test success
     @test isfile(server_file)
     @test read(local_file, String) == read(server_file, String)
 
@@ -273,10 +272,9 @@ end
     @test isfile(upload_file)
     @test !isfile(server_file)
 
-    success, resp = copy_and_wait(server_file) do
-        upload(ftp, upload_file)
+    resp = copy_and_wait(server_file) do
+        upload(ftp, upload_file, upload_file)
     end
-    @test success
     @test isfile(server_file)
     @test read(upload_file, String) == read(server_file, String)
 
@@ -289,10 +287,9 @@ end
     server_file= joinpath(HOMEDIR, "some name")
     @test !isfile(server_file)
 
-    success, resp = copy_and_wait(server_file) do
+    resp = copy_and_wait(server_file) do
         upload(ftp, upload_file, "some name")
     end
-    @test success
     @test isfile(server_file)
     @test read(upload_file, String) == read(server_file, String)
 
@@ -318,13 +315,12 @@ end
     ftp = FTP(; opts...)
     server_file= joinpath(HOMEDIR, "some other name")
     @test !isfile(server_file)
-    success, resp = copy_and_wait(server_file) do
+    resp = copy_and_wait(server_file) do
         open(upload_file) do fp
             upload(ftp, fp, "some other name")
         end
     end
 
-    @test success
     @test isfile(server_file)
     @test read(upload_file, String) == read(server_file, String)
     no_unexpected_changes(ftp)
@@ -398,7 +394,7 @@ end
         num_bytes = copy_and_wait(server_file) do
             captured_size() do io
                 ftp = FTP(; opts..., verbose=io)
-                upload(ftp, upload_file)
+                upload(ftp, upload_file, upload_file)
             end
         end
 
@@ -542,7 +538,7 @@ end
             num_bytes = copy_and_wait(server_file) do
                 captured_size() do io
                     ftp = FTP(; opts..., verbose=io)
-                    upload(ftp, upload_file)
+                    upload(ftp, upload_file, upload_file)
                 end
             end
 

@@ -137,7 +137,7 @@ end
         ftp_options=ftp.ctxt,
         mode::FTP_MODE=binary_mode,
         verbose=nothing
-) -> (Bool, FTPResponse)
+) -> Response
 
 Upload IO object "local_path_io" to the FTP server and save as "remote_path".
 
@@ -152,7 +152,6 @@ Upload IO object "local_path_io" to the FTP server and save as "remote_path".
 `verbose=nothing`: Set the verbosity
 
 # Returns
-`Bool`: Returns a boolean with true if the file was successfully transfered, else false.
 `FTPResponse`: Returns the ftp response object, else nothing
 """
 function upload(
@@ -165,20 +164,17 @@ function upload(
 )
     _dep_verbose_kw(verbose, typeof(ftp), :upload)
 
-    # Whether or not the current IO was successfully delivered to the FTP
-    success = false
     resp = nothing
 
     try
         resp = ftp_put(ftp_options, remote_path, local_path_io; mode=mode, verbose=verbose)
-        success = resp.code == complete_transfer_code
     catch e
         if isa(e, FTPClientError)
             e.msg = "Failed to upload $remote_path"
         end
         rethrow()
     end
-    return success, resp
+    return resp
 end
 
 
@@ -190,7 +186,7 @@ end
         ftp_options=ftp.ctxt,
         mode::FTP_MODE=binary_mode,
         verbose=nothing,
-    ) -> (Bool, FTPResponse)
+    ) -> Response
 
 Uploads the file specified in "local_path" to the file or directory specifies in
 "remote_path".
@@ -211,7 +207,6 @@ it ends in "/"), then the file will be uploaded to the specified directory but w
 `verbose=nothing`: Set the verbosity
 
 # Returns
-`Bool`: Returns a boolean with true if the file was successfully transfered, else false.
 `FTPResponse`: Returns the ftp response object, else nothing
 """
 function upload(
@@ -246,45 +241,6 @@ function upload(
             ftp_options=ftp_options, mode=mode, verbose=verbose
         )
     end
-end
-
-"""
-    upload(
-        ftp::FTP,
-        local_path::AbstractString;
-        ftp_options=ftp.ctxt,
-        mode::FTP_MODE=binary_mode,
-        verbose=nothing,
-    ) -> (Bool, FTPResponse)
-
-Uploads the file specified in "local_path" to the FTP as "local_path"
-
-# Arguments
-`ftp::FTP`: The FTP to deliver to. See FTPClient.FTP for details.
-`local_path::AbstractString`: The file path to the file we want to deliver.
-
-# Keywords
-`ftp_options=ftp.ctxt`: FTP Options
-`mode::FTP_MODE=binary_mode`: Set the ftp mode.
-`verbose=nothing`: Set the verbosity
-
-# Returns
-`Bool`: Returns a boolean with true if the file was successfully transfered, else false.
-`FTPResponse`: Returns the ftp response object, else nothing
-"""
-function upload(
-    ftp::FTP,
-    local_path::AbstractString;
-    ftp_options=ftp.ctxt,
-    mode::FTP_MODE=binary_mode,
-    verbose=nothing
-)
-    _dep_verbose_kw(verbose, typeof(ftp), :upload)
-
-    return upload(
-        ftp, local_path, local_path;
-        ftp_options=ftp_options, mode=mode, verbose=verbose
-    )
 end
 
 """
