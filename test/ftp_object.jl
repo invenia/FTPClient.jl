@@ -124,7 +124,44 @@ end
 end
 
 @testset "upload" begin
-    # check upload
+    # check upload "." dot path
+    ftp = FTP(; opts...)
+    local_file = upload_file
+    server_file = joinpath(HOMEDIR, local_file)
+    tempfile(local_file)
+    @test isfile(local_file)
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, local_file, ".")
+    end
+    @test isfile(server_file)
+    @test read(local_file, String) == read(server_file, String)
+
+    no_unexpected_changes(ftp)
+    close(ftp)
+    cleanup_file(server_file)
+
+    # check upload "/" slash path
+    ftp = FTP(; opts...)
+    local_file = upload_file
+    server_dir = joinpath(HOMEDIR, testdir)
+    mkdir(ftp, testdir)
+    server_file = joinpath(server_dir, local_file)
+    tempfile(local_file)
+    @test isfile(local_file)
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, local_file, "$testdir/")
+    end
+    @test isfile(server_file)
+    @test read(local_file, String) == read(server_file, String)
+
+    no_unexpected_changes(ftp)
+    close(ftp)
+    cleanup_file(server_file)
+    cleanup_dir(server_dir)
+
+    # check upload full remote path
     ftp = FTP(; opts...)
     local_file = upload_file
     server_file = joinpath(HOMEDIR, local_file)
