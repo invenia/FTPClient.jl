@@ -72,7 +72,7 @@ julia> io = download(ftp, "Assignment1.txt");  # Download as IO stream
 
 julia> download(ftp, "Assignment2.txt", "./A2/Assignment2.txt");  # Save file to a specified path
 
-julia> upload(ftp, "Assignment3.txt")  # Upload local file "Assignment3.txt" to FTP server
+julia> upload(ftp, "Assignment3.txt", ".")  # Upload local file "Assignment3.txt" to FTP server home directory
 
 julia> open("Assignment3.txt") do fp
            upload(ftp, fp, "Assignment3-copy.txt")  # Upload IO content as file "Assignment3-copy.txt" on FTP server
@@ -87,6 +87,14 @@ julia> mkdir(ftp, "tmp")
 julia> rmdir(ftp, "tmp")
 
 julia> close(ftp)
+```
+
+If you want to upload a file but retry on failures you can do the following:
+
+```julia
+julia> retry(delays=fill(5, 4)) do
+           upload(ftp, "Assignment3.txt", ".")
+       end
 ```
 
 ## FAQ
