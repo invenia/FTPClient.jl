@@ -397,55 +397,6 @@ end
     )(ftp, upload_file, "/")
 end
 
-@testset "deprecated" begin
-    # test deprecated upload functions
-    @testset "upload" begin
-        # Test the singular local file upload
-        ftp = FTP(; opts...)
-        server_file = joinpath(HOMEDIR, upload_file)
-        @test !isfile(server_file)
-        resp = copy_and_wait(server_file) do
-            @test_deprecated upload(ftp, upload_file)
-        end
-
-        @test isfile(server_file)
-        @test read(upload_file, String) == read(server_file, String)
-        no_unexpected_changes(ftp)
-        cleanup_file(server_file)
-        close(ftp)
-
-        # Test the multiple file upload with retry
-        ftp = FTP(; opts...)
-        upload_list = [upload_file, upload_file_2, upload_file_3, upload_file_4]
-
-        server_file = joinpath(HOMEDIR, "test_upload.txt")
-        @test !isfile(server_file)
-        server_file_2 = joinpath(HOMEDIR, "test_upload_2.txt")
-        @test !isfile(server_file_2)
-        server_file_3 = joinpath(HOMEDIR, "test_upload_3.txt")
-        @test !isfile(server_file_3)
-        server_file_4 = joinpath(HOMEDIR, "test_upload_4.txt")
-        @test !isfile(server_file_4)
-
-        server_list = [server_file, server_file_2, server_file_3, server_file_4]
-
-        resp = copy_and_wait(server_list...) do
-            @test_deprecated upload(ftp, upload_list, "/")
-        end
-
-        @test resp == [true, true, true, true]
-
-        for (ufile, sfile) in zip(upload_list, server_list)
-            @test isfile(sfile)
-            @test read(ufile, String) == read(sfile, String)
-        end
-
-        no_unexpected_changes(ftp)
-        map(cleanup_file, server_list)
-        close(ftp)
-    end
-end
-
 @testset "write" begin
     # check write to file
     ftp = FTP(; opts...)
