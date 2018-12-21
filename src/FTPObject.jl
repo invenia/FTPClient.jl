@@ -152,7 +152,7 @@ Upload IO object "local_path_io" to the FTP server and save as "remote_path".
 - `verbose=nothing`: Set the verbosity
 
 # Returns
-- `FTPResponse`: Returns the ftp response object
+`FTPResponse`: Returns the ftp response object
 """
 function upload(
     ftp::FTP,
@@ -207,7 +207,7 @@ it ends in "/"), then the file will be uploaded to the specified directory but w
 - `verbose=nothing`: Set the verbosity
 
 # Returns
-- `FTPResponse`: Returns the ftp response object
+`FTPResponse`: Returns the ftp response object
 """
 function upload(
     ftp::FTP,
