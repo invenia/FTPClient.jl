@@ -142,17 +142,17 @@ end
 Upload IO object "local_path_io" to the FTP server and save as "remote_path".
 
 # Arguments
-`ftp::FTP`: The FTP to deliver to. See FTPClient.FTP for details.
-`local_path_io::IO`: The IO object that we want to deliver.
-`remote_path::AbstractString`: The path that we want to deliver to.
+- `ftp::FTP`: The FTP to deliver to. See FTPClient.FTP for details.
+- `local_path_io::IO`: The IO object that we want to deliver.
+- `remote_path::AbstractString`: The path that we want to deliver to.
 
 # Keywords
-`ftp_options=ftp.ctxt`: FTP Options
-`mode::FTP_MODE=binary_mode`: Set the ftp mode.
-`verbose=nothing`: Set the verbosity
+- `ftp_options=ftp.ctxt`: FTP Options
+- `mode::FTP_MODE=binary_mode`: Set the ftp mode.
+- `verbose=nothing`: Set the verbosity
 
 # Returns
-`FTPResponse`: Returns the ftp response object, else nothing
+- `FTPResponse`: Returns the ftp response object
 """
 function upload(
     ftp::FTP,
@@ -197,17 +197,17 @@ it ends in "/"), then the file will be uploaded to the specified directory but w
 "local_path" basename as the file name.
 
 # Arguments
-`ftp::FTP`: The FTP to deliver to. See FTPClient.FTP for details.
-`local_path::AbstractString`: The file path to the file we want to deliver.
-`remote_path::AbstractString`: The file/dir path that we want to deliver to.
+- `ftp::FTP`: The FTP to deliver to. See FTPClient.FTP for details.
+- `local_path::AbstractString`: The file path to the file we want to deliver.
+- `remote_path::AbstractString`: The file/dir path that we want to deliver to.
 
 # Keywords
-`ftp_options=ftp.ctxt`: FTP Options
-`mode::FTP_MODE=binary_mode`: Set the ftp mode.
-`verbose=nothing`: Set the verbosity
+- `ftp_options=ftp.ctxt`: FTP Options
+- `mode::FTP_MODE=binary_mode`: Set the ftp mode.
+- `verbose=nothing`: Set the verbosity
 
 # Returns
-`FTPResponse`: Returns the ftp response object, else nothing
+- `FTPResponse`: Returns the ftp response object
 """
 function upload(
     ftp::FTP,
