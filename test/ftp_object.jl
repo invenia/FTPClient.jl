@@ -141,6 +141,26 @@ end
     close(ftp)
     cleanup_file(server_file)
 
+    # Check dir + "." dot path
+    ftp = FTP(; opts...)
+    local_file = upload_file
+    server_dir = joinpath(HOMEDIR, testdir)
+    mkdir(ftp, testdir)
+    server_file = joinpath(server_dir, local_file)
+    tempfile(local_file)
+    @test isfile(local_file)
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, local_file, "$testdir/.")
+    end
+    @test isfile(server_file)
+    @test read(local_file, String) == read(server_file, String)
+
+    no_unexpected_changes(ftp)
+    close(ftp)
+    cleanup_file(server_file)
+    cleanup_dir(server_dir)
+
     # check upload "/" slash path
     ftp = FTP(; opts...)
     local_file = upload_file
@@ -429,9 +449,10 @@ end
 
     # This will run twice, and fail both times. I currently don't know a good way to test
     # this strategy where the ftp client comes back up between trys.
-    @test_throws FTPClientError retry(
-        upload, delays=fill(0.1, 2)
-    )(ftp, upload_file, "/")
+    retry_ftp = retry(delays=fill(0.1, 2)) do
+        upload(ftp, upload_file, "/")
+    end
+    @test_throws FTPClientError retry_ftp()
 end
 
 @testset "write" begin
@@ -518,7 +539,7 @@ end
         num_bytes = copy_and_wait(server_file) do
             captured_size() do io
                 ftp = FTP(; opts..., verbose=io)
-                upload(ftp, upload_file, upload_file)
+                upload(ftp, local_file, ".")
             end
         end
 

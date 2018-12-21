@@ -26,10 +26,15 @@ function upload(
     depwarn(
         string(
             "Uploading multiple files to an ftp_dir with a retry callback is deprecated. ",
-            "Use retry in a file path loop in the future:\n",
-            "for single_file in file_paths\n    ",
-            "retry(delays=fill(5, 4)) do\n        ",
-            "upload(ftp, local_path, remote_path; kwargs... )\n    end\nend",
+            """
+            Use retry in a file path loop in the future:
+            for single_file in file_paths
+                ftp_retry = retry(delays=fill(5, 4)) do
+                    upload(ftp, local_path, remote_path; kwargs... )
+                end
+                ftp_retry()
+            end
+            """,
         ),
         :upload
     )

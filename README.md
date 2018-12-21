@@ -92,9 +92,11 @@ julia> close(ftp)
 If you want to upload a file but retry on failures you can do the following:
 
 ```julia
-julia> retry(delays=fill(5, 4)) do
+julia> ftp_retry = retry(delays=fill(5, 4)) do
            upload(ftp, "Assignment3.txt", ".")
        end
+
+julia> ftp_retry()
 ```
 
 ## FAQ

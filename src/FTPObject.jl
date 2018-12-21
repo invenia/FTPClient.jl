@@ -224,7 +224,7 @@ function upload(
         # If the remote path was just a directory, then the full remote path should be
         # that directory plus the basename of the local_path
         server_location = joinpath(dirname(remote_path), basename(local_path))
-    elseif remote_path[end] == '.'
+    elseif basename(remote_path) == "."
         # Handle the special case where remote_path ends with '.'
         # Since the dirname/basename strategy doesn't work in this specific case, we just
         # handle it here.
