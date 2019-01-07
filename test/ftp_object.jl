@@ -11,7 +11,6 @@ opts = (
     :ssl => false,
 )
 
-
 function no_unexpected_changes(ftp::FTP, url::AbstractString=FTPClient.trailing(prefix, '/'))
     other = FTP(; opts...)
     @test ftp.ctxt.options == other.ctxt.options
@@ -35,10 +34,10 @@ function expected_output(active::Bool)
     close(ftp)
 end
 
-function copy_and_wait(f::Function, files...; timeout=30)
+function copy_and_wait(func::Function, files...; timeout=30)
     # Writing/uploading FTP files can have concurrency issues so we repeatedly
     # try and read the destination file until we have data.
-    resp = f()
+    resp = func()
 
     for f in files
         file_data = ""
@@ -57,11 +56,7 @@ function copy_and_wait(f::Function, files...; timeout=30)
     return resp
 end
 
-# Function that will bring up the server after a few retries, and returns
-# connection details that over ride the previously defined wrong connection.
-# Used for testing upload with retries.
 function retry_test(count, options)
-
     # Fail on the first attempt
     if count == 1
         return (true, options)
@@ -75,6 +70,7 @@ function retry_test(count, options)
         return (false, options)
     end
 end
+
 
 @testset "connection error" begin
     # Note: Creating the FTP instance will not actually establish a connection. A connection
@@ -112,8 +108,8 @@ end
     # check readdir
     ftp = FTP(; opts...)
     server_dir = readdir(ftp)
-    @test occursin("test_directory", string(server_dir))
-    @test occursin("test_download.txt", string(server_dir))
+    @test "test_directory" in server_dir
+    @test "test_download.txt" in server_dir
     no_unexpected_changes(ftp)
     close(ftp)
 end
@@ -128,7 +124,7 @@ end
 end
 
 @testset "upload" begin
-    # check upload
+    # check upload "." dot path
     ftp = FTP(; opts...)
     local_file = upload_file
     server_file = joinpath(HOMEDIR, local_file)
@@ -136,7 +132,86 @@ end
     @test isfile(local_file)
 
     resp = copy_and_wait(server_file) do
-        upload(ftp, local_file)
+        upload(ftp, local_file, ".")
+    end
+    @test isfile(server_file)
+    @test read(local_file, String) == read(server_file, String)
+
+    no_unexpected_changes(ftp)
+    close(ftp)
+    cleanup_file(server_file)
+
+    # Check dir + "." dot path
+    ftp = FTP(; opts...)
+    local_file = upload_file
+    server_dir = joinpath(HOMEDIR, testdir)
+    mkdir(ftp, testdir)
+    server_file = joinpath(server_dir, local_file)
+    tempfile(local_file)
+    @test isfile(local_file)
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, local_file, "$testdir/.")
+    end
+    @test isfile(server_file)
+    @test read(local_file, String) == read(server_file, String)
+
+    no_unexpected_changes(ftp)
+    close(ftp)
+    cleanup_file(server_file)
+    cleanup_dir(server_dir)
+
+    # Check dir + ".." dot path
+    testdir2 = "double_test"
+    ftp = FTP(; opts...)
+    local_file = upload_file
+    server_dir = joinpath(HOMEDIR, testdir)
+    mkdir(ftp, testdir)
+    mkdir(ftp, joinpath(testdir, testdir2))
+    server_file = joinpath(server_dir, local_file)
+    tempfile(local_file)
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, local_file, "$testdir/$testdir2/..")
+    end
+    @test isfile(server_file)
+    @test read(local_file, String) == read(server_file, String)
+
+    no_unexpected_changes(ftp)
+    close(ftp)
+    cleanup_file(server_file)
+    cleanup_dir(joinpath(server_dir, testdir2))
+    cleanup_dir(server_dir)
+
+    # check upload "/" slash path
+    ftp = FTP(; opts...)
+    local_file = upload_file
+    server_dir = joinpath(HOMEDIR, testdir)
+    mkdir(ftp, testdir)
+    server_file = joinpath(server_dir, local_file)
+    tempfile(local_file)
+    @test isfile(local_file)
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, local_file, "$testdir/")
+    end
+    @test isfile(server_file)
+    @test read(local_file, String) == read(server_file, String)
+
+    no_unexpected_changes(ftp)
+    close(ftp)
+    cleanup_file(server_file)
+    cleanup_dir(server_dir)
+
+    # check upload full remote path
+    ftp = FTP(; opts...)
+    local_file = upload_file
+    server_file = joinpath(HOMEDIR, local_file)
+    tempfile(local_file)
+    @test isfile(local_file)
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, local_file, local_file)
     end
     @test isfile(server_file)
     @test read(local_file, String) == read(server_file, String)
@@ -294,7 +369,7 @@ end
     @test !isfile(server_file)
 
     resp = copy_and_wait(server_file) do
-        upload(ftp, upload_file)
+        upload(ftp, upload_file, upload_file)
     end
     @test isfile(server_file)
     @test read(upload_file, String) == read(server_file, String)
@@ -318,7 +393,6 @@ end
     cleanup_file(server_file)
     close(ftp)
 
-    # Check upload with retry, single file
     ftp = FTP(; opts...)
     server_file= joinpath(HOMEDIR, "test_upload.txt")
     @test !isfile(server_file)
@@ -365,7 +439,7 @@ end
     map(cleanup_file, server_list)
     close(ftp)
 
-    # Check upload with retry, multiple files, where it will fail the first time
+    # Check upload with deprecated retry, multiple files, where it will fail the first time
     # Get the FTP object
     ftp = FTP(; opts...)
     # Close the FTP so we can't connect to it
@@ -375,7 +449,7 @@ end
     # It should wait for 1 retry, then create a server and put the details in the
     # retry_server variable, and use that to transfer the files.
     resp = copy_and_wait(server_list...) do
-        upload(ftp, upload_list, "/", retry_callback=retry_test, retry_wait_seconds=1)
+        upload(ftp, upload_list, "/"; retry_callback=retry_test, retry_wait_seconds=1)
     end
 
     @test resp == [true, true, true, true]
@@ -387,18 +461,30 @@ end
 
     no_unexpected_changes(retry_server)
     map(cleanup_file, server_list)
-
     close(retry_server)
+
+    # Check upload with retry, single file
+    # Get the FTP object
+    ftp = FTP(; opts...)
+    # Close the FTP so we can't connect to it
+    close(ftp)
+
+    # This will run twice, and fail both times. I currently don't know a good way to test
+    # this strategy where the ftp client comes back up between trys.
+    retry_ftp = retry(delays=fill(0.1, 2)) do
+        upload(ftp, upload_file, "/")
+    end
+    @test_throws FTPClientError retry_ftp()
 end
 
 @testset "write" begin
     # check write to file
     ftp = FTP(; opts...)
-    server_file= joinpath(HOMEDIR, "some other name")
+    server_file = joinpath(HOMEDIR, "some other name")
     @test !isfile(server_file)
     resp = copy_and_wait(server_file) do
         open(upload_file) do fp
-            resp = upload(ftp, fp, "some other name")
+            upload(ftp, fp, "some other name")
         end
     end
 
@@ -475,7 +561,7 @@ end
         num_bytes = copy_and_wait(server_file) do
             captured_size() do io
                 ftp = FTP(; opts..., verbose=io)
-                upload(ftp, upload_file)
+                upload(ftp, local_file, ".")
             end
         end
 
@@ -619,7 +705,7 @@ end
             num_bytes = copy_and_wait(server_file) do
                 captured_size() do io
                     ftp = FTP(; opts..., verbose=io)
-                    upload(ftp, upload_file)
+                    upload(ftp, upload_file, upload_file)
                 end
             end
 
