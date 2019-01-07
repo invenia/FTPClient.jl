@@ -170,7 +170,8 @@ function upload(
         resp = ftp_put(ftp_options, remote_path, local_path_io; mode=mode, verbose=verbose)
     catch e
         if isa(e, FTPClientError)
-            e.msg = "Failed to upload $remote_path"
+            err = "Faild to upload $remote_path"
+            e.msg = !isempty(e.msg) ? "$(e.msg) - $err" : err
         end
         rethrow()
     end
