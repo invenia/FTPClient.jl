@@ -191,10 +191,10 @@ end
 Uploads the file specified in "local_path" to the file or directory specifies in
 "remote_path".
 
-If "remote_path" is a full file name path, then the file will be uploaded to the FTP
+If "remote_path" is a path to a file, then the file will be uploaded to the FTP
 using the full file path name. If "remote_path" is a path to a directory (which means
-it ends in "/"), then the file will be uploaded to the specified directory but with the
-"local_path" basename as the file name.
+it ends in "/", ".", or ".."), then the file will be uploaded to the specified directory
+but with the "local_path" basename as the file name.
 
 # Arguments
 - `ftp::FTP`: The FTP to deliver to. See FTPClient.FTP for details.
@@ -220,14 +220,9 @@ function upload(
     _dep_verbose_kw(verbose, typeof(ftp), :upload)
 
     # The location we are going to drop the file in the FTP server
-    if basename(remote_path) == ""
-        # If the remote path was just a directory, then the full remote path should be
+    if basename(remote_path) in ("", ".", "..")
+        # If the remote path is a directory, then the full remote path should be
         # that directory plus the basename of the local_path
-        server_location = joinpath(dirname(remote_path), basename(local_path))
-    elseif basename(remote_path) == "."
-        # Handle the special case where remote_path ends with '.'
-        # Since the dirname/basename strategy doesn't work in this specific case, we just
-        # handle it here.
         server_location = joinpath(remote_path, basename(local_path))
     else
         # If the remote path is a full file path, then just use that
@@ -235,7 +230,7 @@ function upload(
     end
 
     # ftp_put requires an io, so open the file
-    open(local_path) do local_path_io
+    open(local_path, "r") do local_path_io
         return upload(
             ftp, local_path_io, server_location;
             ftp_options=ftp_options, mode=mode, verbose=verbose

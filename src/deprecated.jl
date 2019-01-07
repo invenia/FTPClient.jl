@@ -29,7 +29,7 @@ function upload(
             """
             Use retry in a file path loop in the future:
             for single_file in file_paths
-                ftp_retry = retry(delays=fill(5, 4)) do
+                ftp_retry = retry(delays=fill(5.0, 3)) do
                     upload(ftp, local_path, remote_path; kwargs... )
                 end
                 ftp_retry()

@@ -161,6 +161,28 @@ end
     cleanup_file(server_file)
     cleanup_dir(server_dir)
 
+    # Check dir + ".." dot path
+    testdir2 = "double_test"
+    ftp = FTP(; opts...)
+    local_file = upload_file
+    server_dir = joinpath(HOMEDIR, testdir)
+    mkdir(ftp, testdir)
+    mkdir(ftp, joinpath(testdir, testdir2))
+    server_file = joinpath(server_dir, local_file)
+    tempfile(local_file)
+
+    resp = copy_and_wait(server_file) do
+        upload(ftp, local_file, "$testdir/$testdir2/..")
+    end
+    @test isfile(server_file)
+    @test read(local_file, String) == read(server_file, String)
+
+    no_unexpected_changes(ftp)
+    close(ftp)
+    cleanup_file(server_file)
+    cleanup_dir(joinpath(server_dir, testdir2))
+    cleanup_dir(server_dir)
+
     # check upload "/" slash path
     ftp = FTP(; opts...)
     local_file = upload_file
