@@ -170,7 +170,7 @@ function upload(
         resp = ftp_put(ftp_options, remote_path, local_path_io; mode=mode, verbose=verbose)
     catch e
         if isa(e, FTPClientError)
-            err = "Faild to upload $remote_path"
+            err = "Failed to upload $remote_path"
             e.msg = !isempty(e.msg) ? "$(e.msg) - $err" : err
         end
         rethrow()
@@ -193,7 +193,7 @@ Uploads the file specified in "local_path" to the file or directory specifies in
 "remote_path".
 
 If "remote_path" is a path to a file, then the file will be uploaded to the FTP
-using the full file path name. If "remote_path" is a path to a directory (which means
+using the provided path. If "remote_path" is a path to a directory (which means
 it ends in "/", ".", or ".."), then the file will be uploaded to the specified directory
 but with the "local_path" basename as the file name.
 
