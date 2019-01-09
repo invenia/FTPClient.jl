@@ -2,8 +2,6 @@ __precompile__()
 
 module FTPClient
 
-import Base: convert, show, open, mkdir, ascii, mv
-import Base: readdir, cd, pwd, rm, close, download
 using Compat: Cvoid, Nothing, @compat, @cfunction, @warn, nameof, unsafe_string,
     unsafe_write
 using URIParser: URI

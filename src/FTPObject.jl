@@ -80,7 +80,7 @@ function FTP(
     FTP(options; verbose=verbose)
 end
 
-function show(io::IO, ftp::FTP)
+function Base.show(io::IO, ftp::FTP)
     opts = ftp.ctxt.options
     join(io, [
         "URL:       $(safe_uri(ftp.ctxt.url))",
@@ -94,7 +94,7 @@ end
 
 Close FTP connection.
 """
-function close(ftp::FTP)
+function Base.close(ftp::FTP)
     ftp_close_connection(ftp.ctxt)
 end
 
@@ -109,7 +109,7 @@ end
 Download the file "file_name" from FTP server and return IOStream.
 If "save_path" is not specified, contents are written to and returned as an IOBuffer.
 """
-function download(
+function Base.download(
     ftp::FTP,
     file_name::AbstractString,
     save_path::AbstractString="";
@@ -232,7 +232,7 @@ end
 
 Return the contents of the current working directory of the FTP server.
 """
-function readdir(ftp::FTP)
+function Base.readdir(ftp::FTP)
     resp = nothing
 
     try
@@ -255,7 +255,7 @@ end
 
 Set the current working directory of the FTP server to "dir".
 """
-function cd(ftp::FTP, dir::AbstractString)
+function Base.cd(ftp::FTP, dir::AbstractString)
     resp = ftp_command(ftp.ctxt, "CWD $dir")
 
     if resp.code != 250
@@ -269,7 +269,7 @@ end
 
 Get the current working directory of the FTP server
 """
-function pwd(ftp::FTP)
+function Base.pwd(ftp::FTP)
     resp = ftp_command(ftp.ctxt, "PWD")
 
     if resp.code != 257
@@ -285,7 +285,7 @@ end
 
 Delete file "file_name" from FTP server.
 """
-function rm(ftp::FTP, file_name::AbstractString)
+function Base.rm(ftp::FTP, file_name::AbstractString)
     resp = ftp_command(ftp.ctxt, "DELE $file_name")
 
     if resp.code != 250
@@ -313,7 +313,7 @@ end
 
 Make directory "dir" on FTP server.
 """
-function mkdir(ftp::FTP, dir::AbstractString)
+function Base.mkdir(ftp::FTP, dir::AbstractString)
     resp = ftp_command(ftp.ctxt, "MKD $dir")
 
     if resp.code != 257
@@ -331,7 +331,7 @@ end
 
 Move (rename) file "file_name" to "new_name" on FTP server.
 """
-function mv(
+function Base.mv(
     ftp::FTP,
     file_name::AbstractString,
     new_name::AbstractString;
