@@ -107,7 +107,7 @@ end
 Download a file with a persistent connection. Returns a `Response`.
 
 # Arguments
-* `ctxt::ConnContext`: encompases the connection options defined via ftp_connect. See
+* `ctxt::ConnContext`: encompasses the connection options defined via ftp_connect. See
     `RequestOptions` for details.
 * `file_name::AbstractString`: the path to the file on the server.
 * `save_path::AbstractString=""`: if not specified the file is written to the `Response`
@@ -120,10 +120,7 @@ function ftp_get(
     file_name::AbstractString,
     save_path::AbstractString="";
     mode::FTP_MODE=binary_mode,
-    verbose=nothing,
 )
-    _dep_verbose_kw(verbose, typeof(ctxt), :ftp_get)
-
     wd = WriteData()
 
     if !isempty(save_path)
@@ -151,7 +148,7 @@ function ftp_get(
             @ce_curl curl_easy_setopt CURLOPT_URL full_url * ";type=a"
         end
 
-        resp = ftp_perform(ctxt, verbose)
+        resp = ftp_perform(ctxt)
 
         if isopen(wd.buffer)
             seekstart(wd.buffer)
@@ -197,10 +194,7 @@ function ftp_put(
     file_name::AbstractString,
     file::IO;
     mode::FTP_MODE=binary_mode,
-    verbose=nothing,
 )
-    _dep_verbose_kw(verbose, typeof(ctxt), :ftp_put)
-
     rd = ReadData()
 
     rd.src = file
@@ -225,7 +219,7 @@ function ftp_put(
 
     @ce_curl curl_easy_setopt CURLOPT_INFILESIZE Int64(rd.sz)
 
-    resp = ftp_perform(ctxt, verbose)
+    resp = ftp_perform(ctxt)
 
     # resest handle defaults
     @ce_curl curl_easy_setopt CURLOPT_URL ftp_url
@@ -243,13 +237,7 @@ end
 
 Pass FTP command with persistent connection. Returns a `Response`.
 """
-function ftp_command(
-    ctxt::ConnContext,
-    cmd::AbstractString;
-    verbose=nothing,
-)
-    _dep_verbose_kw(verbose, typeof(ctxt), :ftp_command)
-
+function ftp_command(ctxt::ConnContext, cmd::AbstractString)
     wd = WriteData()
     p_wd = pointer_from_objref(wd)
 
@@ -258,7 +246,7 @@ function ftp_command(
     @ce_curl curl_easy_setopt CURLOPT_WRITEFUNCTION C_WRITE_FILE_CB[]
     @ce_curl curl_easy_setopt CURLOPT_WRITEDATA p_wd
 
-    resp = ftp_perform(ctxt, verbose)
+    resp = ftp_perform(ctxt)
 
     resp.body = seekstart(wd.buffer)
     resp.bytes_recd = wd.bytes_recd
@@ -282,7 +270,7 @@ function ftp_close_connection(ctxt::ConnContext)
 end
 
 
-function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream,Nothing})
+function ftp_perform(ctxt::ConnContext)
     resp = Response()
     p_resp = pointer_from_objref(resp)
 
@@ -290,15 +278,14 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream,Nothing})
     @ce_curl curl_easy_setopt CURLOPT_HEADERDATA p_resp
 
     libc_file = nothing
-    verbose = verbose === nothing || verbose == false ? ctxt.verbose : verbose
-    if verbose != false
+    if ctxt.verbose != false
         @ce_curl curl_easy_setopt CURLOPT_VERBOSE Int64(1)
-        if isa(verbose, IOStream)
+        if isa(ctxt.verbose, IOStream)
 
             # flush the IOStream before making a duplicate Libc.FILE that will
             # capture the verbose
-            flush(verbose)
-            libc_file = Libc.FILE(verbose)
+            flush(ctxt.verbose)
+            libc_file = Libc.FILE(ctxt.verbose)
 
             @ce_curl curl_easy_setopt CURLOPT_STDERR libc_file.ptr
         end
@@ -315,7 +302,7 @@ function ftp_perform(ctxt::ConnContext, verbose::Union{Bool,IOStream,Nothing})
             # Libc.FILE does not reliably do this. Then update the IOStream pointer to
             # point to the same position so that data can be appended to the stream.
             ccall(:fflush, Cvoid, (Ptr{Cvoid},), libc_file.ptr)
-            seek(verbose, position(libc_file))
+            seek(ctxt.verbose, position(libc_file))
             close(libc_file)
 
             @ce_curl curl_easy_setopt CURLOPT_STDERR Libc.FILE(RawFD(2), "w").ptr

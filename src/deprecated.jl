@@ -1,14 +1,6 @@
 using Base: @deprecate, depwarn
 
-function _dep_verbose_kw(verbose, preferred::Type, func::Symbol)
-    if verbose !== nothing
-        depwarn(
-            "The `verbose` keyword is deprecated and now needs to be supplied " *
-            "during the initialization of `$(nameof(preferred))`.",
-            func,
-        )
-    end
-end
+# BEGIN FTPClient 0.7 deprecations
 
 @deprecate(
     upload(ftp::FTP, local_name::AbstractString; kwargs...),
@@ -21,7 +13,6 @@ function upload(
     ftp_dir::AbstractString;
     retry_callback::Function=(count, options) -> (count < 4, options),
     retry_wait_seconds::Integer=5,
-    verbose=nothing,
 )
     depwarn(
         string(
@@ -38,7 +29,6 @@ function upload(
         ),
         :upload
     )
-    _dep_verbose_kw(verbose, typeof(ftp), :upload)
 
     successful_delivery = Bool[]
     ftp_options = ftp.ctxt
@@ -58,7 +48,7 @@ function upload(
                 try
                     resp = upload(
                         ftp, single_file_io, server_location;
-                        ftp_options=ftp_options, verbose=verbose
+                        ftp_options=ftp_options,
                     )
                     success = resp.code == complete_transfer_code
 
@@ -83,3 +73,5 @@ function upload(
 
     return successful_delivery
 end
+
+# END FTPClient 0.7 deprecations
