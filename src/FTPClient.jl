@@ -41,7 +41,6 @@ include("response.jl")
 include("request_options.jl")
 include("conn_context.jl")
 include("FTPObject.jl")
-include("deprecated.jl")
 
 const C_WRITE_FILE_CB = Ref{Ptr{Cvoid}}(C_NULL)
 const C_HEADER_COMMAND_CB = Ref{Ptr{Cvoid}}(C_NULL)

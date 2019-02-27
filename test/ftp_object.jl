@@ -398,70 +398,16 @@ end
     @test !isfile(server_file)
 
     resp = copy_and_wait(server_file) do
-        upload(ftp, [upload_file], "/")
+        upload(ftp, upload_file, "/")
     end
 
-    @test resp == [true]
+    @test resp.code == complete_transfer_code
     @test isfile(server_file)
     @test read(upload_file, String) == read(server_file, String)
 
     no_unexpected_changes(ftp)
     cleanup_file(server_file)
     close(ftp)
-
-    # Check upload with retry, multiple files
-    ftp = FTP(; opts...)
-    upload_list = [upload_file, upload_file_2, upload_file_3, upload_file_4]
-
-    server_file = joinpath(HOMEDIR, "test_upload.txt")
-    @test !isfile(server_file)
-    server_file_2 = joinpath(HOMEDIR, "test_upload_2.txt")
-    @test !isfile(server_file_2)
-    server_file_3 = joinpath(HOMEDIR, "test_upload_3.txt")
-    @test !isfile(server_file_3)
-    server_file_4 = joinpath(HOMEDIR, "test_upload_4.txt")
-    @test !isfile(server_file_4)
-
-    server_list = [server_file, server_file_2, server_file_3, server_file_4]
-
-    resp = copy_and_wait(server_list...) do
-        upload(ftp, upload_list, "/")
-    end
-
-    @test resp == [true, true, true, true]
-
-    for (ufile, sfile) in zip(upload_list, server_list)
-        @test isfile(sfile)
-        @test read(ufile, String) == read(sfile, String)
-    end
-
-    no_unexpected_changes(ftp)
-    map(cleanup_file, server_list)
-    close(ftp)
-
-    # Check upload with deprecated retry, multiple files, where it will fail the first time
-    # Get the FTP object
-    ftp = FTP(; opts...)
-    # Close the FTP so we can't connect to it
-    close(ftp)
-
-    # When this function is first called, ftp should not be functioning
-    # It should wait for 1 retry, then create a server and put the details in the
-    # retry_server variable, and use that to transfer the files.
-    resp = copy_and_wait(server_list...) do
-        upload(ftp, upload_list, "/"; retry_callback=retry_test, retry_wait_seconds=1)
-    end
-
-    @test resp == [true, true, true, true]
-
-    for (ufile, sfile) in zip(upload_list, server_list)
-        @test isfile(sfile)
-        @test read(ufile, String) == read(sfile, String)
-    end
-
-    no_unexpected_changes(retry_server)
-    map(cleanup_file, server_list)
-    close(retry_server)
 
     # Check upload with retry, single file
     # Get the FTP object
@@ -743,8 +689,8 @@ end
             num_bytes = copy_and_wait(server_file) do
                 captured_size() do io
                     ftp = FTP(; opts..., verbose=io)
-                    resp = upload(ftp, [upload_file], "/")
-                    @test resp == [true]
+                    resp = upload(ftp, upload_file, "/")
+                    @test resp.code == complete_transfer_code
                 end
             end
 

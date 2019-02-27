@@ -1,7 +1,3 @@
-# FTP code for when the file transfer is complete.
-const complete_transfer_code = 226
-
-
 mutable struct FTP
     ctxt::ConnContext
 
