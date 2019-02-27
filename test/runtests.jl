@@ -1,5 +1,4 @@
-import Compat: Sys, occursin, read
-using Compat.Test
+using Test
 using FTPClient
 using FTPServer
 using FTPServer: username, password, hostname, port, HOMEDIR, tempfile

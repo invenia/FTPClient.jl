@@ -1,4 +1,3 @@
-using Compat: Cvoid, undef
 using LibCURL
 
 

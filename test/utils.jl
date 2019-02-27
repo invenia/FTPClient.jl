@@ -1,5 +1,3 @@
-using Compat: replace, occursin
-
 function is_headers_equal(original::AbstractArray{A}, expected::AbstractArray{B}) where {A<:AbstractString, B<:AbstractString}
     length(original) == length(expected) || return false
     for (a, b) in zip(original, expected)

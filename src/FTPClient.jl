@@ -2,8 +2,6 @@ __precompile__()
 
 module FTPClient
 
-using Compat: Cvoid, Nothing, @compat, @cfunction, @warn, nameof, unsafe_string,
-    unsafe_write
 using URIParser: URI
 
 mutable struct FTPClientError <: Exception
