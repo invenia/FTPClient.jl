@@ -3,7 +3,7 @@ mutable struct FTP
 
     function FTP(ctxt::ConnContext)
         ftp = new(ctxt)
-        finalizer(close, ftp)  # 0.7.0-DEV.2562
+        finalizer(close, ftp)
         return ftp
     end
 end
