@@ -1,5 +1,6 @@
 *.jl.cov
 *.jl.mem
+/Manifest.toml
 
 # Ignore files we can build.
 test/test_upload.txt
