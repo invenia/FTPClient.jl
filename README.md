@@ -2,8 +2,8 @@ FTPClient.jl
 ============
 
 [![Build Status](https://travis-ci.org/invenia/FTPClient.jl.svg?branch=master)](https://travis-ci.org/invenia/FTPClient.jl)
-[![Build status](https://ci.appveyor.com/api/projects/status/ko8ama8fh0fgyjvq/branch/master?svg=true)](https://ci.appveyor.com/project/invenia/ftpclient-jl/branch/master)
-[![codecov.io](http://codecov.io/github/invenia/FTPClient.jl/coverage.svg)](http://codecov.io/github/invenia/FTPClient.jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/github/invenia/FTPClient.jl?svg=true)](https://ci.appveyor.com/project/invenia/ftpclient-jl/branch/master)
+[![codecov](http://codecov.io/gh/invenia/FTPClient.jl/branch/master/graph/badge.svg)](http://codecov.io/gh/invenia/FTPClient.jl)
 
 A Julia FTP client using [LibCURL](https://github.com/JuliaWeb/LibCURL.jl) supporting FTP and FTP over SSL.
 
