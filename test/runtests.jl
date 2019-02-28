@@ -1,8 +1,10 @@
-import Compat: Sys, occursin, read
-using Compat.Test
+using Test
 using FTPClient
 using FTPServer
 using FTPServer: username, password, hostname, port, HOMEDIR, tempfile
+
+# FTP code for when the file transfer is complete.
+const complete_transfer_code = 226
 
 include("utils.jl")
 

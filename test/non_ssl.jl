@@ -35,7 +35,7 @@ function test_get(headers, opt)
     resp = ftp_get(opt, local_file)
     @test !isfile(local_file)
     body = read(server_file, String)
-    test_response(resp, body, 226, headers)
+    test_response(resp, body, complete_transfer_code, headers)
 end
 
 function test_put(headers, opt)
@@ -59,7 +59,7 @@ function test_put(headers, opt)
     @test read(server_file, String) == read(local_file, String)
     cleanup_file(server_file)
 
-    test_response(resp, "", 226, headers)
+    test_response(resp, "", complete_transfer_code, headers)
 end
 
 function test_command(headers, opt)
@@ -131,7 +131,7 @@ function tests_by_mode(active::Bool)
     server_file = joinpath(HOMEDIR, local_file)
     body = read(server_file, String)
 
-    test_response(resp, 226, headers, save_path, body)
+    test_response(resp, complete_transfer_code, headers, save_path, body)
 
     rm(save_path)
 
@@ -153,7 +153,7 @@ function tests_by_mode(active::Bool)
     @test occursin(download_file, body)
     @test occursin(directory_name, body)
     @test resp.bytes_recd == length(body)
-    @test resp.code == 226
+    @test resp.code == complete_transfer_code
     @test is_headers_equal(resp.headers, headers)
     @test rstrip(ctxt.url, '/') == string(options.uri) == prefix
     @test ctxt.options == options
