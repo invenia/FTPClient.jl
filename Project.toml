@@ -1,12 +1,13 @@
 name = "FTPClient"
 uuid = "01fcc997-4f28-56b8-8a06-30002c134abb"
+version = "1.0.1"
 
 [deps]
 LibCURL = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
 URIParser = "30578b45-9adc-5946-b283-645ec420af67"
 
 [compat]
-LibCURL = ">= 0.4.1"
+LibCURL = ">= 0.5.1"
 julia = "0.7, 1.0"
 
 [extras]
