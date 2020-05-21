@@ -24,7 +24,12 @@ jobs:
     - os: windows
       arch: x86
 notifications:
-  email: false
+  email:
+    recipients:
+      - nightly-dev@invenia.ca
+    on_success: never
+    on_failure: always
+    if: type = cron
 after_success:
   - |
     julia -e '
