@@ -208,7 +208,7 @@ end
     Sys.iswindows() && (upload_bytes = b"FooBar\r\nFooBar")
 
     Sys.isunix() && (download_bytes = b"FooBar\r\nFooBar")
-    Sys.isunix() && (download_bytes_ascii = b"FooBar\n\nFooBar")
+    Sys.isunix() && (download_bytes_ascii = b"FooBar\nFooBar")
     Sys.iswindows() && (download_bytes = b"FooBar\nFooBar\x1a\x1a\x1a")
 
     byte_upload_file = "test_upload_byte_file"
