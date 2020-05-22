@@ -204,11 +204,17 @@ end
 
 @testset "binary_ascii" begin
     # test binary vs ascii
-    Sys.isunix() && (upload_bytes = b"FooBar\nFooBar")
-    Sys.iswindows() && (upload_bytes = b"FooBar\r\nFooBar")
+    upload_bytes = if Sys.iswindows()
+        b"FooBar\r\nFooBar"
+    else
+        b"FooBar\nFooBar"
+    end
 
-    Sys.isunix() && (download_bytes = b"FooBar\r\nFooBar")
-    Sys.iswindows() && (download_bytes = b"FooBar\nFooBar\x1a\x1a\x1a")
+    download_bytes = if Sys.iswindows()
+        b"FooBar\nFooBar\x1a\x1a\x1a"
+    else
+        b"FooBar\r\nFooBar"
+    end
 
     # Detect carriage return
     cr(b::UInt8) = b == UInt8('\r')
