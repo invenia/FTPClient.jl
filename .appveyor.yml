@@ -1,5 +1,4 @@
 environment:
-  CONDA_JL_VERSION: 2
   matrix:
     - julia_version: 1.0
     - julia_version: 1.1
