@@ -208,8 +208,10 @@ end
     Sys.iswindows() && (upload_bytes = b"FooBar\r\nFooBar")
 
     Sys.isunix() && (download_bytes = b"FooBar\r\nFooBar")
-    Sys.isunix() && (download_bytes_ascii = b"FooBar\nFooBar")
     Sys.iswindows() && (download_bytes = b"FooBar\nFooBar\x1a\x1a\x1a")
+
+    # Detect carriage return
+    cr(b::UInt8) = b == UInt8('\r')
 
     byte_upload_file = "test_upload_byte_file"
     byte_file = "test_byte_file"
@@ -222,8 +224,7 @@ end
     options = RequestOptions(; opts..., ssl=false, active_mode=false)
     resp = ftp_get(options, byte_file; mode=ascii_mode)
     bytes = read(resp.body)
-    Sys.isunix() && @test bytes != download_bytes
-    Sys.isunix() && @test bytes == download_bytes_ascii
+    Sys.isunix() && @test bytes == filter(!cr, download_bytes)
 
     # it is the same file when downloading in binary mode
     resp = ftp_get(options, byte_file)
@@ -234,8 +235,7 @@ end
     ctxt, resp = ftp_connect(options)
     resp = ftp_get(ctxt, byte_file, mode=ascii_mode)
     bytes = read(resp.body)
-    Sys.isunix() && @test bytes != download_bytes
-    Sys.isunix() && @test bytes == download_bytes_ascii
+    Sys.isunix() && @test bytes == filter(!cr, download_bytes)
     ftp_close_connection(ctxt)
 
     # it is the same file when downloading in binary mode
@@ -249,8 +249,7 @@ end
     ftp = FTP(; opts...)
     buff = download(ftp, byte_file, mode=ascii_mode)
     bytes = read(buff)
-    Sys.isunix() && @test bytes != download_bytes
-    Sys.isunix() && @test bytes == download_bytes_ascii
+    Sys.isunix() && @test bytes == filter(!cr, download_bytes)
     Base.close(ftp)
 
     # it is the same file when downloading in binary mode
@@ -264,15 +263,13 @@ end
     ftp = FTP(; opts...)
     buff = download(ftp, byte_file, mode=ascii_mode)
     bytes = read(buff)
-    Sys.isunix() && @test bytes != download_bytes
-    Sys.isunix() && @test bytes == download_bytes_ascii
+    Sys.isunix() && @test bytes == filter(!cr, download_bytes)
     buff = download(ftp, byte_file)
     bytes = read(buff)
     @test bytes == download_bytes
     buff = download(ftp, byte_file, mode=ascii_mode)
     bytes = read(buff)
-    Sys.isunix() && @test bytes != download_bytes
-    Sys.isunix() && @test bytes == download_bytes_ascii
+    Sys.isunix() && @test bytes == filter(!cr, download_bytes)
     Base.close(ftp)
 
     # upload
