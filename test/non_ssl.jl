@@ -230,7 +230,7 @@ end
     options = RequestOptions(; opts..., ssl=false, active_mode=false)
     resp = ftp_get(options, byte_file; mode=ascii_mode)
     bytes = read(resp.body)
-    Sys.isunix() && @test bytes == filter(!cr, download_bytes)
+    @test bytes == filter(!cr, download_bytes)
 
     # it is the same file when downloading in binary mode
     resp = ftp_get(options, byte_file)
@@ -241,7 +241,7 @@ end
     ctxt, resp = ftp_connect(options)
     resp = ftp_get(ctxt, byte_file, mode=ascii_mode)
     bytes = read(resp.body)
-    Sys.isunix() && @test bytes == filter(!cr, download_bytes)
+    @test bytes == filter(!cr, download_bytes)
     ftp_close_connection(ctxt)
 
     # it is the same file when downloading in binary mode
@@ -255,7 +255,7 @@ end
     ftp = FTP(; opts...)
     buff = download(ftp, byte_file, mode=ascii_mode)
     bytes = read(buff)
-    Sys.isunix() && @test bytes == filter(!cr, download_bytes)
+    @test bytes == filter(!cr, download_bytes)
     Base.close(ftp)
 
     # it is the same file when downloading in binary mode
@@ -269,13 +269,13 @@ end
     ftp = FTP(; opts...)
     buff = download(ftp, byte_file, mode=ascii_mode)
     bytes = read(buff)
-    Sys.isunix() && @test bytes == filter(!cr, download_bytes)
+    @test bytes == filter(!cr, download_bytes)
     buff = download(ftp, byte_file)
     bytes = read(buff)
     @test bytes == download_bytes
     buff = download(ftp, byte_file, mode=ascii_mode)
     bytes = read(buff)
-    Sys.isunix() && @test bytes == filter(!cr, download_bytes)
+    @test bytes == filter(!cr, download_bytes)
     Base.close(ftp)
 
     # upload
