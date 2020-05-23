@@ -204,106 +204,109 @@ end
 
 @testset "binary_ascii" begin
     # test binary vs ascii
-    Sys.isunix() && (upload_bytes = string("466F6F426172", "0A", "466F6F426172"))
-    Sys.iswindows() && (upload_bytes = string("466F6F426172", "0D0A", "466F6F426172"))
+    upload_bytes = if Sys.iswindows()
+        b"FooBar\r\nFooBar"
+    else
+        b"FooBar\nFooBar"
+    end
 
-    Sys.isunix() && (download_bytes = string("466F6F426172", "0D0A", "466F6F426172"))
-    Sys.isunix() && (download_bytes_ascii = string("466F6F426172", "0A", "0A", "466f6f426172"))
-    Sys.iswindows() && (download_bytes = string("466F6F426172", "0A", "466F6F426172", "1A1A1A"))
+    download_bytes = if Sys.iswindows()
+        b"FooBar\nFooBar\x1a\x1a\x1a"
+    else
+        b"FooBar\r\nFooBar"
+    end
+
+    # Detect carriage return
+    cr(b::UInt8) = b == UInt8('\r')
 
     byte_upload_file = "test_upload_byte_file"
     byte_file = "test_byte_file"
 
     open(joinpath(HOMEDIR, byte_file), "w") do fp
-        write(fp, hex2bytes(download_bytes))
+        write(fp, download_bytes)
     end
 
     # it is not the same file when downloading in ascii mode
     options = RequestOptions(; opts..., ssl=false, active_mode=false)
     resp = ftp_get(options, byte_file; mode=ascii_mode)
     bytes = read(resp.body)
-    Sys.isunix() && @test bytes != hex2bytes(download_bytes)
-    Sys.isunix() && @test bytes == hex2bytes(download_bytes_ascii)
+    @test bytes == filter(!cr, download_bytes)
 
     # it is the same file when downloading in binary mode
     resp = ftp_get(options, byte_file)
     bytes = read(resp.body)
-    @test bytes == hex2bytes(download_bytes)
+    @test bytes == download_bytes
 
     # it is not the same file when downloading in ascii mode
     ctxt, resp = ftp_connect(options)
     resp = ftp_get(ctxt, byte_file, mode=ascii_mode)
     bytes = read(resp.body)
-    Sys.isunix() && @test bytes != hex2bytes(download_bytes)
-    Sys.isunix() && @test bytes == hex2bytes(download_bytes_ascii)
+    @test bytes == filter(!cr, download_bytes)
     ftp_close_connection(ctxt)
 
     # it is the same file when downloading in binary mode
     ctxt, resp = ftp_connect(options)
     resp = ftp_get(ctxt, byte_file)
     bytes = read(resp.body)
-    @test bytes == hex2bytes(download_bytes)
+    @test bytes == download_bytes
     ftp_close_connection(ctxt)
 
     # it is not the same file when downloading in ascii mode
     ftp = FTP(; opts...)
     buff = download(ftp, byte_file, mode=ascii_mode)
     bytes = read(buff)
-    Sys.isunix() && @test bytes != hex2bytes(download_bytes)
-    Sys.isunix() && @test bytes == hex2bytes(download_bytes_ascii)
+    @test bytes == filter(!cr, download_bytes)
     Base.close(ftp)
 
     # it is the same file when downloading in binary mode
     ftp = FTP(; opts...)
     buff = download(ftp, byte_file)
     bytes = read(buff)
-    @test bytes == hex2bytes(download_bytes)
+    @test bytes == download_bytes
     Base.close(ftp)
 
     # binary file download using ftp object, start in ascii, and switch to binary, then back
     ftp = FTP(; opts...)
     buff = download(ftp, byte_file, mode=ascii_mode)
     bytes = read(buff)
-    Sys.isunix() && @test bytes != hex2bytes(download_bytes)
-    Sys.isunix() && @test bytes == hex2bytes(download_bytes_ascii)
+    @test bytes == filter(!cr, download_bytes)
     buff = download(ftp, byte_file)
     bytes = read(buff)
-    @test bytes == hex2bytes(download_bytes)
+    @test bytes == download_bytes
     buff = download(ftp, byte_file, mode=ascii_mode)
     bytes = read(buff)
-    Sys.isunix() && @test bytes != hex2bytes(download_bytes)
-    Sys.isunix() && @test bytes == hex2bytes(download_bytes_ascii)
+    @test bytes == filter(!cr, download_bytes)
     Base.close(ftp)
 
     # upload
     server_byte_file = joinpath(HOMEDIR, byte_upload_file)
-    bin_file = IOBuffer(hex2bytes(upload_bytes))
+    bin_file = IOBuffer(upload_bytes)
     copy_and_wait(server_byte_file) do
         ftp_put(options, byte_upload_file, bin_file; mode=binary_mode)
     end
     @test isfile(server_byte_file)
-    @test hex2bytes(upload_bytes) == read(server_byte_file)
+    @test upload_bytes == read(server_byte_file)
     cleanup_file(server_byte_file)
 
     # upload with ctxt
     ctxt, resp = ftp_connect(options)
-    bin_file = IOBuffer(hex2bytes(upload_bytes))
+    bin_file = IOBuffer(upload_bytes)
     copy_and_wait(server_byte_file) do
         ftp_put(ctxt, byte_upload_file, bin_file)
     end
     @test isfile(server_byte_file)
-    @test hex2bytes(upload_bytes) == read(server_byte_file)
+    @test upload_bytes == read(server_byte_file)
     cleanup_file(server_byte_file)
     ftp_close_connection(ctxt)
 
     # ftpObject upload
     ftp = FTP(; opts...)
-    bin_file = IOBuffer(hex2bytes(upload_bytes))
+    bin_file = IOBuffer(upload_bytes)
     copy_and_wait(server_byte_file) do
         upload(ftp, bin_file, byte_upload_file)
     end
     @test isfile(server_byte_file)
-    @test hex2bytes(upload_bytes) == read(server_byte_file)
+    @test upload_bytes == read(server_byte_file)
     cleanup_file(server_byte_file)
     Base.close(ftp)
 end
