@@ -7,7 +7,7 @@ arch:
   - x64
   - x86
 julia:
-  - 1.0  # Latest LTS release
+  # - 1.0  # Latest LTS release (currently unsupported - see LibCURL 0.6)
   - 1    # Latest stable release
   - nightly
 env:
