@@ -59,6 +59,7 @@ function setup_easy_handle(ctxt::ConnContext)
         @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYHOST Int64(2)
         @ce_curl curl_easy_setopt CURLOPT_FTPSSLAUTH CURLFTPAUTH_SSL
         @ce_curl curl_easy_setopt CURLOPT_SSL_VERIFYPEER Int64(ctxt.options.verify_peer)
+        @ce_curl curl_easy_setopt CURLOPT_CAINFO LibCURL.cacert
     end
 
     if ctxt.options.active_mode
