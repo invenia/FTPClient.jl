@@ -85,6 +85,8 @@ function Base.show(io::IO, ftp::FTP)
     ], "\n")
 end
 
+Base.broadcastable(ftp::FTP) = Ref(ftp)
+
 """
     close(ftp::FTP)
 
