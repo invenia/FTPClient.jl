@@ -86,6 +86,12 @@ end
     close(ftp)
 end
 
+@testset "broadcastable" begin
+    # Validate that FTP is treated as a scalar during broadcasting
+    ftp = FTP(; opts...)
+    @test size(ftp .== ftp) == ()
+end
+
 @testset "connection with url" begin
     url = string(
         "ftp://",
