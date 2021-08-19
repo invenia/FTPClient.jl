@@ -45,6 +45,22 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
+      - if: matrix.os != 'windows-latest'
+        run: |
+          python3.8 -m pip install --upgrade pip setuptools
+          python3.8 -m pip install pyopenssl pyftpdlib
+      - if: matrix.os != 'windows-latest' && matrix.arch != 'x86'
+        run: |
+          echo "PYTHON=$pythonLocation/bin/python3.8" >> $GITHUB_ENV
+      - if: matrix.os != 'windows-latest' && matrix.arch == 'x86'
+        run: |
+          echo "PYTHON=''" >> $GITHUB_ENV
+      # Windows uses different python syntax
+      - if: matrix.os == 'windows-latest'
+        run: |
+          py -3.8 -m pip install --upgrade pip setuptools
+          py -3.8 -m pip install pyopenssl pyftpdlib
+          echo "PYTHON=$env:pythonLocation\python.exe" >> $env:GITHUB_ENV
       - uses: actions/cache@v2
         env:
           cache-name: cache-artifacts
@@ -57,9 +73,9 @@ jobs:
             ${{ runner.os }}-${{ matrix.arch }}-
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@latest
-      - uses: julia-actions/julia-runtest@latest
         env:
-          PYTHON: ''  # For use with the FTPServer.jl test dependency
+          CONDA_JL_VERSION: '3'
+      - uses: julia-actions/julia-runtest@latest
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v1
         with:
