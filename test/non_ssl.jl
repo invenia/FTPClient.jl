@@ -231,10 +231,10 @@ end
 
     # Our implementation currently checks size which does not work in ASCII mode on FTPServer
     # https://github.com/invenia/FTPClient.jl/issues/113
-    @test_skip begin
+    @test_broken begin
         resp = ftp_get(options, byte_file; mode=ascii_mode)
         bytes = read(resp.body)
-        @test bytes == filter(!cr, download_bytes)
+        bytes == filter(!cr, download_bytes)
     end
 
     # it is the same file when downloading in binary mode
@@ -244,10 +244,10 @@ end
 
     # it is not the same file when downloading in ascii mode
     ctxt, resp = ftp_connect(options)
-    @test_skip begin  # https://github.com/invenia/FTPClient.jl/issues/113
+    @test_broken begin  # https://github.com/invenia/FTPClient.jl/issues/113
         resp = ftp_get(ctxt, byte_file, mode=ascii_mode)
         bytes = read(resp.body)
-        @test bytes == filter(!cr, download_bytes)
+        bytes == filter(!cr, download_bytes)
     end
     ftp_close_connection(ctxt)
 
@@ -260,10 +260,10 @@ end
 
     # it is not the same file when downloading in ascii mode
     ftp = FTP(; opts...)
-    @test_skip begin  # https://github.com/invenia/FTPClient.jl/issues/113
+    @test_broken begin  # https://github.com/invenia/FTPClient.jl/issues/113
         buff = download(ftp, byte_file, mode=ascii_mode)
         bytes = read(buff)
-        @test bytes == filter(!cr, download_bytes)
+        bytes == filter(!cr, download_bytes)
     end
     Base.close(ftp)
 
@@ -275,19 +275,23 @@ end
     Base.close(ftp)
 
     # binary file download using ftp object, start in ascii, and switch to binary, then back
-    @test_skip begin  # https://github.com/invenia/FTPClient.jl/issues/113
-        ftp = FTP(; opts...)
+    ftp = FTP(; opts...)
+    @test_broken begin  # https://github.com/invenia/FTPClient.jl/issues/113
         buff = download(ftp, byte_file, mode=ascii_mode)
         bytes = read(buff)
-        @test bytes == filter(!cr, download_bytes)
-        buff = download(ftp, byte_file)
-        bytes = read(buff)
-        @test bytes == download_bytes
-        buff = download(ftp, byte_file, mode=ascii_mode)
-        bytes = read(buff)
-        @test bytes == filter(!cr, download_bytes)
-        Base.close(ftp)
+        bytes == filter(!cr, download_bytes)
     end
+
+    buff = download(ftp, byte_file)
+    bytes = read(buff)
+    @test bytes == download_bytes
+
+    @test_broken begin  # https://github.com/invenia/FTPClient.jl/issues/113
+        buff = download(ftp, byte_file, mode=ascii_mode)
+        bytes = read(buff)
+        bytes == filter(!cr, download_bytes)
+    end
+    Base.close(ftp)
 
     # upload
     server_byte_file = joinpath(HOMEDIR, byte_upload_file)
