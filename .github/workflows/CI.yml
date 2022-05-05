@@ -26,7 +26,7 @@ jobs:
           - x64
           - x86
         python-version:
-          - 3.8 # pyftpdlib is not currently compatible with Python 3.9
+          - 3.9 # pyftpdlib is not currently compatible with Python 3.9
         exclude:
           # Test 32-bit only on Linux
           - os: macOS-latest
