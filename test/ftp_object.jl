@@ -34,7 +34,7 @@ function expected_output(active::Bool)
     close(ftp)
 end
 
-function copy_and_wait(func::Function, files...; timeout=30)
+function copy_and_wait(func::Function, files...; timeout=60)
     # Writing/uploading FTP files can have concurrency issues so we repeatedly
     # try and read the destination file until we have data.
     resp = func()
